@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Base Styling */
+body {
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color: white;
+  font-family: system-ui, sans-serif;
+}
+
+/* Fix inputs */
+input, select {
+  color: white;
+}
+
+/* Fix dropdown */
+select option {
+  color: black;
+}
+@keyframes movePlane {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(300px);
+  }
+}
+.nav-link {
+  position: relative;
+  color: #facc15; /* yellow */
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+/* hover */
+.nav-link:hover {
+  color: #fde047;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.8);
+}
+
+/* underline */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 0%;
+  height: 2px;
+  background: #facc15;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+@keyframes fly-plane {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(200px) translateY(-5px);
+  }
+  60% {
+    transform: translateX(500px) translateY(-10px);
+  }
+  100% {
+    transform: translateX(1000px) translateY(0);
+    opacity: 0;
+  }
+}
+
+.animate-fly-plane {
+  animation: fly-plane 4s ease-in-out forwards;
+}
