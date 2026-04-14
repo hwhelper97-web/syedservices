@@ -4,11 +4,9 @@ import Services from "../components/Services";
 import VisaSection from "../components/VisaSection";
 import ExitSection from "../components/ExitSection";
 import WhyUs from "../components/WhyUs";
-import ContactSection from "../components/ContactSection";
 import Footer from "../components/Footer";
 import Testimonials from "../components/Testimonials";
 import WhatsApp from "../components/WhatsApp";
-import MainCTA from "../components/MainCTA";
 import Stats from "../components/Stats";
 import FinalCTA from "../components/FinalCTA";
 import WorldMapPro from "../components/WorldMapPro";
@@ -24,8 +22,6 @@ export default function Home() {
   <Stats />
   <WhyUs />
   <Testimonials />
-  <ContactSection />
-  <MainCTA />
    <FinalCTA />
   <Footer />
   <WhatsApp />

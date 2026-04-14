@@ -73,3 +73,10 @@ select option {
 .animate-fly-plane {
   animation: fly-plane 4s ease-in-out forwards;
 }
+html, body {
+  overflow-x: hidden;
+}
+
+* {
+  max-width: 100%;
+}
