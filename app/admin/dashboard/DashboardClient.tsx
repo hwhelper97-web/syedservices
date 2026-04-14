@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 export default function DashboardClient({ messages = [] }: any) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(messages);
 
   useEffect(() => {
     const isAdmin = localStorage.getItem("admin");
@@ -21,20 +22,37 @@ export default function DashboardClient({ messages = [] }: any) {
     router.push("/admin/login");
   };
 
+  // ✅ DELETE (WORKING)
   const handleDelete = async (id: number) => {
     const confirmDelete = confirm("Delete this message?");
     if (!confirmDelete) return;
 
-    await fetch("/api/contact/delete", {
-      method: "POST",
-      body: JSON.stringify({ id }),
-    });
+    try {
+      const res = await fetch("/api/contact/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
 
-    location.reload();
+      if (res.ok) {
+        setData((prev: any[]) => prev.filter((item) => item.id !== id));
+      } else {
+        alert("Delete failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting");
+    }
   };
 
+  // ✅ REPLY (GMAIL OPEN)
   const handleReply = (email: string) => {
-    window.location.href = `mailto:${email}`;
+    window.open(
+      `https://mail.google.com/mail/?view=cm&to=${email}`,
+      "_blank"
+    );
   };
 
   if (loading) return null;
@@ -50,7 +68,7 @@ export default function DashboardClient({ messages = [] }: any) {
 
         <button
           onClick={handleLogout}
-          className="px-4 py-2 bg-red-500 rounded-lg hover:scale-105"
+          className="px-4 py-2 bg-red-500 rounded-lg hover:scale-105 transition"
         >
           Logout
         </button>
@@ -59,13 +77,15 @@ export default function DashboardClient({ messages = [] }: any) {
       {/* STATS */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="p-4 bg-white/5 rounded-xl text-center">
-          <p className="text-yellow-400 text-xl font-bold">{messages.length}</p>
+          <p className="text-yellow-400 text-xl font-bold">{data.length}</p>
           <p className="text-gray-400 text-sm">Messages</p>
         </div>
+
         <div className="p-4 bg-white/5 rounded-xl text-center">
           <p className="text-yellow-400 text-xl font-bold">Active</p>
           <p className="text-gray-400 text-sm">Status</p>
         </div>
+
         <div className="p-4 bg-white/5 rounded-xl text-center">
           <p className="text-yellow-400 text-xl font-bold">Admin</p>
           <p className="text-gray-400 text-sm">User</p>
@@ -73,8 +93,8 @@ export default function DashboardClient({ messages = [] }: any) {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
 
           <thead className="bg-white/10 text-yellow-400">
             <tr>
@@ -86,33 +106,40 @@ export default function DashboardClient({ messages = [] }: any) {
           </thead>
 
           <tbody>
-            {messages.length === 0 ? (
+            {data.length === 0 ? (
               <tr>
                 <td colSpan={4} className="p-6 text-center text-gray-400">
                   No messages yet
                 </td>
               </tr>
             ) : (
-              messages.map((m: any) => (
-                <tr key={m.id} className="border-t border-white/10">
+              data.map((m: any) => (
+                <tr
+                  key={m.id}
+                  className="border-t border-white/10 hover:bg-white/5 transition"
+                >
                   <td className="p-4">{m.name}</td>
                   <td className="p-4">{m.email}</td>
-                  <td className="p-4">{m.message}</td>
+                  <td className="p-4 max-w-[300px] truncate">
+                    {m.message}
+                  </td>
 
                   <td className="p-4 flex gap-2">
+
                     <button
                       onClick={() => handleReply(m.email)}
-                      className="px-3 py-1 bg-blue-500 rounded-lg text-xs"
+                      className="px-3 py-1 bg-blue-500 rounded-lg text-xs hover:scale-105 transition"
                     >
                       Reply
                     </button>
 
                     <button
                       onClick={() => handleDelete(m.id)}
-                      className="px-3 py-1 bg-red-500 rounded-lg text-xs"
+                      className="px-3 py-1 bg-red-500 rounded-lg text-xs hover:scale-105 transition"
                     >
                       Delete
                     </button>
+
                   </td>
                 </tr>
               ))

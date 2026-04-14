@@ -1,15 +1,40 @@
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { id } = await req.json();
+    const body = await req.json();
+    const { name, email, message } = body;
 
-    await prisma.contact.delete({
-      where: { id },
+    // ✅ VALIDATION
+    if (!name || !email || !message) {
+      return Response.json(
+        { error: "All fields required" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ SAVE TO DATABASE
+    const saved = await prisma.contact.create({
+      data: {
+        name,
+        email,
+        message,
+      },
     });
 
+    console.log("Saved:", saved);
+
+    // ✅ SUCCESS RESPONSE
     return Response.json({ success: true });
+
   } catch (error) {
-    return Response.json({ error: "Delete failed" }, { status: 500 });
+    console.error("CONTACT ERROR:", error);
+
+    return Response.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }
