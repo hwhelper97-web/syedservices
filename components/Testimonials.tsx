@@ -1,30 +1,62 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { FiStar } from "react-icons/fi";
+
+const testimonials = [
+  {
+    name: "Ahmad Raza",
+    role: "Student, UK",
+    content: "Syed Services made my UK student visa process incredibly smooth. Their team is professional and always ready to help.",
+    image: "https://i.pravatar.cc/150?u=ahmad",
+  },
+  {
+    name: "Sarah Khan",
+    role: "Traveler",
+    content: "I got my Schengen visa in just 2 weeks! Highly recommend their services for anyone looking for reliable visa assistance.",
+    image: "https://i.pravatar.cc/150?u=sarah",
+  },
+  {
+    name: "Zubair Ahmed",
+    role: "Business Owner",
+    content: "Professional consultancy for work permits. They handled all the complex documentation for my team.",
+    image: "https://i.pravatar.cc/150?u=zubair",
+  },
+];
+
 export default function Testimonials() {
-  const data = [
-    "Very fast visa service! Highly recommended.",
-    "Professional and trusted agency.",
-    "Got my exit permit without any issue!",
-  ];
-
   return (
-    <section className="py-20 bg-[#020617] text-center">
+    <section className="py-24 bg-slate-900/30">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">What Our <span className="text-gradient">Clients</span> Say</h2>
+          <p className="text-slate-400">Real stories from people we've helped achieve their dreams.</p>
+        </div>
 
-      <h2 className="text-3xl font-bold text-yellow-400 mb-10">
-        What Our Clients Say
-      </h2>
-
-      <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto px-6">
-
-        {data.map((t, i) => (
-          <div
-            key={i}
-            className="p-6 bg-white/5 border border-white/10 rounded-xl backdrop-blur"
-          >
-            <p className="text-gray-300">"{t}"</p>
-          </div>
-        ))}
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-[#0f172a] p-8 rounded-3xl border border-slate-800 flex flex-col h-full"
+            >
+              <div className="flex gap-1 text-yellow-400 mb-6">
+                {[...Array(5)].map((_, i) => <FiStar key={i} fill="currentColor" />)}
+              </div>
+              <p className="text-slate-300 italic mb-8 flex-grow">"{t.content}"</p>
+              <div className="flex items-center gap-4">
+                <img src={t.image} alt={t.name} className="w-12 h-12 rounded-full ring-2 ring-yellow-400/20" />
+                <div>
+                  <h4 className="font-bold text-white">{t.name}</h4>
+                  <p className="text-xs text-slate-500">{t.role}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
-
     </section>
   );
 }

@@ -1,11 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import DashboardClient from "./DashboardClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function Dashboard() {
-  let messages: any[] = [];
+  let leads: any[] = [];
 
   try {
-    messages = await prisma.contact.findMany({
+    leads = await prisma.lead.findMany({
+      include: {
+        files: true,
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -14,6 +19,5 @@ export default async function Dashboard() {
     console.error("❌ DB ERROR:", error);
   }
 
-  // ✅ always safe fallback
-  return <DashboardClient messages={messages ?? []} />;
+  return <DashboardClient initialLeads={leads ?? []} />;
 }

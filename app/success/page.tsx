@@ -1,26 +1,39 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { FiCheckCircle, FiArrowLeft, FiHome } from "react-icons/fi";
+import Link from "next/link";
+
 export default function SuccessPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#020617] to-[#0f172a]">
-
-      <div className="p-10 rounded-2xl bg-white/5 border border-white/10 backdrop-blur text-center space-y-4">
-
-        <h1 className="text-3xl font-bold text-green-400">
-          Application Submitted ✅
-        </h1>
-
-        <p className="text-gray-400">
-          Our team will review your application and contact you shortly.
+    <div className="min-h-screen flex items-center justify-center bg-[#020617] px-6">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full glass-card p-12 text-center"
+      >
+        <div className="inline-flex items-center justify-center w-24 h-24 bg-green-500/20 text-green-500 rounded-full mb-8">
+          <FiCheckCircle size={48} />
+        </div>
+        
+        <h1 className="text-3xl font-bold text-white mb-4">Application Received!</h1>
+        <p className="text-slate-400 mb-10 leading-relaxed">
+          Thank you for choosing Syed Services. Your application has been successfully submitted. 
+          Our expert consultants will review your documents and contact you within 24 hours.
         </p>
 
-        <a
-          href="/"
-          className="inline-block mt-4 bg-yellow-500 text-black px-6 py-3 rounded-xl hover:scale-105 transition"
-        >
-          Go Back Home
-        </a>
-
-      </div>
-
+        <div className="space-y-4">
+          <Link 
+            href="/" 
+            className="premium-btn btn-primary w-full flex items-center justify-center gap-2"
+          >
+            <FiHome /> Back to Homepage
+          </Link>
+          <p className="text-xs text-slate-600 uppercase tracking-widest font-bold">
+            Stay tuned for updates
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

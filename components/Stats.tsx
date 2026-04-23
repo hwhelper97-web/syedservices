@@ -1,57 +1,42 @@
 "use client";
-import { useEffect, useState } from "react";
 
-function Counter({ target }: { target: number }) {
-  const [count, setCount] = useState(0);
+import { motion } from "framer-motion";
 
-  useEffect(() => {
-    let start = 0;
-    const interval = setInterval(() => {
-      start += Math.ceil(target / 50);
-      if (start >= target) {
-        start = target;
-        clearInterval(interval);
-      }
-      setCount(start);
-    }, 30);
-  }, [target]);
-
-  return <span>{count}</span>;
-}
+const stats = [
+  { label: "Visas Approved", value: "5,000+" },
+  { label: "Success Rate", value: "99%" },
+  { label: "Countries Served", value: "40+" },
+  { label: "Years Experience", value: "10+" },
+];
 
 export default function Stats() {
   return (
-    <section className="py-20 bg-black text-center">
-
-      <h2 className="text-3xl font-bold text-yellow-400 mb-10">
-        Our Achievements
-      </h2>
-
-      <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-
-        <div className="bg-white/5 p-8 rounded-xl">
-          <h3 className="text-4xl text-yellow-400 font-bold">
-            <Counter target={5000} />+
-          </h3>
-          <p className="text-gray-400">Visas Processed</p>
+    <section className="py-20 relative">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.5 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
+              className="text-center"
+            >
+              <h3 className="text-4xl md:text-5xl font-black text-yellow-400 mb-2">
+                {stat.value}
+              </h3>
+              <p className="text-slate-400 font-medium uppercase tracking-widest text-xs">
+                {stat.label}
+              </p>
+            </motion.div>
+          ))}
         </div>
-
-        <div className="bg-white/5 p-8 rounded-xl">
-          <h3 className="text-4xl text-yellow-400 font-bold">
-            <Counter target={1200} />+
-          </h3>
-          <p className="text-gray-400">Happy Clients</p>
-        </div>
-
-        <div className="bg-white/5 p-8 rounded-xl">
-          <h3 className="text-4xl text-yellow-400 font-bold">
-            <Counter target={99} />%
-          </h3>
-          <p className="text-gray-400">Success Rate</p>
-        </div>
-
       </div>
-
+      
+      {/* Divider Line */}
+      <div className="max-w-7xl mx-auto px-6 mt-20">
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+      </div>
     </section>
   );
 }

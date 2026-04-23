@@ -1,10 +1,39 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+}
+
+model Lead {
+  id          Int      @id @default(autoincrement())
+  trackingId  String   @unique
+  name        String
+  email       String
+  phone       String
+  service     String
+  message     String
+  status      String   @default("New") // New, In Progress, Completed
+  createdAt   DateTime @default(now())
+  files       File[]
+}
+
+model File {
+  id        Int    @id @default(autoincrement())
+  leadId    Int
+  lead      Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fileUrl   String
+  fileType  String // pdf, image
+  fileName  String
 }
 
 model Contact {
