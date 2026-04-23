@@ -18,7 +18,7 @@ export async function GET() {
     });
     
     return Response.json({ 
-      message: "Admin seeded successfully in MySQL", 
+      message: "Admin seeded successfully in Supabase", 
       email: admin.email 
     });
   } catch (error: any) {

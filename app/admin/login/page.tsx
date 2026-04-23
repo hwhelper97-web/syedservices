@@ -66,12 +66,12 @@ export default function Login() {
             <div className="space-y-1">
               <label>Email Address</label>
               <div className="relative">
-                <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
                 <input
                   required
                   type="email"
                   placeholder="admin@syedservices.com"
-                  className="pl-12"
+                  className="pl-14"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -81,12 +81,12 @@ export default function Login() {
             <div className="space-y-1">
               <label>Password</label>
               <div className="relative">
-                <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
                 <input
                   required
                   type="password"
                   placeholder="••••••••"
-                  className="pl-12"
+                  className="pl-14"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
