@@ -129,12 +129,12 @@ export default function ExitPermitPage() {
               Exit Permit facilitates foreigners who intend to leave Pakistan but do not possess a valid visa 
               (expired, cancelled, or rejected). Valid for 15 days from the date of issuance.
             </p>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
-                <FiClock className="text-yellow-400" /> 48-72 Hours Processing
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
+                <FiClock className="text-yellow-400 shrink-0" /> <span className="whitespace-nowrap">48-72 Hours Processing</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
-                <FiGlobe className="text-yellow-400" /> 192 Countries Eligible
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
+                <FiGlobe className="text-yellow-400 shrink-0" /> <span className="whitespace-nowrap">192 Countries Eligible</span>
               </div>
             </div>
           </motion.div>
@@ -212,12 +212,12 @@ export default function ExitPermitPage() {
             <p className="text-slate-400">Secure and professional processing by Syed Services</p>
           </div>
 
-          <div className="glass-card p-8 md:p-12 border-slate-800">
+          <div className="glass-card p-5 sm:p-8 md:p-12 border-slate-800 mt-4 md:mt-0">
             {/* Progress Bar (Shortened) */}
-            <div className="flex justify-between mb-12">
+            <div className="flex justify-between mb-8 sm:mb-12">
               {[1, 2, 3, 4].map((s) => (
                 <div key={s} className={`flex items-center gap-2 ${step >= s ? 'text-yellow-400' : 'text-slate-600'}`}>
-                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${step >= s ? 'border-yellow-400 bg-yellow-400/10' : 'border-slate-800'}`}>{s}</div>
+                   <div className={`w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold border-2 ${step >= s ? 'border-yellow-400 bg-yellow-400/10' : 'border-slate-800'}`}>{s}</div>
                    <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Step {s}</span>
                 </div>
               ))}
@@ -254,9 +254,9 @@ export default function ExitPermitPage() {
                       <p className="text-xs text-slate-500">Multiple family members.</p>
                     </button>
                   </div>
-                  <div className="flex gap-4">
-                    <button onClick={() => setStep(1)} className="flex-1 py-4 bg-slate-800 rounded-xl font-bold">Back</button>
-                    <button onClick={() => setStep(3)} className="flex-[2] premium-btn btn-primary py-4">Continue</button>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
+                    <button onClick={() => setStep(1)} className="w-full sm:flex-1 py-3 sm:py-4 bg-slate-800 rounded-xl font-bold">Back</button>
+                    <button onClick={() => setStep(3)} className="w-full sm:flex-[2] premium-btn btn-primary py-3 sm:py-4">Continue</button>
                   </div>
                 </motion.div>
               )}
@@ -315,9 +315,9 @@ export default function ExitPermitPage() {
                        </p>
                     </div>
 
-                    <div className="flex gap-4 pt-8">
-                      <button type="button" onClick={() => setStep(2)} className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold transition-colors">Back</button>
-                      <button disabled={isSubmitting} type="submit" className="flex-[2] premium-btn btn-primary py-4 text-lg">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-8">
+                      <button type="button" onClick={() => setStep(2)} className="w-full sm:flex-1 py-3 sm:py-4 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold transition-colors">Back</button>
+                      <button disabled={isSubmitting} type="submit" className="w-full sm:flex-[2] premium-btn btn-primary py-3 sm:py-4 text-base sm:text-lg">
                         {isSubmitting ? "Processing..." : "Submit Application"}
                       </button>
                     </div>
@@ -333,9 +333,9 @@ export default function ExitPermitPage() {
                   <h3 className="text-2xl font-bold mb-2">Application Received!</h3>
                   <p className="text-slate-400 mb-8">Your Exit Permit application has been submitted successfully.</p>
                   
-                  <div className="bg-yellow-400/10 border border-yellow-400/20 p-6 rounded-2xl mb-8">
+                  <div className="bg-yellow-400/10 border border-yellow-400/20 p-4 sm:p-6 rounded-2xl mb-8">
                     <p className="text-xs text-slate-500 uppercase font-bold tracking-widest mb-2">Your Tracking ID</p>
-                    <p className="text-3xl font-black text-yellow-400 font-mono">{trackingId}</p>
+                    <p className="text-2xl sm:text-3xl font-black text-yellow-400 font-mono break-all">{trackingId}</p>
                   </div>
 
                   <div className="space-y-4">
