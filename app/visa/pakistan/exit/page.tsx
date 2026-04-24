@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { countries } from "@/utils/countries";
+import { compressImage } from "@/utils/compressImage";
 
 const overstayFees = [
   { range: "Up to 2 Weeks", fee: "No surcharge" },
@@ -42,10 +43,21 @@ export default function ExitPermitPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileSelect = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFiles(prev => ({ ...prev, [id]: file }));
+      if (file.size > 15 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Please select a file smaller than 15MB.`);
+        e.target.value = '';
+        return;
+      }
+      
+      let finalFile = file;
+      if (file.type.startsWith('image/')) {
+        finalFile = await compressImage(file);
+      }
+      
+      setSelectedFiles(prev => ({ ...prev, [id]: finalFile }));
     }
   };
 
@@ -68,15 +80,29 @@ export default function ExitPermitPage() {
         method: "POST",
         body: data,
       });
-      const result = await res.json();
+      
+      let result;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        result = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Non-JSON response:", res.status, text);
+        if (res.status === 413) {
+          throw new Error("The uploaded files are too large. Please compress your images and try again.");
+        }
+        throw new Error(`Server returned error ${res.status}. Please try again later.`);
+      }
+
       if (res.ok) {
         setTrackingId(result.trackingId);
         setStep(4); // Success step
       } else {
         alert(result.error || "Submission failed.");
       }
-    } catch (err) {
-      alert("Error submitting application.");
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      alert(err.message || "Error submitting application.");
     } finally {
       setIsSubmitting(false);
     }
