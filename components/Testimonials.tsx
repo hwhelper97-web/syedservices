@@ -47,7 +47,11 @@ export default function Testimonials() {
               </div>
               <p className="text-slate-300 italic mb-8 flex-grow">"{t.content}"</p>
               <div className="flex items-center gap-4">
-                <img src={t.image} alt={t.name} className="w-12 h-12 rounded-full ring-2 ring-yellow-400/20" />
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black font-bold text-lg shadow-[0_0_15px_rgba(250,204,21,0.3)] relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+                  {t.name.split(' ').map(n => n[0]).join('')}
+                  <div className="absolute inset-0 rounded-full border-2 border-yellow-400/20 animate-pulse" />
+                </div>
                 <div>
                   <h4 className="font-bold text-white">{t.name}</h4>
                   <p className="text-xs text-slate-500">{t.role}</p>
