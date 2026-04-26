@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendStatusUpdateNotification } from "@/utils/email";
+import path from "path";
+import fs from "fs/promises";
 
 export async function POST(
   req: NextRequest,
@@ -34,7 +36,6 @@ export async function POST(
       // Save to public directory for direct download
       const fileName = `${id}_${Date.now()}_${attachmentFile.name}`;
       const publicPath = path.join(process.cwd(), "public/uploads/results", fileName);
-      const fs = require('fs/promises');
       await fs.writeFile(publicPath, buffer);
       
       attachmentUrl = `https://syedservices.com.pk/uploads/results/${fileName}`;
