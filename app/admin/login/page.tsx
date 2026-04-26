@@ -70,8 +70,8 @@ export default function Login() {
                 <input
                   required
                   type="email"
-                  placeholder="admin@syedservices.com"
-                  className="pl-14"
+                  placeholder="info@syedservices.com.pk"
+                  className="!pl-12"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -86,7 +86,7 @@ export default function Login() {
                   required
                   type="password"
                   placeholder="••••••••"
-                  className="pl-14"
+                  className="!pl-12"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />

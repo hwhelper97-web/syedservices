@@ -14,6 +14,8 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isNotifying, setIsNotifying] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -45,6 +47,33 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
       }
     } catch (err) {
       alert("Error updating status");
+    }
+  };
+
+  const notifyEmail = async (id: number) => {
+    setIsNotifying(true);
+    try {
+      const formData = new FormData();
+      if (attachment) {
+        formData.append("attachment", attachment);
+      }
+
+      const res = await fetch(`/api/leads/${id}/notify`, { 
+        method: "POST",
+        body: formData,
+      });
+      
+      if (res.ok) {
+        alert("Notification email sent successfully!");
+        setAttachment(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to send email");
+      }
+    } catch (err) {
+      alert("Error sending notification");
+    } finally {
+      setIsNotifying(false);
     }
   };
 
@@ -306,15 +335,44 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
                         <option value="Completed">Completed</option>
                       </select>
                     </div>
-                    <a 
-                      href={`https://wa.me/${selectedLead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                        `Hi ${selectedLead.name}, your application (${selectedLead.trackingId}) for ${selectedLead.service} is now ${selectedLead.status}. Track it here: https://syedservices.com.pk/track?id=${selectedLead.trackingId}`
-                      )}`}
-                      target="_blank"
-                      className="flex items-center justify-center gap-2 w-full py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-all text-xs font-bold"
-                    >
-                      Notify via WhatsApp
-                    </a>
+                    <div className="flex flex-col gap-2">
+                      <a 
+                        href={`https://wa.me/${selectedLead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                          `Hi ${selectedLead.name}, your application (${selectedLead.trackingId}) for ${selectedLead.service} is now ${selectedLead.status}. Track it here: https://syedservices.com.pk/track?id=${selectedLead.trackingId}`
+                        )}`}
+                        target="_blank"
+                        className="flex items-center justify-center gap-2 w-full py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-all text-xs font-bold"
+                      >
+                        Notify via WhatsApp
+                      </a>
+
+                      <div className="pt-2 border-t border-slate-800 mt-2">
+                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Attach Result (PDF)</label>
+                        <div className="relative group">
+                           <div className={`flex items-center justify-between p-3 bg-slate-900 border rounded-lg transition-all ${attachment ? 'border-yellow-400 bg-yellow-400/5' : 'border-slate-800'}`}>
+                              <span className="text-[10px] truncate pr-2 text-slate-400">
+                                {attachment ? `✓ ${attachment.name}` : "Upload Visa/Permit PDF"}
+                              </span>
+                              <FiDownload className="text-slate-600 group-hover:text-yellow-400 transition-colors" />
+                              <input 
+                                type="file" 
+                                accept=".pdf"
+                                onChange={(e) => setAttachment(e.target.files?.[0] || null)}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                              />
+                           </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        disabled={isNotifying || !selectedLead.email}
+                        onClick={() => notifyEmail(selectedLead.id)}
+                        className="flex items-center justify-center gap-2 w-full py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg transition-all text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                      >
+                        <FiMail className={isNotifying ? "animate-spin" : ""} />
+                        {isNotifying ? "Sending Email..." : "Notify via Email"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 

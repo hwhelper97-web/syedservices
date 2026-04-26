@@ -10,8 +10,8 @@ export default function ContactSection() {
         Need help? Our team is available 24/7
       </p>
 
-      <p className="text-white">📧 syedservices@email.com</p>
-      <p className="text-white">📞 +92 300 0000000</p>
+      <p className="text-white">📧 info@syedservices.com.pk</p>
+      <p className="text-white">📞 +92 309 9797771</p>
 
     </section>
   );
