@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMenu, FiX, FiPhone, FiChevronRight, FiLock, FiChevronDown, FiGlobe, FiBriefcase, FiBook, FiShield, FiHeart, FiPlus, FiFileText, FiDollarSign, FiSearch } from "react-icons/fi";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -57,6 +58,7 @@ const LanguageSwitcher = () => {
 };
 
 export default function Navbar() {
+  const router = useRouter();
   const { t, dir } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [mobileDropdown, setMobileDropdown] = useState<string | null>(null);
