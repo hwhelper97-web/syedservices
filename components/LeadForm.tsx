@@ -28,7 +28,14 @@ const visaCategories = [
 export default function LeadForm({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<{ [key: string]: File | null }>({
+    passport: null,
+    photo: null,
+    cnic: null,
+    license: null,
+    others: null,
+  });
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -37,11 +44,19 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
     visaCategory: visaCategories[0],
     country: "",
     message: "",
+    // Visa specific fields
+    passportNumber: "",
+    passportExpiry: "",
+    dob: "",
+    fatherName: "",
+    motherName: "",
+    maritalStatus: "Single",
+    occupation: "",
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
+    if (e.target.files && e.target.files[0]) {
+      setFiles(prev => ({ ...prev, [key]: e.target.files![0] }));
     }
   };
 
@@ -50,17 +65,14 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
     setLoading(true);
 
     const data = new FormData();
-    data.append("name", formData.name);
-    data.append("email", formData.email);
-    data.append("phone", formData.phone);
-    data.append("service", formData.service);
-    if (formData.service === "Visa Services") {
-      data.append("visaCategory", formData.visaCategory);
-    }
-    data.append("message", formData.message);
+    // Common fields
+    Object.entries(formData).forEach(([key, value]) => {
+      data.append(key, value);
+    });
     
-    files.forEach((file) => {
-      data.append("files", file);
+    // Append files
+    Object.entries(files).forEach(([key, file]) => {
+      if (file) data.append(key, file);
     });
 
     try {
@@ -75,7 +87,7 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
         setSuccess(true);
         setTimeout(() => {
           onClose();
-        }, 10000); // 10 seconds so they can copy the ID
+        }, 10000); 
       } else {
         alert("Something went wrong. Please try again.");
       }
@@ -86,6 +98,8 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
       setLoading(false);
     }
   };
+
+  const isVisa = formData.service === "Visa Services";
 
   return (
     <AnimatePresence>
@@ -102,14 +116,14 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg glass-card overflow-hidden flex flex-col max-h-[90vh]"
+          className={`relative w-full ${isVisa ? 'max-w-2xl' : 'max-w-lg'} glass-card overflow-hidden flex flex-col max-h-[90vh] transition-all duration-500`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="bg-yellow-400 p-5 flex justify-between items-center shrink-0">
             <div>
-              <h2 className="text-xl font-bold text-black">Start Your Journey</h2>
-              <p className="text-black/70 text-xs">Fill out the form for a free consultation</p>
+              <h2 className="text-xl font-bold text-black">{isVisa ? "Full Visa Application" : "Start Your Journey"}</h2>
+              <p className="text-black/70 text-xs">{isVisa ? "Please provide accurate details for official processing" : "Fill out the form for a free consultation"}</p>
             </div>
             <button
               onClick={onClose}
@@ -137,145 +151,290 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                 <p className="text-slate-400 text-xs">Please save this ID to track your status.</p>
               </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
-                    <input
-                      required
-                      type="text"
-                      placeholder="John Doe"
-                      className="w-full text-sm py-2"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address *</label>
-                    <input
-                      required
-                      type="email"
-                      placeholder="john@example.com"
-                      className="w-full text-sm py-2"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
-                  <input
-                    required
-                    type="tel"
-                    placeholder="+92 300 1234567"
-                    className="w-full text-sm py-2"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nationality *</label>
-                    <select
-                      required
-                      className="w-full text-sm py-2"
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    >
-                      <option value="">Select Country</option>
-                      {countries.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Interested Service *</label>
-                    <select
-                      required
-                      className="w-full text-sm py-2"
-                      value={formData.service}
-                      onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                    >
-                      {services.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Conditional Visa Category Dropdown */}
-                {formData.service === "Visa Services" && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="space-y-1 overflow-hidden"
-                  >
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Visa Category *</label>
-                    <select
-                      required
-                      className="w-full text-sm py-2"
-                      value={formData.visaCategory}
-                      onChange={(e) => setFormData({ ...formData, visaCategory: e.target.value })}
-                    >
-                      {visaCategories.map((v) => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  </motion.div>
-                )}
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Message</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Briefly describe your needs..."
-                    className="w-full text-sm py-2"
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Attach Documents</label>
-                  <div className="relative group">
-                    <div className="border border-dashed border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-colors group-hover:border-yellow-400/50 bg-slate-900/50">
-                      <FiUpload className="text-slate-500 mb-1 group-hover:text-yellow-400" size={20} />
-                      <p className="text-[10px] text-slate-400">
-                        {files.length > 0 
-                          ? `${files.length} selected` 
-                          : "PDF/JPG allowed"}
-                      </p>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                
+                {/* Basic Section */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Primary Contact Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
                       <input
-                        multiple
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={handleFileChange}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        required
+                        type="text"
+                        placeholder="Full name as per passport"
+                        className="w-full text-sm py-2"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email Address *</label>
+                      <input
+                        required
+                        type="email"
+                        placeholder="your@email.com"
+                        className="w-full text-sm py-2"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
                     </div>
                   </div>
-                  {files.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {files.map((file, i) => (
-                        <span key={i} className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">
-                          {file.name}
-                        </span>
-                      ))}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
+                      <input
+                        required
+                        type="tel"
+                        placeholder="+92 300 1234567"
+                        className="w-full text-sm py-2"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      />
                     </div>
-                  )}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Interested Service *</label>
+                      <select
+                        required
+                        className="w-full text-sm py-2"
+                        value={formData.service}
+                        onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                      >
+                        {services.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Conditional Visa Detail Section */}
+                <AnimatePresence>
+                  {isVisa && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-6 overflow-hidden"
+                    >
+                      {/* Visa Category & Country */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Visa Category *</label>
+                          <select
+                            required
+                            className="w-full text-sm py-2"
+                            value={formData.visaCategory}
+                            onChange={(e) => setFormData({ ...formData, visaCategory: e.target.value })}
+                          >
+                            {visaCategories.map((v) => (
+                              <option key={v} value={v}>{v}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current Nationality *</label>
+                          <select
+                            required
+                            className="w-full text-sm py-2"
+                            value={formData.country}
+                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                          >
+                            <option value="">Select Country</option>
+                            {countries.map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Personal Details */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Personal & Family Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date of Birth *</label>
+                            <input
+                              required={isVisa}
+                              type="date"
+                              className="w-full text-sm py-2"
+                              value={formData.dob}
+                              onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Father's Name *</label>
+                            <input
+                              required={isVisa}
+                              type="text"
+                              placeholder="Full Name"
+                              className="w-full text-sm py-2"
+                              value={formData.fatherName}
+                              onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mother's Name *</label>
+                            <input
+                              required={isVisa}
+                              type="text"
+                              placeholder="Full Name"
+                              className="w-full text-sm py-2"
+                              value={formData.motherName}
+                              onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Marital Status *</label>
+                            <select
+                              required={isVisa}
+                              className="w-full text-sm py-2"
+                              value={formData.maritalStatus}
+                              onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })}
+                            >
+                              <option value="Single">Single</option>
+                              <option value="Married">Married</option>
+                              <option value="Divorced">Divorced</option>
+                              <option value="Widowed">Widowed</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Passport Details */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Passport Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Passport Number *</label>
+                            <input
+                              required={isVisa}
+                              type="text"
+                              placeholder="Passport No"
+                              className="w-full text-sm py-2"
+                              value={formData.passportNumber}
+                              onChange={(e) => setFormData({ ...formData, passportNumber: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Passport Expiry *</label>
+                            <input
+                              required={isVisa}
+                              type="date"
+                              className="w-full text-sm py-2"
+                              value={formData.passportExpiry}
+                              onChange={(e) => setFormData({ ...formData, passportExpiry: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Document Uploads for Visa */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Required Document Scans</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            { id: 'passport', label: 'Passport Bio Page *', icon: <FiGlobe /> },
+                            { id: 'photo', label: 'Recent Photograph *', icon: <FiUpload /> },
+                            { id: 'cnic', label: 'CNIC / National ID *', icon: <FiUpload /> },
+                            { id: 'license', label: 'Driving License (Optional)', icon: <FiUpload /> },
+                          ].map((doc) => (
+                            <div key={doc.id} className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{doc.label}</label>
+                              <div className="relative group">
+                                <div className={`border border-dashed ${files[doc.id] ? 'border-green-500 bg-green-500/5' : 'border-slate-700 bg-slate-900/50'} rounded-xl p-3 flex items-center gap-3 transition-colors`}>
+                                  <div className={`shrink-0 ${files[doc.id] ? 'text-green-500' : 'text-slate-500'}`}>{doc.icon}</div>
+                                  <p className="text-[10px] text-slate-400 truncate">
+                                    {files[doc.id] ? (files[doc.id] as File).name : "Upload Scan"}
+                                  </p>
+                                  <input
+                                    required={isVisa && doc.id !== 'license'}
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => handleFileChange(e, doc.id)}
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {!isVisa && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nationality *</label>
+                        <select
+                          required
+                          className="w-full text-sm py-2"
+                          value={formData.country}
+                          onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                        >
+                          <option value="">Select Country</option>
+                          {countries.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1 opacity-0 pointer-events-none">
+                        {/* Spacer for 2-col alignment */}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Message</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Tell us about your requirements..."
+                        className="w-full text-sm py-2"
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attach Documents (Optional)</label>
+                      <div className="relative group">
+                        <div className="border border-dashed border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-colors group-hover:border-yellow-400/50 bg-slate-900/50">
+                          <FiUpload className="text-slate-500 mb-1 group-hover:text-yellow-400" size={20} />
+                          <p className="text-[10px] text-slate-400">Drag or click to upload</p>
+                          <input
+                            type="file"
+                            multiple
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => {
+                              if(e.target.files && e.target.files[0]) {
+                                setFiles(prev => ({ ...prev, others: e.target.files![0] }));
+                              }
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                      {files.others && (
+                        <p className="text-[10px] text-green-500 mt-1">{(files.others as File).name} selected</p>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <button
                   disabled={loading}
                   type="submit"
-                  className="w-full premium-btn btn-primary !py-3 text-sm font-bold mt-2"
+                  className="w-full premium-btn btn-primary !py-4 text-sm font-black uppercase tracking-widest mt-4"
                 >
                   {loading ? (
-                    <><FiLoader className="animate-spin" /> Processing...</>
+                    <><FiLoader className="animate-spin" /> Processing Application...</>
                   ) : (
-                    "Submit Application"
+                    isVisa ? "Submit Full Application" : "Submit Consultation Request"
                   )}
                 </button>
               </form>
