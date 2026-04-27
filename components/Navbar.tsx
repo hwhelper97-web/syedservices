@@ -59,6 +59,7 @@ const LanguageSwitcher = () => {
 export default function Navbar() {
   const { t, dir } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [mobileDropdown, setMobileDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -204,32 +205,51 @@ export default function Navbar() {
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Language</span>
                 <LanguageSwitcher />
               </div>
-              {navLinks.map((link) => (
-                <div key={link.name}>
-                  <Link 
-                    href={link.href}
-                    onClick={() => !link.dropdown && setIsOpen(false)}
-                    className="text-lg font-medium text-slate-300 hover:text-yellow-400 flex items-center justify-between"
-                  >
-                    {link.name}
-                    {link.dropdown && <FiChevronRight className={dir === 'rtl' ? 'rotate-180' : ''} />}
-                  </Link>
-                  {link.dropdown && (
-                    <div className={`grid grid-cols-2 gap-2 mt-4 ml-2 pl-4 border-l border-white/5 ${dir === 'rtl' ? 'mr-2 pr-4 border-l-0 border-r border-white/5' : ''}`}>
-                      {visaSubLinks.map((sub) => (
-                        <Link 
-                          key={sub.name}
-                          href={sub.href}
-                          onClick={() => setIsOpen(false)}
-                          className="text-xs text-slate-500 hover:text-yellow-400 py-2 flex items-center gap-2"
-                        >
-                          {sub.name}
-                        </Link>
-                      ))}
+              {navLinks.map((link) => {
+                const isDropdownOpen = mobileDropdown === link.name;
+                return (
+                  <div key={link.name}>
+                    <div 
+                      className="text-lg font-medium text-slate-300 hover:text-yellow-400 flex items-center justify-between cursor-pointer py-1"
+                      onClick={() => {
+                        if (link.dropdown) {
+                          setMobileDropdown(isDropdownOpen ? null : link.name);
+                        } else {
+                          setIsOpen(false);
+                          router.push(link.href);
+                        }
+                      }}
+                    >
+                      <span>{link.name}</span>
+                      {link.dropdown && (
+                        <FiChevronRight className={`transition-transform ${isDropdownOpen ? "rotate-90" : ""} ${dir === 'rtl' ? 'rotate-180' : ''}`} />
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    
+                    <AnimatePresence>
+                      {link.dropdown && isDropdownOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className={`grid grid-cols-2 gap-2 mt-4 ml-2 pl-4 border-l border-white/5 overflow-hidden ${dir === 'rtl' ? 'mr-2 pr-4 border-l-0 border-r border-white/5' : ''}`}
+                        >
+                          {visaSubLinks.map((sub) => (
+                            <Link 
+                              key={sub.name}
+                              href={sub.href}
+                              onClick={() => setIsOpen(false)}
+                              className="text-xs text-slate-500 hover:text-yellow-400 py-2 flex items-center gap-2"
+                            >
+                              {sub.name}
+                            </Link>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
               <button 
                 className="premium-btn btn-primary w-full mt-4"
                 onClick={() => {
