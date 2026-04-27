@@ -7,10 +7,11 @@ const footerLinks = [
   {
     title: "Services",
     links: [
-      { name: "Visa Services", href: "#" },
-      { name: "Tickets", href: "/ticketing" },
-      { name: "Work Permits", href: "#" },
-      { name: "Immigration", href: "#" },
+      { name: "Tourist Visa", href: "/visa/pakistan#tourist" },
+      { name: "Business Visa", href: "/visa/pakistan#business" },
+      { name: "Student Visa", href: "/visa/pakistan#student" },
+      { name: "Work Visa", href: "/visa/pakistan#work" },
+      { name: "Medical Visa", href: "/visa/pakistan#medical" },
     ],
   },
   {
