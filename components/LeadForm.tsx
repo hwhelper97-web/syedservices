@@ -102,59 +102,61 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-xl glass-card overflow-hidden"
+          className="relative w-full max-w-lg glass-card overflow-hidden flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-yellow-400 p-6 flex justify-between items-center">
+          <div className="bg-yellow-400 p-5 flex justify-between items-center shrink-0">
             <div>
-              <h2 className="text-2xl font-bold text-black">Start Your Journey</h2>
-              <p className="text-black/70 text-sm">Fill out the form to get a free consultation</p>
+              <h2 className="text-xl font-bold text-black">Start Your Journey</h2>
+              <p className="text-black/70 text-xs">Fill out the form for a free consultation</p>
             </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-black/10 rounded-full transition-colors text-black"
             >
-              <FiX size={24} />
+              <FiX size={20} />
             </button>
           </div>
 
-          <div className="p-8">
+          <div className="p-6 overflow-y-auto custom-scrollbar">
             {success ? (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center py-12"
+                className="text-center py-8"
               >
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500/20 text-green-500 rounded-full mb-6">
-                  <FiCheckCircle size={40} />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 text-green-500 rounded-full mb-4">
+                  <FiCheckCircle size={32} />
                 </div>
-                <h3 className="text-2xl font-bold mb-2">Application Submitted!</h3>
-                <div className="bg-yellow-400/10 border border-yellow-400/20 p-4 rounded-xl mb-6">
+                <h3 className="text-xl font-bold mb-2 text-white">Application Submitted!</h3>
+                <div className="bg-yellow-400/10 border border-yellow-400/20 p-4 rounded-xl mb-4">
                   <p className="text-xs text-slate-500 uppercase font-bold tracking-widest mb-1">Your Tracking ID</p>
-                  <p className="text-2xl font-black text-yellow-400 font-mono">{(formData as any).trackingId || "88008XXXXXX"}</p>
+                  <p className="text-xl font-black text-yellow-400 font-mono">{(formData as any).trackingId || "88008XXXXXX"}</p>
                 </div>
-                <p className="text-slate-400 text-sm">Please save this ID to track your application status. You will also receive an email confirmation.</p>
+                <p className="text-slate-400 text-xs">Please save this ID to track your status.</p>
               </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label>Full Name *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
                     <input
                       required
                       type="text"
                       placeholder="John Doe"
+                      className="w-full text-sm py-2"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label>Email Address *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address *</label>
                     <input
                       required
                       type="email"
                       placeholder="john@example.com"
+                      className="w-full text-sm py-2"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
@@ -162,21 +164,23 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div className="space-y-1">
-                  <label>Phone Number *</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
                   <input
                     required
                     type="tel"
                     placeholder="+92 300 1234567"
+                    className="w-full text-sm py-2"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label>Nationality / Country *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nationality *</label>
                     <select
                       required
+                      className="w-full text-sm py-2"
                       value={formData.country}
                       onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     >
@@ -187,9 +191,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label>Interested Service *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Interested Service *</label>
                     <select
                       required
+                      className="w-full text-sm py-2"
                       value={formData.service}
                       onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                     >
@@ -207,9 +212,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                     animate={{ opacity: 1, height: "auto" }}
                     className="space-y-1 overflow-hidden"
                   >
-                    <label>Visa Category *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Visa Category *</label>
                     <select
                       required
+                      className="w-full text-sm py-2"
                       value={formData.visaCategory}
                       onChange={(e) => setFormData({ ...formData, visaCategory: e.target.value })}
                     >
@@ -221,24 +227,25 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                 )}
 
                 <div className="space-y-1">
-                  <label>Message</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Message</label>
                   <textarea
-                    rows={3}
-                    placeholder="Tell us about your requirements..."
+                    rows={2}
+                    placeholder="Briefly describe your needs..."
+                    className="w-full text-sm py-2"
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label>Attach Documents (PDF/JPG)</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Attach Documents</label>
                   <div className="relative group">
-                    <div className="border-2 border-dashed border-slate-700 rounded-lg p-6 flex flex-col items-center justify-center transition-colors group-hover:border-yellow-400/50">
-                      <FiUpload className="text-slate-500 mb-2 group-hover:text-yellow-400" size={24} />
-                      <p className="text-sm text-slate-400">
+                    <div className="border border-dashed border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-colors group-hover:border-yellow-400/50 bg-slate-900/50">
+                      <FiUpload className="text-slate-500 mb-1 group-hover:text-yellow-400" size={20} />
+                      <p className="text-[10px] text-slate-400">
                         {files.length > 0 
-                          ? `${files.length} file(s) selected` 
-                          : "Drag and drop or click to upload"}
+                          ? `${files.length} selected` 
+                          : "PDF/JPG allowed"}
                       </p>
                       <input
                         multiple
@@ -250,9 +257,9 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                     </div>
                   </div>
                   {files.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {files.map((file, i) => (
-                        <span key={i} className="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300">
+                        <span key={i} className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">
                           {file.name}
                         </span>
                       ))}
@@ -263,12 +270,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                 <button
                   disabled={loading}
                   type="submit"
-                  className="w-full premium-btn btn-primary mt-4"
+                  className="w-full premium-btn btn-primary !py-3 text-sm font-bold mt-2"
                 >
                   {loading ? (
-                    <>
-                      <FiLoader className="animate-spin" /> Submitting...
-                    </>
+                    <><FiLoader className="animate-spin" /> Processing...</>
                   ) : (
                     "Submit Application"
                   )}
