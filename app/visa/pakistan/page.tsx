@@ -369,9 +369,18 @@ const FeeSection = () => {
 
 // --- Main Page ---
 
+import LeadForm from "@/components/LeadForm";
+
 export default function VisaServicesHub() {
   const [activeTab, setActiveTab] = useState(visaCategories[0].id);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const activeCategory = visaCategories.find(v => v.id === activeTab) || visaCategories[0];
+
+  useEffect(() => {
+    const handleOpenForm = () => setIsFormOpen(true);
+    window.addEventListener('openLeadForm', handleOpenForm);
+    return () => window.removeEventListener('openLeadForm', handleOpenForm);
+  }, []);
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
@@ -637,6 +646,8 @@ export default function VisaServicesHub() {
 
       <Footer />
       <WhatsApp />
+      
+      {isFormOpen && <LeadForm onClose={() => setIsFormOpen(false)} />}
     </main>
   );
 }
