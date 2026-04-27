@@ -4,32 +4,84 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMenu, FiX, FiPhone, FiChevronRight, FiLock, FiChevronDown, FiGlobe, FiBriefcase, FiBook, FiShield, FiHeart, FiPlus, FiFileText, FiDollarSign, FiSearch } from "react-icons/fi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const visaSubLinks = [
-  { name: "Tourist Visa", href: "/visa/pakistan#tourist", icon: <FiGlobe /> },
-  { name: "Business Visa", href: "/visa/pakistan#business", icon: <FiBriefcase /> },
-  { name: "Student Visa", href: "/visa/pakistan#student", icon: <FiBook /> },
-  { name: "Work Visa", href: "/visa/pakistan#work", icon: <FiShield /> },
-  { name: "Medical Visa", href: "/visa/pakistan#medical", icon: <FiHeart /> },
-  { name: "Visa Extensions", href: "/visa/pakistan#extension", icon: <FiPlus /> },
-  { name: "Required Documents", href: "/visa/pakistan#hub", icon: <FiFileText /> },
-  { name: "Visa Fees", href: "/visa/pakistan#fees", icon: <FiDollarSign /> },
-  { name: "Eligibility Checker", href: "/visa/pakistan#finder", icon: <FiSearch /> },
-];
+const LanguageSwitcher = () => {
+  const { language, setLanguage, t } = useLanguage();
+  const [isOpen, setIsOpen] = useState(false);
 
-const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "Visa Services", href: "/visa/pakistan", dropdown: true },
-  { name: "Consultancy", href: "/consultancy" },
-  { name: "Tickets", href: "/ticketing" },
-  { name: "Exit Permit", href: "/visa/pakistan/exit" },
-  { name: "Track Application", href: "/track" },
-];
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'ur', name: 'اردو', flag: '🇵🇰' },
+    { code: 'dr', name: 'دری', flag: '🇦🇫' },
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  ];
+
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 px-3 py-1.5 rounded-full border border-white/5 transition-all text-xs font-bold"
+      >
+        <span>{languages.find(l => l.code === language)?.flag}</span>
+        <span className="uppercase">{language}</span>
+        <FiChevronDown className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute top-full mt-2 right-0 bg-[#0f172a] border border-white/5 rounded-2xl p-2 shadow-2xl min-w-[120px]"
+          >
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => {
+                  setLanguage(lang.code as any);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-white/5 transition-colors ${language === lang.code ? 'text-yellow-400 font-bold' : 'text-slate-400'}`}
+              >
+                <span>{lang.name}</span>
+                <span>{lang.flag}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function Navbar() {
+  const { t, dir } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  const visaSubLinks = [
+    { name: t('tourist_visa') || "Tourist Visa", href: "/visa/pakistan#tourist", icon: <FiGlobe /> },
+    { name: t('business_visa') || "Business Visa", href: "/visa/pakistan#business", icon: <FiBriefcase /> },
+    { name: t('student_visa') || "Student Visa", href: "/visa/pakistan#student", icon: <FiBook /> },
+    { name: t('work_visa') || "Work Visa", href: "/visa/pakistan#work", icon: <FiShield /> },
+    { name: t('medical_visa') || "Medical Visa", href: "/visa/pakistan#medical", icon: <FiHeart /> },
+    { name: t('visa_extensions') || "Visa Extensions", href: "/visa/pakistan#extension", icon: <FiPlus /> },
+    { name: t('required_documents') || "Required Documents", href: "/visa/pakistan#hub", icon: <FiFileText /> },
+    { name: t('visa_fees') || "Visa Fees", href: "/visa/pakistan#fees", icon: <FiDollarSign /> },
+    { name: t('eligibility_checker') || "Eligibility Checker", href: "/visa/pakistan#finder", icon: <FiSearch /> },
+  ];
+
+  const navLinks = [
+    { name: t('home'), href: "/" },
+    { name: t('visa_services'), href: "/visa/pakistan", dropdown: true },
+    { name: t('consultancy'), href: "/consultancy" },
+    { name: t('tickets'), href: "/ticketing" },
+    { name: t('exit_permit'), href: "/visa/pakistan/exit" },
+    { name: t('track'), href: "/track" },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,7 +133,7 @@ export default function Navbar() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full left-0 mt-4 w-[480px] bg-[#0f172a] border border-white/5 rounded-3xl p-6 shadow-2xl grid grid-cols-2 gap-2"
+                      className={`absolute top-full mt-4 w-[480px] bg-[#0f172a] border border-white/5 rounded-3xl p-6 shadow-2xl grid grid-cols-2 gap-2 ${dir === 'rtl' ? 'right-0' : 'left-0'}`}
                     >
                       {visaSubLinks.map((sub) => (
                         <Link 
@@ -103,6 +155,7 @@ export default function Navbar() {
 
         {/* Action Button */}
         <div className="hidden md:flex items-center gap-4">
+          <LanguageSwitcher />
           <Link 
             href="/admin/login" 
             className="text-slate-500 hover:text-yellow-400 transition-colors p-2"
@@ -123,7 +176,7 @@ export default function Navbar() {
               window.dispatchEvent(event);
             }}
           >
-            Apply Now <FiChevronRight />
+            {t('apply_now')} <FiChevronRight className={dir === 'rtl' ? 'rotate-180' : ''} />
           </button>
         </div>
 
@@ -146,6 +199,10 @@ export default function Navbar() {
             className="md:hidden bg-[#0f172a] border-b border-white/5 overflow-hidden"
           >
             <div className="p-6 flex flex-col gap-4">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Language</span>
+                <LanguageSwitcher />
+              </div>
               {navLinks.map((link) => (
                 <div key={link.name}>
                   <Link 
@@ -154,10 +211,10 @@ export default function Navbar() {
                     className="text-lg font-medium text-slate-300 hover:text-yellow-400 flex items-center justify-between"
                   >
                     {link.name}
-                    {link.dropdown && <FiChevronRight />}
+                    {link.dropdown && <FiChevronRight className={dir === 'rtl' ? 'rotate-180' : ''} />}
                   </Link>
                   {link.dropdown && (
-                    <div className="grid grid-cols-2 gap-2 mt-4 ml-2 pl-4 border-l border-white/5">
+                    <div className={`grid grid-cols-2 gap-2 mt-4 ml-2 pl-4 border-l border-white/5 ${dir === 'rtl' ? 'mr-2 pr-4 border-l-0 border-r border-white/5' : ''}`}>
                       {visaSubLinks.map((sub) => (
                         <Link 
                           key={sub.name}
@@ -180,7 +237,7 @@ export default function Navbar() {
                   window.dispatchEvent(event);
                 }}
               >
-                Apply Now
+                {t('apply_now')}
               </button>
             </div>
           </motion.div>

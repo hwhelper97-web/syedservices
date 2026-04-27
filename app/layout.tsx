@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Outfit } from "next/font/google";
 import { Metadata } from "next";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${outfit.className} bg-[#020617] text-white antialiased`}>
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

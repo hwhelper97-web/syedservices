@@ -13,6 +13,18 @@ const services = [
   "Immigration Consultancy",
 ];
 
+const visaCategories = [
+  "Tourist Visa",
+  "Family Visit Visa",
+  "Business Visa",
+  "Work Visa",
+  "Student Visa",
+  "Medical Visa",
+  "Transit Visa",
+  "Religious/Pilgrimage",
+  "Visa Extensions",
+];
+
 export default function LeadForm({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -22,6 +34,7 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
     email: "",
     phone: "",
     service: services[0],
+    visaCategory: visaCategories[0],
     country: "",
     message: "",
   });
@@ -41,6 +54,9 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
     data.append("email", formData.email);
     data.append("phone", formData.phone);
     data.append("service", formData.service);
+    if (formData.service === "Visa Services") {
+      data.append("visaCategory", formData.visaCategory);
+    }
     data.append("message", formData.message);
     
     files.forEach((file) => {
@@ -183,6 +199,26 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                     </select>
                   </div>
                 </div>
+
+                {/* Conditional Visa Category Dropdown */}
+                {formData.service === "Visa Services" && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="space-y-1 overflow-hidden"
+                  >
+                    <label>Visa Category *</label>
+                    <select
+                      required
+                      value={formData.visaCategory}
+                      onChange={(e) => setFormData({ ...formData, visaCategory: e.target.value })}
+                    >
+                      {visaCategories.map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </motion.div>
+                )}
 
                 <div className="space-y-1">
                   <label>Message</label>
