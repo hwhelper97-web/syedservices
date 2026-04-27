@@ -15,8 +15,8 @@ const services = [
     color: "yellow",
   },
   {
-    title: "Study Abroad",
-    desc: "Complete assistance for international admissions, scholarships, and student visa processing.",
+    title: "Tickets",
+    desc: "Domestic and international flight ticketing services with the best available fares and premium support.",
     icon: <FiBookOpen />,
     color: "blue",
   },

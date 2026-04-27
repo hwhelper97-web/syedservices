@@ -9,7 +9,7 @@ const navLinks = [
   { name: "Home", href: "/" },
   { name: "Visa Services", href: "/visa" },
   { name: "Consultancy", href: "/consultancy" },
-  { name: "Study Abroad", href: "#" },
+  { name: "Tickets", href: "/ticketing" },
   { name: "Exit Permit", href: "/visa/pakistan/exit" },
   { name: "Track Application", href: "/track" },
 ];

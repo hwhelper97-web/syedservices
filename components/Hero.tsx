@@ -84,7 +84,7 @@ export default function Hero() {
             Explore the <span className="text-gradient">World</span> Without Limits
           </h1>
           <p className="text-lg text-slate-400 mb-8 max-w-lg">
-            Syed Services provides expert guidance for visas, study abroad, and immigration. 
+            Syed Services provides expert guidance for visas, flight tickets, and immigration. 
             We turn your international dreams into reality with 99% success rate.
           </p>
 

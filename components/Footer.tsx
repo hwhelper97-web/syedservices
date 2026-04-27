@@ -8,7 +8,7 @@ const footerLinks = [
     title: "Services",
     links: [
       { name: "Visa Services", href: "#" },
-      { name: "Study Abroad", href: "#" },
+      { name: "Tickets", href: "/ticketing" },
       { name: "Work Permits", href: "#" },
       { name: "Immigration", href: "#" },
     ],

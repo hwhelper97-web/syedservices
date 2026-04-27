@@ -7,7 +7,7 @@ import { countries } from "@/utils/countries";
 
 const services = [
   "Visa Services",
-  "Study Abroad",
+  "Tickets",
   "Work Permits",
   "Travel & Tours",
   "Immigration Consultancy",
