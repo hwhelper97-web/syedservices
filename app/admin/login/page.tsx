@@ -70,7 +70,7 @@ export default function Login() {
                 <input
                   required
                   type="email"
-                  placeholder="info@syedservices.com.pk"
+                  placeholder="syedsaif@syedservices.com.pk"
                   className="!pl-12"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
