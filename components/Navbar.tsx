@@ -80,6 +80,7 @@ export default function Navbar() {
     { name: t('consultancy'), href: "/consultancy" },
     { name: t('tickets'), href: "/ticketing" },
     { name: t('exit_permit'), href: "/visa/pakistan/exit" },
+    { name: t('offices'), href: "/offices" },
     { name: t('track'), href: "/track" },
   ];
 

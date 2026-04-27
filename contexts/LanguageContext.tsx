@@ -22,6 +22,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tickets: "Tickets",
     exit_permit: "Exit Permit",
     track: "Track Application",
+    offices: "Offices",
     apply_now: "Apply Now",
     
     // Sub-links
@@ -79,6 +80,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tickets: "ٹکٹ",
     exit_permit: "ایگزٹ پرمٹ",
     track: "درخواست ٹریک کریں",
+    offices: "دفاتر",
     apply_now: "ابھی اپلائی کریں",
 
     // Sub-links
@@ -136,6 +138,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tickets: "تکیت",
     exit_permit: "اجازه خروج",
     track: "پیگیری درخواست",
+    offices: "دفاتر",
     apply_now: "اکنون درخواست دهید",
 
     // Sub-links
@@ -193,6 +196,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tickets: "التذاكر",
     exit_permit: "تصريح خروج",
     track: "تتبع الطلب",
+    offices: "المكاتب",
     apply_now: "قدم الآن",
 
     // Sub-links

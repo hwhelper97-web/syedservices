@@ -31,8 +31,9 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
     passport: null,
     photo: null,
-    cnic: null,
     license: null,
+    bankStatement: null,
+    invitationLetter: null,
     others: null,
   });
   
@@ -51,7 +52,9 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
     fatherName: "",
     motherName: "",
     maritalStatus: "Single",
+    spouseName: "",
     occupation: "",
+    hasInvitation: "No",
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
@@ -301,6 +304,19 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                               <option value="Widowed">Widowed</option>
                             </select>
                           </div>
+                          {formData.maritalStatus === "Married" && (
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Spouse Name *</label>
+                              <input
+                                required={isVisa && formData.maritalStatus === "Married"}
+                                type="text"
+                                placeholder="Full Name"
+                                className="w-full text-sm py-2"
+                                value={formData.spouseName}
+                                onChange={(e) => setFormData({ ...formData, spouseName: e.target.value })}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -337,10 +353,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                         <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Required Document Scans</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {[
-                            { id: 'passport', label: 'Passport Bio Page *', icon: <FiGlobe /> },
+                            { id: 'passport', label: 'Passport Scan *', icon: <FiGlobe /> },
                             { id: 'photo', label: 'Recent Photograph *', icon: <FiUpload /> },
-                            { id: 'cnic', label: 'CNIC / National ID *', icon: <FiUpload /> },
-                            { id: 'license', label: 'Driving License (Optional)', icon: <FiUpload /> },
+                            { id: 'license', label: 'Driving License / Local ID *', icon: <FiUpload /> },
+                            { id: 'bankStatement', label: 'Bank Statement (1-3 Months) *', icon: <FiUpload /> },
                           ].map((doc) => (
                             <div key={doc.id} className="space-y-1">
                               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{doc.label}</label>
@@ -351,7 +367,7 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                                     {files[doc.id] ? (files[doc.id] as File).name : "Upload Scan"}
                                   </p>
                                   <input
-                                    required={isVisa && doc.id !== 'license'}
+                                    required={isVisa}
                                     type="file"
                                     accept=".pdf,.jpg,.jpeg,.png"
                                     onChange={(e) => handleFileChange(e, doc.id)}
@@ -361,6 +377,58 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                               </div>
                             </div>
                           ))}
+                        </div>
+
+                        {/* Invitation Letter Section */}
+                        <div className="space-y-4 pt-4 border-t border-white/5">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invitation Letter from Pakistan</h4>
+                              <p className="text-[10px] text-slate-400">Do you have an invitation letter? If not, we can provide one.</p>
+                            </div>
+                            <div className="flex gap-4">
+                              {['Yes', 'No'].map((opt) => (
+                                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                                  <input 
+                                    type="radio" 
+                                    name="hasInvitation" 
+                                    value={opt}
+                                    checked={formData.hasInvitation === opt}
+                                    onChange={(e) => setFormData({ ...formData, hasInvitation: e.target.value })}
+                                    className="accent-yellow-400"
+                                  />
+                                  <span className="text-xs text-slate-300">{opt === 'Yes' ? 'I Have It' : 'I Need One'}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          {formData.hasInvitation === 'Yes' ? (
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Invitation Letter *</label>
+                              <div className="relative group">
+                                <div className={`border border-dashed ${files.invitationLetter ? 'border-green-500 bg-green-500/5' : 'border-slate-700 bg-slate-900/50'} rounded-xl p-3 flex items-center gap-3 transition-colors`}>
+                                  <div className={`shrink-0 ${files.invitationLetter ? 'text-green-500' : 'text-slate-500'}`}><FiUpload /></div>
+                                  <p className="text-[10px] text-slate-400 truncate">
+                                    {files.invitationLetter ? (files.invitationLetter as File).name : "Upload Invitation Letter"}
+                                  </p>
+                                  <input
+                                    required={isVisa && formData.hasInvitation === 'Yes'}
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => handleFileChange(e, 'invitationLetter')}
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-xl p-4">
+                              <p className="text-[10px] text-yellow-400/80 leading-relaxed">
+                                <strong>Note:</strong> Since you don't have an invitation letter, our team will process and provide a legal invitation letter for your visa application as part of our service.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>

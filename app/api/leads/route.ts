@@ -14,8 +14,23 @@ export async function POST(req: NextRequest) {
     const service = formData.get("service") as string;
     const message = formData.get("message") as string;
     
-    // Get all files
-    const files = formData.getAll("files") as unknown as File[];
+    // Visa specific fields
+    const dob = formData.get("dob") as string;
+    const fatherName = formData.get("fatherName") as string;
+    const motherName = formData.get("motherName") as string;
+    const maritalStatus = formData.get("maritalStatus") as string;
+    const spouseName = formData.get("spouseName") as string;
+    const passportNumber = formData.get("passportNumber") as string;
+    const passportExpiry = formData.get("passportExpiry") as string;
+    const country = formData.get("country") as string;
+    
+    // Get all files from all keys
+    const files: File[] = [];
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        files.push(value);
+      }
+    }
 
     if (!name || !phone || !service) {
       return NextResponse.json({ error: "Name, Phone, and Service are required" }, { status: 400 });
@@ -34,6 +49,14 @@ export async function POST(req: NextRequest) {
         service,
         message: message || "",
         status: "New",
+        dob,
+        fatherName,
+        motherName,
+        maritalStatus,
+        spouseName,
+        passportNumber,
+        passportExpiry,
+        country,
       },
     });
 

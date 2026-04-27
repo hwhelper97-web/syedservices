@@ -15,16 +15,27 @@ model Admin {
 }
 
 model Lead {
-  id          Int      @id @default(autoincrement())
-  trackingId  String   @unique
-  name        String
-  email       String
-  phone       String
-  service     String
-  message     String
-  status      String   @default("New") // New, In Progress, Completed
-  createdAt   DateTime @default(now())
-  files       File[]
+  id              Int      @id @default(autoincrement())
+  trackingId      String   @unique
+  name            String
+  email           String
+  phone           String
+  service         String
+  message         String
+  status          String   @default("New") // New, In Progress, Completed
+  
+  // Visa specific fields
+  dob             String?
+  fatherName      String?
+  motherName      String?
+  maritalStatus   String?
+  spouseName      String?
+  passportNumber  String?
+  passportExpiry  String?
+  country         String?
+  
+  createdAt       DateTime @default(now())
+  files           File[]
 }
 
 model File {

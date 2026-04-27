@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   FiLogOut, FiTrash2, FiMail, FiPhone, FiCheckCircle, 
-  FiClock, FiFileText, FiDownload, FiSearch, FiEye, FiUser, FiCalendar, FiTag, FiX
+  FiClock, FiFileText, FiDownload, FiSearch, FiEye, FiUser, FiCalendar, FiTag, FiX, FiGlobe, FiLoader
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -309,6 +309,10 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
                         <span>{selectedLead.phone}</span>
                       </div>
                       <div className="flex items-center gap-3 text-slate-300">
+                        <FiGlobe className="text-yellow-400" />
+                        <span>{selectedLead.country || "Nationality not provided"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-300">
                         <FiTag className="text-yellow-400" />
                         <span>{selectedLead.service}</span>
                       </div>
@@ -316,6 +320,42 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
                         <FiCalendar className="text-yellow-400" />
                         <span>{new Date(selectedLead.createdAt).toLocaleString()}</span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Visa Application Details</h3>
+                    <div className="space-y-2 text-xs">
+                      {selectedLead.dob && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">DOB:</span>
+                          <span className="text-slate-200">{selectedLead.dob}</span>
+                        </div>
+                      )}
+                      {selectedLead.passportNumber && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Passport:</span>
+                          <span className="text-slate-200">{selectedLead.passportNumber} (Exp: {selectedLead.passportExpiry})</span>
+                        </div>
+                      )}
+                      {selectedLead.fatherName && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Father Name:</span>
+                          <span className="text-slate-200">{selectedLead.fatherName}</span>
+                        </div>
+                      )}
+                      {selectedLead.motherName && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Mother Name:</span>
+                          <span className="text-slate-200">{selectedLead.motherName}</span>
+                        </div>
+                      )}
+                      {selectedLead.maritalStatus && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Status:</span>
+                          <span className="text-slate-200">{selectedLead.maritalStatus} {selectedLead.spouseName ? `(Spouse: ${selectedLead.spouseName})` : ""}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -442,21 +482,3 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
     </div>
   );
 }
-
-// Add this to your global CSS for rotation animation
-const FiLoader = ({ className }: { className?: string }) => (
-  <svg 
-    stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" 
-    strokeLinecap="round" strokeLinejoin="round" className={className} 
-    height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"
-  >
-    <line x1="12" y1="2" x2="12" y2="6"></line>
-    <line x1="12" y1="18" x2="12" y2="22"></line>
-    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-    <line x1="2" y1="12" x2="6" y2="12"></line>
-    <line x1="18" y1="12" x2="22" y2="12"></line>
-    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-  </svg>
-);
