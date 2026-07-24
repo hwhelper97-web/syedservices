@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -52,5 +52,352 @@ model Contact {
   name      String
   email     String
   message   String
+  createdAt DateTime @default(now())
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  AGENT
+  STAFF
+  CLIENT
+}
+
+enum ApplicationStatus {
+  DRAFT
+  WAITING_CONFIRMATION
+  DEAL_CONFIRMED
+  SENT_FOR_INVITATION
+  INVITATION_ARRIVED
+  FILE_READY_EMBASSY
+  APPLICATION_SUBMITTED
+  PASSPORT_TO_SUBMIT
+  FINISHED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  PARTIALLY_PAID
+  VOID
+}
+
+enum PaymentMethod {
+  ONLINE
+  CASH
+  BANK_TRANSFER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  passwordHash String
+  name         String
+  image        String?
+  role         UserRole      @default(CLIENT)
+  status       String        @default("ACTIVE") // ACTIVE, SUSPENDED, PENDING
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  clientProfile ClientProfile?
+  agentProfile  AgentProfile?
+  staffTasks    Task[]        @relation("AssignedTo")
+  createdTasks  Task[]        @relation("CreatedBy")
+  sentMessages  Message[]     @relation("Sender")
+  recvMessages  Message[]     @relation("Receiver")
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  verifiedPayments Payment[]  @relation("VerifiedBy")
+  blogs         Blog[]
+}
+
+model ClientProfile {
+  id             Int           @id @default(autoincrement())
+  userId         Int           @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone          String?
+  dob            String?
+  gender         String?
+  nationality    String?
+  birthPlace     String?
+  religion       String?
+  profession     String?
+  qualification  String?
+  currentAddress String?
+  permanentAddress String?
+  
+  // Passport Info
+  passportNumber String?
+  passportIssueDate String?
+  passportExpiryDate String?
+  passportIssuePlace String?
+  
+  // Family Info
+  fatherName     String?
+  motherName     String?
+  spouseName     String?
+  childrenCount  Int           @default(0)
+  emergencyContact String?
+  
+  // Education
+  highSchool     String?
+  college        String?
+  bachelor       String?
+  master         String?
+  graduationYear String?
+  cgpa           String?
+  
+  // Employment
+  companyName    String?
+  position       String?
+  salary         String?
+  experienceYears String?
+  employerAddress String?
+
+  applications   Application[]
+  appointments   Appointment[]
+  agentId        Int?
+  agent          AgentProfile? @relation(name: "AgentClients", fields: [agentId], references: [id], onDelete: SetNull)
+}
+
+model AgentProfile {
+  id             Int           @id @default(autoincrement())
+  userId         Int           @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentCode      String        @unique
+  agencyName     String?
+  agencyAddress  String?
+  phone          String?
+  commissionRate Float         @default(0.0)
+  licenseNumber  String?
+  whatsappNumber String?
+  officeAddress  String?
+  licenseCertificate String?
+
+  applications   Application[]
+  appointments   Appointment[]
+  clients        ClientProfile[] @relation("AgentClients")
+}
+
+model Application {
+  id                 Int                       @id @default(autoincrement())
+  trackingId         String                    @unique
+  clientId           Int
+  client             ClientProfile             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  agentId            Int?
+  agent              AgentProfile?             @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  assignedStaffId    Int?
+  
+  // Visa details
+  country            String
+  visaCategory       String
+  duration           String?
+  entryType          String? // Single, Multiple
+  travelDate         String?
+  returnDate         String?
+  purpose            String?
+  sponsor            String?
+  reference          String?
+  
+  // Travel History
+  visitedCountries   String?
+  previousVisas      String?
+  visaRefusals       String?
+  previousPassportNumber String?
+  
+  status             ApplicationStatus         @default(DRAFT)
+  
+  // Contract Details
+  contractApprovedDays  String?
+  contractPaymentAmount String?
+  contractFirstPartyName String?
+  contractStatus        String?                   @default("PENDING") // PENDING, SENT, ACCEPTED
+  contractAccepted      Boolean                   @default(false)
+  contractAcceptedAt    DateTime?
+  contractSignatureName String?
+
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  statusHistory      ApplicationStatusHistory[]
+  documents          Document[]
+  invoices           Invoice[]
+}
+
+model ApplicationStatusHistory {
+  id            Int               @id @default(autoincrement())
+  applicationId Int
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus
+  notes         String?
+  updatedById   Int
+  createdAt     DateTime          @default(now())
+}
+
+model Document {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  documentType  String      // passport, cnic, photo, bank_statement, etc.
+  fileUrl       String
+  fileName      String
+  fileSize      Int?
+  fileType      String      // pdf, image, png, etc.
+  version       Int         @default(1)
+  createdAt     DateTime    @default(now())
+}
+
+model Appointment {
+  id            Int               @id @default(autoincrement())
+  clientId      Int
+  client        ClientProfile     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  agentId       Int?
+  agent         AgentProfile?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  date          DateTime
+  timeSlot      String
+  status        AppointmentStatus @default(SCHEDULED)
+  notes         String?
+  createdAt     DateTime          @default(now())
+}
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  invoiceNumber String        @unique
+  applicationId Int
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  totalAmount   Float
+  status        PaymentStatus @default(UNPAID)
+  dueDate       DateTime
+  createdAt     DateTime      @default(now())
+  payments      Payment[]
+}
+
+model Payment {
+  id             Int           @id @default(autoincrement())
+  invoiceId      Int
+  invoice        Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount         Float
+  paymentMethod  PaymentMethod
+  transactionId  String?
+  receiptUrl     String?
+  status         String        @default("PENDING") // PENDING, VERIFIED, REJECTED
+  verifiedById   Int?
+  verifiedBy     User?         @relation("VerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  senderId      Int
+  sender        User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId    Int
+  receiver      User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  applicationId Int?
+  messageText   String
+  attachmentUrl String?
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id            Int          @id @default(autoincrement())
+  title         String
+  description   String?
+  dueDate       DateTime?
+  status        TaskStatus   @default(PENDING)
+  priority      TaskPriority @default(MEDIUM)
+  assignedToId  Int?
+  assignedTo    User?        @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById   Int
+  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Blog {
+  id         Int      @id @default(autoincrement())
+  title      String
+  slug       String   @unique
+  content    String
+  coverImage String?
+  status     String   @default("DRAFT") // DRAFT, PUBLISHED
+  authorId   Int
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
+model Testimonial {
+  id         Int      @id @default(autoincrement())
+  clientName String
+  clientRole String?
+  text       String
+  rating     Int      @default(5)
+  avatar     String?
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+}
+
+model FAQ {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  category  String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+}
+
+model ContactRequest {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    String   @default("NEW") // NEW, READ, ARCHIVED
   createdAt DateTime @default(now())
 }

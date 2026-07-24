@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { 
   FiLogOut, FiTrash2, FiMail, FiPhone, FiCheckCircle, 
   FiClock, FiFileText, FiDownload, FiSearch, FiEye, FiUser, FiCalendar, FiTag, FiX, FiGlobe, FiLoader
@@ -116,12 +117,20 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
               <p className="text-xs text-slate-400 mt-1">Admin Dashboard</p>
             </div>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors text-sm font-medium"
-          >
-            <FiLogOut /> Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/portal"
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black hover:bg-yellow-500 rounded-lg transition-all text-xs font-black shadow-lg shadow-yellow-400/10 cursor-pointer"
+            >
+              <FiGlobe /> CRM & Visa Portal
+            </Link>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors text-sm font-medium"
+            >
+              <FiLogOut /> Logout
+            </button>
+          </div>
         </div>
       </nav>
 

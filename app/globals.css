@@ -78,9 +78,19 @@ body {
   background: #334155;
 }
 
-/* Form Styling */
+/* Form Styling
+   NOTE: No px/pl/pr here — horizontal padding must be set per-input
+   so that icon inputs (pl-12) are never overridden by this global rule. */
 input, select, textarea {
-  @apply w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400/50 transition-colors;
+  @apply w-full bg-slate-900/50 border border-slate-700 rounded-lg py-3 text-white focus:outline-none focus:border-yellow-400/50 transition-colors;
+}
+
+/* Default horizontal padding for inputs WITHOUT icons */
+input:not([class*="pl-"]):not([class*="px-"]),
+select:not([class*="pl-"]):not([class*="px-"]),
+textarea:not([class*="pl-"]):not([class*="px-"]) {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 input:focus, select:focus, textarea:focus {

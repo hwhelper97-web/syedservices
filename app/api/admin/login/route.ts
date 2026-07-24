@@ -26,6 +26,24 @@ export async function POST(req: Request) {
       { expiresIn: "1d" }
     );
 
+    // Single Sign-On: set portal_token cookie if portal user matches
+    try {
+      const { setSessionCookie } = await import("@/lib/auth");
+      const portalUser = await prisma.user.findUnique({
+        where: { email },
+      });
+      if (portalUser && ["SUPER_ADMIN", "ADMIN"].includes(portalUser.role)) {
+        await setSessionCookie({
+          userId: portalUser.id,
+          email: portalUser.email,
+          role: portalUser.role,
+          name: portalUser.name,
+        });
+      }
+    } catch (cookieErr) {
+      console.error("SSO Cookie set error:", cookieErr);
+    }
+
     return Response.json({ token });
 
   } catch (error) {
