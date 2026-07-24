@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(
   req: Request,
@@ -47,26 +46,43 @@ export async function POST(
     }
 
     // Write file to disk
-    const uploadDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      "applications",
-      applicationId.toString()
-    );
-    await mkdir(uploadDir, { recursive: true });
+   const bytes = await file.arrayBuffer();
+const buffer = Buffer.from(bytes);
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-    // Sanitize file name
-    const cleanFileName = `${documentType}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    const filePath = path.join(uploadDir, cleanFileName);
+const extension =
+  safeName.split(".").pop()?.toLowerCase() || "bin";
 
-    await writeFile(filePath, buffer);
+const storagePath =
+  `applications/${applicationId}/${Date.now()}_${safeName}`;
 
-    const fileUrl = `/uploads/applications/${applicationId}/${cleanFileName}`;
-    const fileType = file.name.split(".").pop() || "unknown";
+const { error: uploadError } = await supabase.storage
+  .from("documents")
+  .upload(storagePath, buffer, {
+    contentType: file.type,
+    upsert: true,
+  });
+
+if (uploadError) {
+  console.error(uploadError);
+
+  return NextResponse.json(
+    {
+      error: uploadError.message,
+    },
+    {
+      status: 500,
+    }
+  );
+}
+
+const { data } = supabase.storage
+  .from("documents")
+  .getPublicUrl(storagePath);
+
+const fileUrl = data.publicUrl;
+const fileType = extension;
 
     // Insert or update Document in DB
     const document = await prisma.document.create({
