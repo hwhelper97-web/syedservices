@@ -58,7 +58,7 @@ export default function Footer() {
                   <Icon size={18} />
                 </a>
               ))}
-              <Link href="/admin/login" className="ml-4 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-yellow-400 hover:text-black transition-all" title="Admin Login">
+              <Link href="/portal/login" className="ml-4 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-yellow-400 hover:text-black transition-all" title="Portal Login">
                 <FiLock size={18} />
               </Link>
             </div>

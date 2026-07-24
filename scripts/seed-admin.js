@@ -17,7 +17,25 @@ async function main() {
     },
   });
 
-  console.log("Admin user seeded:", admin.email);
+  const portalUser = await prisma.user.upsert({
+    where: { email },
+    update: {
+      passwordHash: hashedPassword,
+      role: "SUPER_ADMIN",
+      name: "Saeed Arman",
+      status: "ACTIVE",
+    },
+    create: {
+      email,
+      passwordHash: hashedPassword,
+      name: "Saeed Arman",
+      role: "SUPER_ADMIN",
+      status: "ACTIVE",
+    },
+  });
+
+  console.log("Admin user seeded in legacy Admin table:", admin.email);
+  console.log("Admin user seeded in Portal User table:", portalUser.email);
 }
 
 main()

@@ -161,9 +161,9 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <LanguageSwitcher />
           <Link 
-            href="/admin/login" 
+            href="/portal/login" 
             className="text-slate-500 hover:text-yellow-400 transition-colors p-2"
-            title="Admin Login"
+            title="Portal Login"
           >
             <FiLock size={18} />
           </Link>
