@@ -272,7 +272,7 @@ export async function sendApplicationStatusUpdateEmail(
           </div>
           
           <div style="text-align: center;">
-            <a href="http://localhost:3000/portal/login" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://syedservices.com.pk'}/portal/login" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
               Log In to Portal to View Details
             </a>
           </div>

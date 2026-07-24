@@ -1,48 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 export default function Logo() {
-  const [fly, setFly] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setFly(true);
-    }, 20000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <div className="relative cursor-pointer leading-tight overflow-visible">
-      
-      {/* TEXT (ALWAYS VISIBLE ✅) */}
-      <h1 className="text-white text-lg font-semibold tracking-[0.2em]">
-        Syed{" "}
-        <span className="text-gray-300">Services</span>
-      </h1>
+    <div className="flex items-center gap-3 cursor-pointer select-none">
+      {/* ✈️ PREMIUM AIRPLANE / LOGO ICON */}
+      <div className="w-10 h-10 bg-yellow-400/10 text-yellow-400 rounded-2xl flex items-center justify-center border border-yellow-400/20 shadow-md transition-transform duration-300 hover:scale-105 shrink-0">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />
+        </svg>
+      </div>
 
-      <p className="text-[10px] text-gray-500 tracking-[0.4em] uppercase mt-1">
-        Travel • Visa • Tours
-      </p>
-
-      {/* ✈️ PREMIUM AIRPLANE */}
-      {fly && (
-        <div className="absolute top-1 left-0 animate-fly-plane">
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="text-gray-300"
-          >
-            <path
-              d="M2 12L22 2L13 22L11 13L2 12Z"
-              fill="currentColor"
-            />
-          </svg>
-        </div>
-      )}
+      <div className="text-left">
+        {/* TEXT */}
+        <h1 className="text-white text-lg font-black tracking-wider leading-none">
+          Syed <span className="text-yellow-400">Services</span>
+        </h1>
+        <p className="text-[9px] text-slate-400 tracking-[0.22em] uppercase font-bold mt-1.5 leading-none">
+          Travel • Visa • Tours
+        </p>
+      </div>
     </div>
   );
 }
