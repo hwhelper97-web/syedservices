@@ -367,3 +367,53 @@ export async function sendPasswordResetEmail(email: string, code: string) {
     console.error("Password reset email send error:", error);
   }
 }
+
+export async function sendWelcomeEmail(email: string, name: string, role: string) {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.EMAIL_PORT || "587"),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `"Syed Services Welcome" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Welcome to Syed Services Portal!",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 24px; padding: 35px; background: #0f172a; color: #f8fafc;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h2 style="color: #fbbf24; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">Welcome to Syed Services</h2>
+          <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 14px;">Your Premium Visa & Ticket Portal</p>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #1e293b; margin: 20px 0;" />
+        <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">Dear <strong>${name}</strong>,</p>
+        <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">Thank you for registering on our platform! We are thrilled to welcome you as a registered <strong>${role === "AGENT" ? "Travel Agent" : "Client"}</strong>.</p>
+        <div style="background: #020617; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; margin: 25px 0;">
+          <h4 style="color: #fbbf24; margin: 0 0 10px 0; font-size: 14px; font-weight: 800; text-transform: uppercase; tracking-wider;">Account Details</h4>
+          <p style="margin: 5px 0; font-size: 13px; color: #94a3b8;"><strong>Registered Email:</strong> ${email}</p>
+          <p style="margin: 5px 0; font-size: 13px; color: #94a3b8;"><strong>Account Type:</strong> ${role === "AGENT" ? "Travel Agency Partner" : "Direct Client"}</p>
+        </div>
+        <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">You can now log in to submit application files, track application status in real-time, upload documents, make payments, and chat directly with our support team.</p>
+        <div style="text-align: center; margin: 30px 0 15px 0;">
+          <a href="https://syedservices.com.pk/portal/login" style="background: #fbbf24; color: #020617; padding: 14px 28px; border-radius: 12px; font-weight: bold; text-decoration: none; font-size: 14px; display: inline-block;">Log In to Portal</a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #1e293b; margin: 25px 0;" />
+        <p style="font-size: 11px; text-align: center; color: #64748b; line-height: 1.5; margin: 0;">This email was sent automatically by Syed Services. If you did not create an account, please contact our support team at info@syedservices.com.pk.</p>
+      </div>
+    `,
+  };
+
+  try {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      await transporter.sendMail(mailOptions);
+    } else {
+      console.log(`[EMAIL DEV MODE] Welcome email sent to ${email}`);
+    }
+  } catch (error) {
+    console.error("Welcome email send error:", error);
+  }
+}

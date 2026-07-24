@@ -1,20 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FiSend, FiMessageSquare, FiUser, FiLoader, FiRefreshCw } from "react-icons/fi";
+import { FiSend, FiLoader, FiMessageSquare, FiRefreshCw } from "react-icons/fi";
 
 export default function ClientMessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
-  const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Seeded admin ID is 1 (Saeed Arman)
-  const ADMIN_ID = 1;
-
   useEffect(() => {
-    fetchMessages();
+    fetchSessionAndMessages();
   }, []);
 
   useEffect(() => {
@@ -25,131 +23,153 @@ export default function ClientMessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchMessages = async () => {
+  const fetchSessionAndMessages = async () => {
     try {
-      const res = await fetch(`/api/messages?partnerId=${ADMIN_ID}`);
-      const data = await res.json();
-      if (res.ok) {
-        setMessages(data.messages);
+      // Fetch session
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
+      if (sessionRes.ok && sessionData.session) {
+        setCurrentUserId(sessionData.session.userId);
       }
+
+      // Fetch messages
+      await fetchMessages();
     } catch (e) {
-      console.error("Failed to load messages", e);
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSend = async (e: React.FormEvent) => {
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch("/api/messages");
+      const data = await res.json();
+      if (res.ok) {
+        setMessages(data.messages || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!content.trim()) return;
 
     setSending(true);
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          receiverId: ADMIN_ID,
-          messageText: inputText,
-        }),
+        body: JSON.stringify({ messageText: content }),
       });
-
       if (res.ok) {
-        const data = await res.json();
-        setMessages((prev) => [...prev, data.message]);
-        setInputText("");
+        setContent("");
+        await fetchMessages();
       }
     } catch (e) {
-      console.error("Failed to send message", e);
+      console.error(e);
     } finally {
       setSending(false);
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-12rem)] flex flex-col bg-[#0f172a] border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl relative">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[120px] pointer-events-none" />
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-yellow-400">
+        <FiLoader className="animate-spin" size={32} />
+      </div>
+    );
+  }
 
-      {/* Chat Header */}
-      <div className="p-6 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-yellow-400/10 text-yellow-400 rounded-full flex items-center justify-center font-bold border border-yellow-400/20">
-            SA
-          </div>
-          <div>
-            <h4 className="text-white font-bold text-sm">Saeed Arman</h4>
-            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Support Advisor</p>
-          </div>
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-xl font-black text-white tracking-tight">Support Messages</h3>
+          <p className="text-xs text-slate-400 mt-1">Chat directly with our support team regarding your applications</p>
         </div>
-        <button 
-          onClick={fetchMessages} 
-          className="p-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all"
+        <button
+          onClick={fetchMessages}
+          className="p-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
+          title="Refresh messages"
         >
           <FiRefreshCw size={16} />
         </button>
       </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-4 relative z-10 flex flex-col justify-end">
-        {loading ? (
-          <div className="flex justify-center items-center h-full text-yellow-400">
-            <FiLoader className="animate-spin" size={28} />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center py-12 space-y-3 my-auto">
-            <FiMessageSquare className="text-slate-500 text-4xl mx-auto" />
-            <h4 className="text-white font-bold text-sm">No Messages Yet</h4>
-            <p className="text-xs text-slate-500 max-w-xs mx-auto">
-              Start the conversation by sending your queries regarding your visa or tickets here.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4 overflow-y-auto pr-2 max-h-full">
-            {messages.map((msg) => {
-              // Seeded admin ID is 1, so if senderId === 1, it's incoming
-              const isIncoming = msg.senderId === ADMIN_ID;
-              return (
-                <div 
-                  key={msg.id}
-                  className={`flex ${isIncoming ? "justify-start" : "justify-end"}`}
-                >
-                  <div className={`max-w-[70%] p-4 rounded-3xl text-sm ${
-                    isIncoming 
-                      ? "bg-slate-900 border border-slate-850 text-slate-200 rounded-tl-none" 
-                      : "bg-yellow-400 text-black font-medium rounded-tr-none shadow-lg shadow-yellow-400/5"
-                  }`}>
-                    <p>{msg.messageText}</p>
-                    <span className={`text-[8px] block mt-1.5 text-right ${isIncoming ? "text-slate-550" : "text-black/60"}`}>
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </div>
+      <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-6 shadow-xl flex flex-col h-[550px] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[120px] pointer-events-none" />
 
-      {/* Chat Input */}
-      <form onSubmit={handleSend} className="p-6 border-t border-slate-800 bg-slate-900/20 relative z-10">
-        <div className="relative">
+        {/* Chat History */}
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 flex flex-col justify-start">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-2 text-slate-500 my-auto">
+              <FiMessageSquare size={32} />
+              <p className="text-xs">No support messages yet. Send a message to start the conversation.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((msg) => {
+                const isSelf = msg.senderId === currentUserId;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-3 max-w-[85%] ${isSelf ? "ml-auto flex-row-reverse" : ""}`}
+                  >
+                    {/* Avatar */}
+                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
+                      isSelf
+                        ? "bg-slate-800 text-slate-300 border border-slate-700"
+                        : "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
+                    }`}>
+                      {isSelf ? "ME" : msg.sender?.name?.[0]?.toUpperCase() || "S"}
+                    </div>
+
+                    {/* Chat Bubble */}
+                    <div className={`p-4 rounded-3xl text-xs leading-relaxed ${
+                      isSelf
+                        ? "bg-yellow-400 text-black font-semibold rounded-tr-none shadow-md shadow-yellow-400/5"
+                        : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none"
+                    }`}>
+                      <p className="whitespace-pre-wrap">{msg.messageText}</p>
+                      <span className={`block text-[9px] mt-1.5 text-right ${
+                        isSelf ? "text-black/60" : "text-slate-500"
+                      }`}>
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Message Input Form */}
+        <form onSubmit={handleSendMessage} className="flex gap-3 border-t border-slate-800 pt-4 bg-slate-900/10 relative z-10">
           <input
             type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type your query here..."
-            className="w-full pl-6 pr-16 py-4 bg-slate-950/60 border border-slate-800 focus:border-yellow-400/50 rounded-2xl text-sm focus:outline-none placeholder-slate-600"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Type your message to Syed Services support..."
+            className="flex-1 px-4 py-3.5 bg-slate-950/60 border border-slate-800 focus:border-yellow-400/50 rounded-2xl text-sm focus:outline-none text-white placeholder-slate-500"
           />
           <button
             type="submit"
-            disabled={sending || !inputText.trim()}
-            className="absolute right-2 top-2 p-3 bg-yellow-400 text-black rounded-xl hover:scale-105 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer"
+            disabled={sending || !content.trim()}
+            className="px-6 bg-yellow-400 text-black font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-lg shadow-yellow-400/10"
           >
-            <FiSend size={16} />
+            {sending ? (
+              <FiLoader className="animate-spin" size={16} />
+            ) : (
+              <FiSend size={16} />
+            )}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

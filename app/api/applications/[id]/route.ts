@@ -151,7 +151,7 @@ export async function PATCH(
       }
     });
 
-    // Trigger email notification if status was changed
+    // Trigger email notification if application details or status were changed
     try {
       const fullApp = await prisma.application.findUnique({
         where: { id: applicationId },
@@ -168,13 +168,17 @@ export async function PATCH(
           }
         }
       });
-      if (fullApp && status) {
-        const { sendApplicationStatusUpdateEmail } = await import("@/utils/email");
-        await sendApplicationStatusUpdateEmail(
-          fullApp, 
-          status, 
-          notes || `Status updated to ${status.replace(/_/g, " ")} by ${session.name}`
-        );
+      if (fullApp) {
+        const hasChanges = status || contractStatus || contractAccepted || contractPaymentAmount || contractApprovedDays || notes;
+        if (hasChanges) {
+          const { sendApplicationStatusUpdateEmail } = await import("@/utils/email");
+          const updateNotes = notes || `Application details were updated by ${session.name}.`;
+          await sendApplicationStatusUpdateEmail(
+            fullApp, 
+            status || fullApp.status, 
+            updateNotes
+          );
+        }
       }
     } catch (emailErr) {
       console.error("Failed to send status update email:", emailErr);
