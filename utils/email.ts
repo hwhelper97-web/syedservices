@@ -196,3 +196,134 @@ export async function sendStatusUpdateNotification(lead: any, attachment?: { buf
     console.error("Status Update Notification Error:", error);
   }
 }
+
+export async function sendApplicationStatusUpdateEmail(
+  application: any,
+  newStatus: string,
+  notes?: string
+) {
+  const clientEmail = application.client?.user?.email;
+  if (!clientEmail) return;
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.EMAIL_PORT || "587"),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const trackingId = application.trackingId;
+  const applicantName = application.client?.user?.name || "Client";
+  const agentName = application.agent?.user?.name || "";
+  const agentEmail = application.agent?.user?.email || "";
+
+  const statusFormatted = newStatus.replace(/_/g, " ");
+
+  const notesHtml = notes
+    ? `<div style="margin-bottom: 30px;">
+         <p style="margin: 0 0 8px 0; color: #64748b; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Details/Notes:</p>
+         <div style="background-color: #f1f5f9; padding: 15px 20px; border-radius: 12px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+           ${notes}
+         </div>
+       </div>`
+    : "";
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; text-align: center;">
+          <div style="display: inline-block; width: 50px; height: 50px; background-color: #facc15; border-radius: 12px; line-height: 50px; color: #000000; font-weight: bold; font-size: 24px; margin-bottom: 10px;">S</div>
+          <h1 style="color: #ffffff; margin: 0; font-size: 20px; letter-spacing: 1px; text-transform: uppercase;">Syed Services</h1>
+          <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 12px;">Visa File & Application Status Update</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 22px; font-weight: bold;">Visa File Status Changed</h2>
+          <p style="color: #475569; line-height: 1.6; margin-bottom: 25px;">
+            Dear <strong>${applicantName}</strong>,
+          </p>
+          <p style="color: #475569; line-height: 1.6; margin-bottom: 25px;">
+            There has been a status change on your visa file for <strong>${application.country} - ${application.visaCategory}</strong>.
+          </p>
+
+          <div style="background-color: #fefce8; border-left: 4px solid #facc15; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <p style="margin: 0; color: #713f12; font-size: 14px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">New Status</p>
+            <p style="margin: 5px 0 0 0; color: #1e293b; font-size: 24px; font-weight: 800;">${statusFormatted}</p>
+          </div>
+
+          ${notesHtml}
+
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 35px; border: 1px solid #f1f5f9;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="color: #64748b; font-size: 13px;">Tracking ID:</td>
+                <td style="color: #1e293b; font-size: 13px; font-weight: bold; text-align: right; font-family: monospace;">${trackingId}</td>
+              </tr>
+              <tr>
+                <td style="color: #64748b; font-size: 13px; padding-top: 8px;">Date Updated:</td>
+                <td style="color: #1e293b; font-size: 13px; font-weight: bold; text-align: right; padding-top: 8px;">${new Date().toLocaleString()}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div style="text-align: center;">
+            <a href="http://localhost:3000/portal/login" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+              Log In to Portal to View Details
+            </a>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="color: #64748b; font-size: 13px; margin: 0 0 15px 0;">
+            Need help? Contact our support team directly.
+          </p>
+          <div style="display: inline-block; margin: 0 10px;">
+            <p style="margin: 0; color: #1e293b; font-size: 12px; font-weight: bold;">WhatsApp</p>
+            <p style="margin: 2px 0 0 0; color: #64748b; font-size: 11px;">+92 309 9797771</p>
+          </div>
+          <div style="display: inline-block; margin: 0 10px; border-left: 1px solid #e2e8f0; padding-left: 20px;">
+            <p style="margin: 0; color: #1e293b; font-size: 12px; font-weight: bold;">Email</p>
+            <p style="margin: 2px 0 0 0; color: #64748b; font-size: 11px;">info@syedservices.com.pk</p>
+          </div>
+          <p style="color: #94a3b8; font-size: 11px; margin-top: 25px;">
+            © 2026 Syed Services Pakistan. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      await transporter.sendMail({
+        from: `"Syed Services Updates" <${process.env.EMAIL_USER}>`,
+        to: clientEmail,
+        subject: `Update: Visa File Status for ${trackingId} (${statusFormatted})`,
+        html,
+      });
+    }
+  } catch (error) {
+    console.error("Client email notification error:", error);
+  }
+
+  if (agentEmail) {
+    try {
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        await transporter.sendMail({
+          from: `"Syed Services Updates" <${process.env.EMAIL_USER}>`,
+          to: agentEmail,
+          subject: `Agent Notice: Visa File Status for ${trackingId} (${statusFormatted})`,
+          html: html.replace(`Dear <strong>${applicantName}</strong>`, `Dear Agent <strong>${agentName}</strong> (Client: ${applicantName})`),
+        });
+      }
+    } catch (error) {
+      console.error("Agent email notification error:", error);
+    }
+  }
+}

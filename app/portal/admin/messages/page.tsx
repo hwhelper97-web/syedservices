@@ -31,9 +31,9 @@ export default function AdminMessagesPage() {
       const res = await fetch("/api/admin/users");
       const data = await res.json();
       if (res.ok) {
-        // filter clients
-        const clientUsers = data.users.filter((u: any) => u.role === "CLIENT");
-        setClients(clientUsers);
+        // filter clients and agents
+        const chatUsers = data.users.filter((u: any) => u.role === "CLIENT" || u.role === "AGENT");
+        setClients(chatUsers);
       }
     } catch (e) {
       console.error("Failed to load clients", e);
@@ -108,17 +108,17 @@ export default function AdminMessagesPage() {
     <div className="max-w-6xl mx-auto h-[calc(100vh-12rem)] flex bg-[#0f172a] border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl relative">
       <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[120px] pointer-events-none" />
 
-      {/* Left Sidebar: Clients List */}
+      {/* Left Sidebar: Portal Chats List */}
       <div className="w-80 border-r border-slate-800 flex flex-col bg-slate-950/20 relative z-10 shrink-0">
         <div className="p-4 border-b border-slate-800 space-y-3">
-          <h4 className="text-white font-bold text-sm uppercase tracking-wider">Client Chats</h4>
+          <h4 className="text-white font-bold text-sm uppercase tracking-wider">Portal Chats</h4>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
               <FiSearch size={14} />
             </span>
             <input
               type="text"
-              placeholder="Search clients..."
+              placeholder="Search clients or agents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-slate-800 rounded-xl text-xs placeholder-slate-650 focus:outline-none text-white font-medium"
@@ -132,7 +132,7 @@ export default function AdminMessagesPage() {
               <FiLoader className="animate-spin" size={20} />
             </div>
           ) : filteredClients.length === 0 ? (
-            <div className="text-center py-8 text-xs text-slate-500">No clients found</div>
+            <div className="text-center py-8 text-xs text-slate-500">No chat users found</div>
           ) : (
             filteredClients.map((client) => {
               const isSelected = selectedClient?.id === client.id;
@@ -159,9 +159,18 @@ export default function AdminMessagesPage() {
                     {initials}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-xs font-bold truncate ${isSelected ? "text-black" : "text-white"}`}>
-                      {client.name}
-                    </p>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <p className={`text-xs font-bold truncate ${isSelected ? "text-black" : "text-white"}`}>
+                        {client.name}
+                      </p>
+                      <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
+                        client.role === "AGENT"
+                          ? (isSelected ? "bg-black/20 text-black border border-black/15" : "bg-blue-500/20 text-blue-400 border border-blue-555/20")
+                          : (isSelected ? "bg-black/10 text-black border border-black/10" : "bg-emerald-500/20 text-emerald-400 border border-emerald-555/20")
+                      }`}>
+                        {client.role === "AGENT" ? "Agent" : "Client"}
+                      </span>
+                    </div>
                     <p className={`text-[10px] truncate ${isSelected ? "text-black/60" : "text-slate-500"}`}>
                       {client.email}
                     </p>

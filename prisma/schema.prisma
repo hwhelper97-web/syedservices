@@ -401,31 +401,3 @@ model ContactRequest {
   status    String   @default("NEW") // NEW, READ, ARCHIVED
   createdAt DateTime @default(now())
 }
-
-model Order {
-  id            Int      @id @default(autoincrement())
-  trackingId    String   @unique
-  sneakerName   String
-  status        String   @default("Pending Inspection")
-  customerEmail String
-  price         Float?   @default(0.0)
-  createdAt     DateTime @default(now())
-}
-
-model Appraisal {
-  id             Int      @id @default(autoincrement())
-  sneakerName    String
-  conditionScore Int      @default(10)
-  boxStatus      String   @default("Good")
-  status         String   @default("Pending Appraisal")
-  sellerEmail    String
-  createdAt      DateTime @default(now())
-}
-
-model SupportChat {
-  id        Int      @id @default(autoincrement())
-  sessionId String
-  sender    String
-  message   String
-  createdAt DateTime @default(now())
-}

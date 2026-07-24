@@ -1,76 +1,33 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FiInbox,
-  FiShoppingBag,
-  FiMessageSquare,
-  FiMail,
-  FiLogOut,
-  FiSliders,
-  FiSend,
-  FiActivity,
-  FiRefreshCw,
-  FiCheckCircle,
-  FiLoader
+import Link from "next/link";
+import { 
+  FiLogOut, FiTrash2, FiMail, FiPhone, FiCheckCircle, 
+  FiClock, FiFileText, FiDownload, FiSearch, FiEye, FiUser, FiCalendar, FiTag, FiX, FiGlobe, FiLoader
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function DashboardClient({ initialTab = "orders" }: { initialTab?: string }) {
+export default function DashboardClient({ initialLeads }: { initialLeads: any[] }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(initialTab); // orders, appraisals, chat, emails
+  const [leads, setLeads] = useState(initialLeads);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [adminEmail, setAdminEmail] = useState("");
+  const [isNotifying, setIsNotifying] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
 
-  // Data states
-  const [orders, setOrders] = useState<any[]>([]);
-  const [appraisals, setAppraisals] = useState<any[]>([]);
-  const [chatSessions, setChatSessions] = useState<{ [key: string]: any[] }>({});
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
-  const [chatInput, setChatInput] = useState("");
-  const [emailLogs, setEmailLogs] = useState<any[]>([]);
-
-  // Fetch flags
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [loadingAppraisals, setLoadingAppraisals] = useState(false);
-  const [loadingChat, setLoadingChat] = useState(false);
-  const [loadingEmails, setLoadingEmails] = useState(false);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Authenticate admin session
   useEffect(() => {
     setIsMounted(true);
-    // Simple local check for authentication bypass/redirect if not logged in
+    const isAdmin = localStorage.getItem("admin");
     const token = localStorage.getItem("token");
-    const adminFlag = localStorage.getItem("admin");
-    
-    // In dev / test, if no admin, set default email or redirect
-    if (adminFlag !== "true" || !token) {
+    if (isAdmin !== "true" || !token) {
       router.push("/admin/login");
-    } else {
-      setAdminEmail("syedsaif@syedservices.com.pk");
     }
   }, [router]);
 
-  // Fetch active tab data
-  useEffect(() => {
-    if (!isMounted) return;
-    if (activeTab === "orders") fetchOrders();
-    if (activeTab === "appraisals") fetchAppraisals();
-    if (activeTab === "chat") fetchChatSessions();
-    if (activeTab === "emails") fetchEmails();
-  }, [activeTab, isMounted]);
-
-  // Chat polling
-  useEffect(() => {
-    if (activeTab !== "chat" || !selectedSessionId) return;
-    const interval = setInterval(() => {
-      fetchChatSessionMessages(selectedSessionId);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [activeTab, selectedSessionId]);
+  if (!isMounted) return null;
 
   const handleLogout = () => {
     localStorage.removeItem("admin");
@@ -78,556 +35,459 @@ export default function DashboardClient({ initialTab = "orders" }: { initialTab?
     router.push("/admin/login");
   };
 
-  // 1. ORDERS METHODS
-  const fetchOrders = async () => {
-    setLoadingOrders(true);
+  const updateStatus = async (id: number, newStatus: string) => {
     try {
-      const res = await fetch("/api/orders");
-      if (res.ok) {
-        setOrders(await res.json());
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
-
-  const handleUpdateOrderStatus = async (id: number, currentStatus: string) => {
-    // Transition through statuses: Pending Inspection -> Authenticated -> Shipped
-    const nextStatus = currentStatus === "Pending Inspection" ? "Authenticated" : "Shipped";
-    try {
-      const res = await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/leads/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: nextStatus } : o));
+        setLeads(leads.map(l => l.id === id ? { ...l, status: newStatus } : l));
+        if (selectedLead?.id === id) setSelectedLead({ ...selectedLead, status: newStatus });
       }
     } catch (err) {
-      console.error(err);
+      alert("Error updating status");
     }
   };
 
-  // 2. APPRAISALS METHODS
-  const fetchAppraisals = async () => {
-    setLoadingAppraisals(true);
+  const notifyEmail = async (id: number) => {
+    setIsNotifying(true);
     try {
-      const res = await fetch("/api/sell");
-      if (res.ok) {
-        setAppraisals(await res.json());
+      const formData = new FormData();
+      if (attachment) {
+        formData.append("attachment", attachment);
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingAppraisals(false);
-    }
-  };
 
-  const handleUpdateAppraisal = async (id: number, currentStatus: string, score: number, box: string) => {
-    const nextStatus = currentStatus === "Pending Appraisal" ? "Completed" : "Pending Appraisal";
-    try {
-      const res = await fetch(`/api/sell/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: nextStatus,
-          conditionScore: score,
-          boxStatus: box,
-        }),
-      });
-      if (res.ok) {
-        setAppraisals(prev => prev.map(a => a.id === id ? { ...a, status: nextStatus, conditionScore: score, boxStatus: box } : a));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // 3. CHAT METHODS
-  const fetchChatSessions = async () => {
-    setLoadingChat(true);
-    try {
-      const res = await fetch("/api/chat");
-      if (res.ok) {
-        const allMsgs: any[] = await res.json();
-        // Group messages by sessionId
-        const sessions: { [key: string]: any[] } = {};
-        allMsgs.forEach(m => {
-          if (!sessions[m.sessionId]) {
-            sessions[m.sessionId] = [];
-          }
-          sessions[m.sessionId].push(m);
-        });
-        setChatSessions(sessions);
-        if (Object.keys(sessions).length > 0 && !selectedSessionId) {
-          setSelectedSessionId(Object.keys(sessions)[0]);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingChat(false);
-    }
-  };
-
-  const fetchChatSessionMessages = async (sid: string) => {
-    try {
-      const res = await fetch(`/api/chat?sessionId=${sid}`);
-      if (res.ok) {
-        const msgs = await res.json();
-        setChatSessions(prev => ({
-          ...prev,
-          [sid]: msgs
-        }));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleSendChatMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !selectedSessionId) return;
-
-    const msgText = chatInput.trim();
-    setChatInput("");
-
-    // Optimistic update
-    const tempMsg = {
-      id: Date.now(),
-      sessionId: selectedSessionId,
-      sender: "ADMIN",
-      message: msgText,
-      createdAt: new Date().toISOString()
-    };
-
-    setChatSessions(prev => ({
-      ...prev,
-      [selectedSessionId]: [...(prev[selectedSessionId] || []), tempMsg]
-    }));
-
-    try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch(`/api/leads/${id}/notify`, { 
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: selectedSessionId,
-          sender: "ADMIN",
-          message: msgText
-        })
+        body: formData,
       });
+      
       if (res.ok) {
-        const actualMsg = await res.json();
-        setChatSessions(prev => ({
-          ...prev,
-          [selectedSessionId]: (prev[selectedSessionId] || []).map(m => m.id === tempMsg.id ? actualMsg : m)
-        }));
+        alert("Notification email sent successfully!");
+        setAttachment(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to send email");
       }
     } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // 4. EMAILS METHODS
-  const fetchEmails = async () => {
-    setLoadingEmails(true);
-    try {
-      const res = await fetch("/api/emails");
-      if (res.ok) {
-        setEmailLogs(await res.json());
-      }
-    } catch (err) {
-      console.error(err);
+      alert("Error sending notification");
     } finally {
-      setLoadingEmails(false);
+      setIsNotifying(false);
     }
   };
 
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatSessions, selectedSessionId]);
+  const deleteLead = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this lead? All associated files will also be deleted.")) return;
+    try {
+      const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setLeads(leads.filter(l => l.id !== id));
+        setSelectedLead(null);
+      }
+    } catch (err) {
+      alert("Error deleting lead");
+    }
+  };
 
-  if (!isMounted) return null;
+  const filteredLeads = leads.filter(l => 
+    l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    l.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    l.phone.includes(searchTerm) ||
+    l.service.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const stats = {
+    total: leads.length,
+    new: leads.filter(l => l.status === "New").length,
+    inProgress: leads.filter(l => l.status === "In Progress").length,
+    completed: leads.filter(l => l.status === "Completed").length,
+  };
 
   return (
-    <div className="bg-[#020617] min-h-screen text-slate-300 flex flex-col md:flex-row">
-      {/* Sidebar navigation */}
-      <aside className="w-full md:w-64 bg-slate-950 border-r border-slate-800 p-6 flex flex-col justify-between flex-shrink-0">
-        <div>
-          {/* Header Title */}
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-yellow-400 rounded-xl text-black font-black flex items-center justify-center text-lg shadow-[0_0_20px_rgba(250,204,21,0.2)]">
-              SH
-            </div>
+    <div className="min-h-screen bg-[#020617] text-slate-200">
+      {/* Sidebar / Topbar */}
+      <nav className="bg-[#0f172a] border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center text-black font-bold text-xl">S</div>
             <div>
-              <h2 className="text-white font-black text-sm tracking-tight">SneakerHub</h2>
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Console</span>
+              <h1 className="text-xl font-bold text-white leading-none">Syed Services</h1>
+              <p className="text-xs text-slate-400 mt-1">Admin Dashboard</p>
             </div>
           </div>
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/portal"
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black hover:bg-yellow-500 rounded-lg transition-all text-xs font-black shadow-lg shadow-yellow-400/10 cursor-pointer"
+            >
+              <FiGlobe /> CRM & Visa Portal
+            </Link>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors text-sm font-medium"
+            >
+              <FiLogOut /> Logout
+            </button>
+          </div>
+        </div>
+      </nav>
 
-          {/* Navigation links */}
-          <nav className="space-y-2">
-            {[
-              { id: "orders", label: "Orders Queue", icon: FiShoppingBag },
-              { id: "appraisals", label: "Seller Appraisals", icon: FiSliders },
-              { id: "chat", label: "Support Chat", icon: FiMessageSquare },
-              { id: "emails", label: "Sent Emails Log", icon: FiMail },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === tab.id
-                      ? "bg-yellow-400 text-black shadow-lg shadow-yellow-400/5"
-                      : "text-slate-400 hover:bg-slate-900/60 hover:text-white"
-                  }`}
-                >
-                  <Icon size={16} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
+      <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Leads", value: stats.total, icon: <FiUser />, color: "blue" },
+            { label: "New", value: stats.new, icon: <FiClock />, color: "yellow" },
+            { label: "In Progress", value: stats.inProgress, icon: <FiLoader className="animate-spin-slow" />, color: "purple" },
+            { label: "Completed", value: stats.completed, icon: <FiCheckCircle />, color: "green" },
+          ].map((stat, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl"
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 text-${stat.color}-400 bg-${stat.color}-400/10`}>
+                {stat.icon}
+              </div>
+              <p className="text-slate-400 text-sm font-medium">{stat.label}</p>
+              <h3 className="text-2xl font-bold text-white mt-1">{stat.value}</h3>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Logout Profile Block */}
-        <div className="mt-8 pt-6 border-t border-slate-900">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-yellow-400">
-              SA
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-[10px] text-white font-bold truncate">Saeed Arman</p>
-              <p className="text-[8px] text-slate-500 truncate">{adminEmail}</p>
-            </div>
+        {/* Search and Filters */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-[#0f172a] p-4 rounded-xl border border-slate-800">
+          <div className="relative w-full md:w-96">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Search by name, email, or service..."
+              className="pl-11 pr-4 py-2 rounded-lg bg-slate-900 border-slate-800 focus:border-yellow-400/50"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full py-2.5 border border-slate-800 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <FiLogOut size={14} /> Log Out
-          </button>
+          <div className="flex gap-2">
+            {/* Filter buttons could go here */}
+          </div>
         </div>
-      </aside>
 
-      {/* Main Console window */}
-      <main className="flex-1 p-6 md:p-10 flex flex-col relative overflow-x-hidden">
-        {/* Background glow effects */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-400/5 rounded-full blur-[100px] pointer-events-none" />
-
-        <header className="mb-8 flex justify-between items-center relative z-10">
-          <div>
-            <h1 className="text-2xl font-black text-white capitalize tracking-tight">
-              {activeTab.replace("-", " ")}
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              System monitoring panel & operation actions
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              if (activeTab === "orders") fetchOrders();
-              if (activeTab === "appraisals") fetchAppraisals();
-              if (activeTab === "chat") fetchChatSessions();
-              if (activeTab === "emails") fetchEmails();
-            }}
-            className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Refresh Data"
-          >
-            <FiRefreshCw size={14} />
-          </button>
-        </header>
-
-        {/* Tab View Switcher */}
-        <section className="flex-1 bg-[#0f172a]/60 border border-slate-800 rounded-[2rem] p-6 shadow-2xl backdrop-blur-md relative z-10 flex flex-col">
-          {/* TAB 1: ORDERS QUEUE */}
-          {activeTab === "orders" && (
-            <div className="space-y-6 flex-1 flex flex-col">
-              {loadingOrders ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <FiLoader className="animate-spin text-yellow-400" size={32} />
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 py-20 text-xs">
-                  <FiShoppingBag size={48} className="mb-4 text-slate-700" />
-                  No order entries found in database.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-350">
-                    <thead className="bg-slate-900/40 text-[9px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="p-4">Tracking ID</th>
-                        <th className="p-4">Sneaker</th>
-                        <th className="p-4">Customer Email</th>
-                        <th className="p-4">Price</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/40 font-medium">
-                      {orders.map((o) => (
-                        <tr key={o.id} className="hover:bg-slate-900/10 transition-colors">
-                          <td className="p-4 font-bold text-yellow-400">{o.trackingId}</td>
-                          <td className="p-4 text-white font-bold">{o.sneakerName}</td>
-                          <td className="p-4">{o.customerEmail}</td>
-                          <td className="p-4">${o.price}</td>
-                          <td className="p-4">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                o.status === "Pending Inspection"
-                                  ? "bg-yellow-500/10 text-yellow-400"
-                                  : o.status === "Authenticated"
-                                  ? "bg-green-500/10 text-green-400"
-                                  : "bg-blue-500/10 text-blue-400"
-                              }`}
+        {/* Table */}
+        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-900/50 border-b border-slate-800">
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-400">Date</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-400">Lead Info</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-400">Service</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-400">Status</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-400">Files</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {filteredLeads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-slate-800/30 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                      {new Date(lead.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-white">{lead.name}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{lead.email || "No email"}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{lead.phone}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-400/10 text-blue-400">
+                        {lead.service}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <select 
+                        value={lead.status}
+                        onChange={(e) => updateStatus(lead.id, e.target.value)}
+                        className={`text-xs font-bold py-1 px-2 rounded-lg border-none focus:ring-0 cursor-pointer
+                          ${lead.status === 'New' ? 'bg-yellow-400/10 text-yellow-400' : 
+                            lead.status === 'In Progress' ? 'bg-purple-400/10 text-purple-400' : 
+                            'bg-green-400/10 text-green-400'}`}
+                      >
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex -space-x-2">
+                        {lead.files.length > 0 ? (
+                          lead.files.map((file: any, idx: number) => (
+                            <div 
+                              key={file.id} 
+                              title={file.fileName}
+                              className="w-8 h-8 rounded-full bg-slate-700 border-2 border-[#0f172a] flex items-center justify-center text-xs text-slate-300"
                             >
-                              {o.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
-                            {o.status !== "Shipped" && (
-                              <button
-                                onClick={() => handleUpdateOrderStatus(o.id, o.status)}
-                                className="px-3 py-1.5 bg-yellow-400 text-black rounded-lg text-[10px] font-bold hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-                              >
-                                {o.status === "Pending Inspection" ? "Verify / Authenticate" : "Ship Order"}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 2: SELLER APPRAISALS */}
-          {activeTab === "appraisals" && (
-            <div className="space-y-6 flex-1 flex flex-col">
-              {loadingAppraisals ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <FiLoader className="animate-spin text-yellow-400" size={32} />
-                </div>
-              ) : appraisals.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 py-20 text-xs">
-                  <FiSliders size={48} className="mb-4 text-slate-700" />
-                  No appraisals submitted yet.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-350">
-                    <thead className="bg-slate-900/40 text-[9px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="p-4">ID</th>
-                        <th className="p-4">Sneaker</th>
-                        <th className="p-4">Condition</th>
-                        <th className="p-4">Box Status</th>
-                        <th className="p-4">Seller Email</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/40 font-medium">
-                      {appraisals.map((a) => (
-                        <tr key={a.id} className="hover:bg-slate-900/10 transition-colors">
-                          <td className="p-4 text-slate-500">#{a.id}</td>
-                          <td className="p-4 text-white font-bold">{a.sneakerName}</td>
-                          <td className="p-4">
-                            <span className="text-yellow-400 font-bold">{a.conditionScore}</span>/10
-                          </td>
-                          <td className="p-4">{a.boxStatus}</td>
-                          <td className="p-4">{a.sellerEmail}</td>
-                          <td className="p-4">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                a.status === "Pending Appraisal"
-                                  ? "bg-yellow-500/10 text-yellow-400"
-                                  : "bg-green-500/10 text-green-400"
-                              }`}
-                            >
-                              {a.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right flex justify-end gap-2">
-                            {a.status === "Pending Appraisal" && (
-                              <>
-                                <button
-                                  onClick={() => handleUpdateAppraisal(a.id, a.status, a.conditionScore, "Damaged")}
-                                  className="px-2.5 py-1.5 border border-slate-800 text-slate-400 rounded-lg text-[9px] font-bold hover:text-white transition-colors cursor-pointer"
-                                  title="Mark box damaged"
-                                >
-                                  Damage Box
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateAppraisal(a.id, a.status, 9, a.boxStatus)}
-                                  className="px-2.5 py-1.5 border border-slate-800 text-slate-400 rounded-lg text-[9px] font-bold hover:text-white transition-colors cursor-pointer"
-                                  title="Degrade Condition"
-                                >
-                                  Degrade (9/10)
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateAppraisal(a.id, a.status, a.conditionScore, a.boxStatus)}
-                                  className="px-3 py-1.5 bg-yellow-400 text-black rounded-lg text-[10px] font-bold hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-                                >
-                                  Complete Appraisal
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: SUPPORT CHAT */}
-          {activeTab === "chat" && (
-            <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[350px]">
-              {loadingChat ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <FiLoader className="animate-spin text-yellow-400" size={32} />
-                </div>
-              ) : Object.keys(chatSessions).length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 py-20 text-xs">
-                  <FiMessageSquare size={48} className="mb-4 text-slate-700" />
-                  No customer chat sessions available.
-                </div>
-              ) : (
-                <>
-                  {/* Sessions sidebar */}
-                  <div className="w-full md:w-64 border-r border-slate-800/60 pr-0 md:pr-6 flex flex-col gap-2 overflow-y-auto max-h-[350px]">
-                    <h4 className="text-[10px] text-slate-550 font-bold uppercase tracking-widest mb-2 px-2">Active Dialogs</h4>
-                    {Object.keys(chatSessions).map((sid) => {
-                      const msgs = chatSessions[sid];
-                      const lastMsg = msgs[msgs.length - 1];
-                      return (
-                        <button
-                          key={sid}
-                          onClick={() => setSelectedSessionId(sid)}
-                          className={`w-full text-left p-3 rounded-2xl transition-all cursor-pointer ${
-                            selectedSessionId === sid
-                              ? "bg-slate-900 text-white border border-slate-850"
-                              : "text-slate-450 hover:bg-slate-900/40 hover:text-slate-200"
-                          }`}
+                              {file.fileType === 'pdf' ? 'P' : 'I'}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-slate-600 text-xs">None</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setSelectedLead(lead)}
+                          className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                          title="View Details"
                         >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-bold text-xs">Guest {sid.substring(8, 12)}</span>
-                            <span className="text-[8px] text-slate-600">
-                              {lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 truncate leading-relaxed">
-                            {lastMsg ? lastMsg.message : "Empty chat"}
-                          </p>
+                          <FiEye />
                         </button>
-                      );
-                    })}
+                        <button 
+                          onClick={() => deleteLead(lead.id)}
+                          className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredLeads.length === 0 && (
+              <div className="text-center py-20 text-slate-500">
+                <FiUser size={48} className="mx-auto mb-4 opacity-20" />
+                <p>No leads found matching your search.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Lead Detail Modal */}
+      <AnimatePresence>
+        {selectedLead && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedLead(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              className="relative w-full max-w-xl h-full bg-[#0f172a] border-l border-slate-800 shadow-2xl overflow-y-auto"
+            >
+              <div className="p-8 space-y-8">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">{selectedLead.name}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-slate-400 text-sm">Tracking ID:</span>
+                      <span className="bg-yellow-400/10 text-yellow-400 px-2 py-0.5 rounded text-xs font-bold font-mono">
+                        {selectedLead.trackingId}
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedLead(null)}
+                    className="p-2 hover:bg-slate-800 rounded-full text-slate-400"
+                  >
+                    <FiX size={24} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Contact Details</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-slate-300">
+                        <FiMail className="text-yellow-400" />
+                        <span>{selectedLead.email || "No email provided"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-300">
+                        <FiPhone className="text-yellow-400" />
+                        <span>{selectedLead.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-300">
+                        <FiGlobe className="text-yellow-400" />
+                        <span>{selectedLead.country || "Nationality not provided"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-300">
+                        <FiTag className="text-yellow-400" />
+                        <span>{selectedLead.service}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-300">
+                        <FiCalendar className="text-yellow-400" />
+                        <span>{new Date(selectedLead.createdAt).toLocaleString()}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Active session dialog window */}
-                  <div className="flex-1 flex flex-col bg-slate-950/40 border border-slate-850 rounded-[1.5rem] overflow-hidden">
-                    {selectedSessionId ? (
-                      <>
-                        {/* Conversation messages */}
-                        <div className="flex-1 p-4 overflow-y-auto space-y-3 max-h-[250px]">
-                          {(chatSessions[selectedSessionId] || []).map((m) => (
-                            <div
-                              key={m.id}
-                              className={`flex ${m.sender === "ADMIN" ? "justify-end" : "justify-start"}`}
-                            >
-                              <div
-                                className={`max-w-[70%] p-3 rounded-2xl text-xs font-semibold leading-relaxed ${
-                                  m.sender === "ADMIN"
-                                    ? "bg-yellow-400 text-black rounded-tr-none"
-                                    : "bg-slate-900 text-white border border-slate-800 rounded-tl-none"
-                                }`}
-                              >
-                                {m.message}
-                              </div>
-                            </div>
-                          ))}
-                          <div ref={messagesEndRef} />
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Visa Application Details</h3>
+                    <div className="space-y-2 text-xs">
+                      {selectedLead.dob && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">DOB:</span>
+                          <span className="text-slate-200">{selectedLead.dob}</span>
                         </div>
+                      )}
+                      {selectedLead.passportNumber && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Passport:</span>
+                          <span className="text-slate-200">{selectedLead.passportNumber} (Exp: {selectedLead.passportExpiry})</span>
+                        </div>
+                      )}
+                      {selectedLead.fatherName && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Father Name:</span>
+                          <span className="text-slate-200">{selectedLead.fatherName}</span>
+                        </div>
+                      )}
+                      {selectedLead.motherName && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Mother Name:</span>
+                          <span className="text-slate-200">{selectedLead.motherName}</span>
+                        </div>
+                      )}
+                      {selectedLead.maritalStatus && (
+                        <div className="flex justify-between border-b border-white/5 pb-1">
+                          <span className="text-slate-500">Status:</span>
+                          <span className="text-slate-200">{selectedLead.maritalStatus} {selectedLead.spouseName ? `(Spouse: ${selectedLead.spouseName})` : ""}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                        {/* Input submit form */}
-                        <form onSubmit={handleSendChatMessage} className="p-3 bg-slate-950 border-t border-slate-850 flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Type reply as Administrator..."
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            className="flex-1 bg-slate-900 border border-slate-800 focus:border-yellow-400/50 rounded-xl px-4 py-2 text-xs text-white focus:outline-none placeholder-slate-550"
-                          />
-                          <button
-                            type="submit"
-                            className="w-9 h-9 bg-yellow-400 text-black rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-                          >
-                            <FiSend size={14} />
-                          </button>
-                        </form>
-                      </>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center text-xs text-slate-500">
-                        Select a dialog to view conversations.
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Current Status</h3>
+                    <div className="flex items-center gap-3">
+                      <select 
+                        value={selectedLead.status}
+                        onChange={(e) => updateStatus(selectedLead.id, e.target.value)}
+                        className={`font-bold py-2 px-4 rounded-xl border-none focus:ring-0 cursor-pointer w-full
+                          ${selectedLead.status === 'New' ? 'bg-yellow-400/10 text-yellow-400' : 
+                            selectedLead.status === 'In Progress' ? 'bg-purple-400/10 text-purple-400' : 
+                            'bg-green-400/10 text-green-400'}`}
+                      >
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <a 
+                        href={`https://wa.me/${selectedLead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                          `Hi ${selectedLead.name}, your application (${selectedLead.trackingId}) for ${selectedLead.service} is now ${selectedLead.status}. Track it here: https://syedservices.com.pk/track?id=${selectedLead.trackingId}`
+                        )}`}
+                        target="_blank"
+                        className="flex items-center justify-center gap-2 w-full py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-all text-xs font-bold"
+                      >
+                        Notify via WhatsApp
+                      </a>
+
+                      <div className="pt-2 border-t border-slate-800 mt-2">
+                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Attach Result (PDF)</label>
+                        <div className="relative group">
+                           <div className={`flex items-center justify-between p-3 bg-slate-900 border rounded-lg transition-all ${attachment ? 'border-yellow-400 bg-yellow-400/5' : 'border-slate-800'}`}>
+                              <span className="text-[10px] truncate pr-2 text-slate-400">
+                                {attachment ? `✓ ${attachment.name}` : "Upload Visa/Permit PDF"}
+                              </span>
+                              <FiDownload className="text-slate-600 group-hover:text-yellow-400 transition-colors" />
+                              <input 
+                                type="file" 
+                                accept=".pdf"
+                                onChange={(e) => setAttachment(e.target.files?.[0] || null)}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                              />
+                           </div>
+                        </div>
                       </div>
+
+                      <button 
+                        disabled={isNotifying || !selectedLead.email}
+                        onClick={() => notifyEmail(selectedLead.id)}
+                        className="flex items-center justify-center gap-2 w-full py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg transition-all text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                      >
+                        <FiMail className={isNotifying ? "animate-spin" : ""} />
+                        {isNotifying ? "Sending Email..." : "Notify via Email"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Message</h3>
+                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 whitespace-pre-wrap">
+                    {selectedLead.message || "No message provided."}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Documents ({selectedLead.files.length})</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    {selectedLead.files.length > 0 ? (
+                      selectedLead.files.map((file: any) => (
+                        <div key={file.id} className="flex items-center justify-between p-4 bg-slate-900 border border-slate-800 rounded-xl">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${file.fileType === 'pdf' ? 'bg-red-400/10 text-red-400' : 'bg-blue-400/10 text-blue-400'}`}>
+                              <FiFileText size={20} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white max-w-[200px] truncate">{file.fileName}</p>
+                              <p className="text-xs text-slate-500 uppercase">{file.fileType}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {file.fileType !== 'pdf' && (
+                              <a 
+                                href={file.fileUrl} 
+                                target="_blank" 
+                                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
+                                title="View Image"
+                              >
+                                <FiEye />
+                              </a>
+                            )}
+                            <a 
+                              href={file.fileUrl} 
+                              download={file.fileName}
+                              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
+                              title="Download"
+                            >
+                              <FiDownload />
+                            </a>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-slate-500 italic text-sm">No documents attached.</p>
                     )}
                   </div>
-                </>
-              )}
-            </div>
-          )}
+                </div>
 
-          {/* TAB 4: SENT EMAILS LOG */}
-          {activeTab === "emails" && (
-            <div className="space-y-6 flex-1 flex flex-col">
-              {loadingEmails ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <FiLoader className="animate-spin text-yellow-400" size={32} />
+                <div className="pt-8 border-t border-slate-800">
+                  <button 
+                    onClick={() => deleteLead(selectedLead.id)}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all font-bold"
+                  >
+                    <FiTrash2 /> Delete Lead Entry
+                  </button>
                 </div>
-              ) : emailLogs.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 py-20 text-xs">
-                  <FiMail size={48} className="mb-4 text-slate-700" />
-                  No sent logs stored in queue.
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                  {emailLogs.map((log) => (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      key={log.id}
-                      className="bg-slate-950 border border-slate-850 p-5 rounded-[1.5rem] space-y-2 relative"
-                    >
-                      <div className="flex justify-between items-center text-[10px] text-slate-500 border-b border-slate-900 pb-2 mb-2 font-bold uppercase tracking-wider">
-                        <span>Recipient: <strong className="text-yellow-400">{log.to}</strong></span>
-                        <span>{new Date(log.timestamp).toLocaleString()}</span>
-                      </div>
-                      <h4 className="text-white text-xs font-black tracking-tight">{log.subject}</h4>
-                      <p className="text-[11px] text-slate-400 whitespace-pre-wrap leading-relaxed pt-1">
-                        {log.body}
-                      </p>
-                      <span className="absolute bottom-4 right-4 text-[9px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-green-500/10">
-                        Sent Log Verified
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      </main>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

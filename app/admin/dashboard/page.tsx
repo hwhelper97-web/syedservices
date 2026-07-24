@@ -1,7 +1,5 @@
-import DashboardClient from "./DashboardClient";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function DashboardPage() {
-  return <DashboardClient />;
+export default function AdminDashboardRedirectPage() {
+  redirect("/portal/admin");
 }

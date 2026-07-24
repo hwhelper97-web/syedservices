@@ -3,8 +3,6 @@ import { Outfit } from "next/font/google";
 import { Metadata } from "next";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
-import { LiveChatWidget } from "@/components/LiveChatWidget";
-
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -26,7 +24,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${outfit.className} bg-[#020617] text-white antialiased`} suppressHydrationWarning>
         <LanguageProvider>
           {children}
-          <LiveChatWidget />
         </LanguageProvider>
       </body>
     </html>

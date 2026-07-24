@@ -147,9 +147,38 @@ export async function PATCH(
       data: {
         userId: session.userId,
         action: "UPDATE_STATUS",
-        details: `Application ${application.trackingId} status updated to ${status}`,
+        details: `Application ${application.trackingId} status updated to ${status || 'MODIFIED'}`,
       }
     });
+
+    // Trigger email notification if status was changed
+    try {
+      const fullApp = await prisma.application.findUnique({
+        where: { id: applicationId },
+        include: {
+          client: {
+            include: {
+              user: true
+            }
+          },
+          agent: {
+            include: {
+              user: true
+            }
+          }
+        }
+      });
+      if (fullApp && status) {
+        const { sendApplicationStatusUpdateEmail } = await import("@/utils/email");
+        await sendApplicationStatusUpdateEmail(
+          fullApp, 
+          status, 
+          notes || `Status updated to ${status.replace(/_/g, " ")} by ${session.name}`
+        );
+      }
+    } catch (emailErr) {
+      console.error("Failed to send status update email:", emailErr);
+    }
 
     return NextResponse.json({ success: true, application: updatedApp });
   } catch (error: any) {
