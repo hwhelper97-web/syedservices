@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -12,30 +10,27 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
-    const type = (formData.get("type") as string) || "general";
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", type);
-    await mkdir(uploadDir, { recursive: true });
-
+    // Convert file to Base64 Data URL to support Serverless deployment (Vercel) 
+    // where the local filesystem is read-only.
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Content = buffer.toString("base64");
+    const mimeType = file.type || "application/octet-stream";
+    
+    const fileUrl = `data:${mimeType};base64,${base64Content}`;
 
-    // Sanitize file name
-    const timestamp = Date.now();
-    const cleanFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    const filePath = path.join(uploadDir, cleanFileName);
-
-    await writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/${type}/${cleanFileName}`;
-
-    return NextResponse.json({ success: true, fileUrl });
+    return NextResponse.json({ 
+      success: true, 
+      fileUrl,
+      fileName: file.name
+    });
   } catch (error: any) {
-    console.error("General file upload error:", error);
+    console.error("File upload error:", error);
     return NextResponse.json(
       { error: "Internal server error during upload" },
       { status: 500 }
