@@ -317,7 +317,7 @@ export async function sendApplicationStatusUpdateEmail(
       if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         await transporter.sendMail({
           from: `"Syed Services Updates" <${process.env.EMAIL_USER}>`,
-          to: agentEmail,
+to: agentEmail,
           subject: `Agent Notice: Visa File Status for ${trackingId} (${statusFormatted})`,
           html: html.replace(`Dear <strong>${applicantName}</strong>`, `Dear Agent <strong>${agentName}</strong> (Client: ${applicantName})`),
         });
@@ -325,5 +325,45 @@ export async function sendApplicationStatusUpdateEmail(
     } catch (error) {
       console.error("Agent email notification error:", error);
     }
+  }
+}
+
+export async function sendPasswordResetEmail(email: string, code: string) {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.EMAIL_PORT || "587"),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `"Syed Services Support" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Reset Your Portal Password",
+    html: `
+      <div style="font-family: sans-serif; padding: 25px; border: 1px solid #e2e8f0; border-radius: 20px; max-width: 500px; margin: auto;">
+        <h2 style="color: #fbbf24; margin-bottom: 5px;">Syed Services</h2>
+        <p style="color: #64748b; font-size: 14px; margin-top: 0;">Portal Support</p>
+        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 20px 0;" />
+        <p style="font-size: 15px; color: #1e293b; line-height: 1.5;">You requested to reset your portal password. Please use the following 6-digit verification code to proceed:</p>
+        <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 12px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px; color: #0f172a; margin: 25px 0;">
+          ${code}
+        </div>
+        <p style="font-size: 12px; color: #94a3b8; line-height: 1.5;">This verification code is valid for 15 minutes. If you did not make this request, you can safely ignore this email.</p>
+      </div>
+    `,
+  };
+
+  try {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      await transporter.sendMail(mailOptions);
+    } else {
+      console.log(`[EMAIL DEV MODE] Password reset code for ${email}: ${code}`);
+    }
+  } catch (error) {
+    console.error("Password reset email send error:", error);
   }
 }
