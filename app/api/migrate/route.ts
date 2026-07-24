@@ -13,8 +13,8 @@ export async function GET() {
       console.log("Chmod failed or not needed", e);
     }
 
-    // Run prisma db push from the server environment
-    const { stdout, stderr } = await execAsync("npx prisma db push --accept-data-loss");
+    // Run prisma db push from the server environment using local path to avoid npx download caching errors
+    const { stdout, stderr } = await execAsync("node node_modules/prisma/build/index.js db push --accept-data-loss");
     
     return Response.json({ 
       message: "Migration attempted", 
