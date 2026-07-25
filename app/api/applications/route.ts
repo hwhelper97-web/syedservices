@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { sendSystemNotificationToAdmins } from "@/utils/email";
 
 export async function POST(req: Request) {
   try {
@@ -201,6 +202,25 @@ export async function POST(req: Request) {
         status: "UNPAID",
       }
     });
+
+    if (!isDraft) {
+      sendSystemNotificationToAdmins({
+        subject: `New Application Received: ${trackingId}`,
+        htmlContent: `
+          <p>A new visa/ticket application has been submitted by <strong>${session.name}</strong> (${session.role}):</p>
+          <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Tracking ID:</strong> ${trackingId}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Country:</strong> ${country}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Visa Category:</strong> ${visaCategory}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Travel Date:</strong> ${travelDate || "N/A"}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Entry Type:</strong> ${entryType}</p>
+          </div>
+          <p style="font-size: 13px; color: #94a3b8;">You can manage this application file in the applications section of the portal.</p>
+        `
+      }).catch((err) => {
+        console.error("Admin application alert async send error:", err);
+      });
+    }
 
     return NextResponse.json({
       success: true,

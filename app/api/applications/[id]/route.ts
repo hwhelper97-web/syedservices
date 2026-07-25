@@ -184,6 +184,26 @@ export async function PATCH(
       console.error("Failed to send status update email:", emailErr);
     }
 
+    // Notify admins if changes are made by Client or Agent
+    if (session.role === "CLIENT" || session.role === "AGENT") {
+      try {
+        const { sendSystemNotificationToAdmins } = await import("@/utils/email");
+        await sendSystemNotificationToAdmins({
+          subject: `Application ${application.trackingId} Updated by ${session.role}`,
+          htmlContent: `
+            <p>Application <strong>${application.trackingId}</strong> has been updated by <strong>${session.name}</strong> (${session.role}):</p>
+            <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Updated By:</strong> ${session.name} (${session.role})</p>
+              ${contractAccepted ? `<p style="margin: 5px 0; font-size: 13px;"><strong>Contract Status:</strong> Signed & Accepted by ${contractSignatureName}</p>` : ""}
+              ${notes ? `<p style="margin: 5px 0; font-size: 13px;"><strong>Notes:</strong> ${notes}</p>` : ""}
+            </div>
+          `
+        });
+      } catch (err) {
+        console.error("Failed to send admin notification for client/agent application update:", err);
+      }
+    }
+
     return NextResponse.json({ success: true, application: updatedApp });
   } catch (error: any) {
     console.error("Application PATCH error:", error);

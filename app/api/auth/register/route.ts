@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
-import { sendWelcomeEmail } from "@/utils/email";
+import { sendWelcomeEmail, sendSystemNotificationToAdmins } from "@/utils/email";
 
 export async function POST(req: Request) {
   try {
@@ -80,6 +80,24 @@ export async function POST(req: Request) {
     // Send welcome greeting email asynchronously
     sendWelcomeEmail(user.email, user.name, user.role).catch((err) => {
       console.error("Welcome email async send error:", err);
+    });
+
+    // Notify all admins and staff of new user registration
+    sendSystemNotificationToAdmins({
+      subject: `New ${user.role} Registered: ${user.name}`,
+      htmlContent: `
+        <p>A new user has registered on the Syed Services Portal:</p>
+        <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
+          <p style="margin: 5px 0; font-size: 13px;"><strong>Name:</strong> ${user.name}</p>
+          <p style="margin: 5px 0; font-size: 13px;"><strong>Email:</strong> ${user.email}</p>
+          <p style="margin: 5px 0; font-size: 13px;"><strong>Account Type:</strong> ${user.role}</p>
+          <p style="margin: 5px 0; font-size: 13px;"><strong>Phone:</strong> ${phone || "N/A"}</p>
+          ${agencyName ? `<p style="margin: 5px 0; font-size: 13px;"><strong>Agency:</strong> ${agencyName}</p>` : ""}
+        </div>
+        <p style="font-size: 13px; color: #94a3b8;">You can view their details in the client management section of the admin panel.</p>
+      `
+    }).catch((err) => {
+      console.error("Admin registration alert async send error:", err);
     });
 
     return NextResponse.json({

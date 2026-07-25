@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import path from "path";
+import { prisma } from "@/lib/prisma";
 
 const getTransporter = () => {
   return nodemailer.createTransport({
@@ -12,6 +13,65 @@ const getTransporter = () => {
     },
   });
 };
+
+export async function sendSystemNotificationToAdmins({
+  subject,
+  htmlContent
+}: {
+  subject: string;
+  htmlContent: string;
+}) {
+  try {
+    const admins = await prisma.user.findMany({
+      where: {
+        role: { in: ["SUPER_ADMIN", "ADMIN", "STAFF"] },
+        status: "ACTIVE"
+      },
+      select: { email: true }
+    });
+
+    const adminEmails = admins.map(a => a.email).filter(Boolean);
+    
+    if (adminEmails.length === 0) {
+      adminEmails.push(process.env.ADMIN_EMAIL || "info@syedservices.com.pk");
+    }
+
+    const transporter = getTransporter();
+
+    for (const email of adminEmails) {
+      try {
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+          await transporter.sendMail({
+            from: `"Syed Services Alert" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: `[SYSTEM ALERT] ${subject}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; background: #0f172a; color: #f8fafc;">
+                <div style="border-bottom: 1px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px;">
+                  <h2 style="color: #fbbf24; margin: 0; font-size: 20px; font-weight: 800;">Syed Services Portal Alert</h2>
+                  <p style="color: #64748b; margin: 5px 0 0 0; font-size: 12px;">Automated Staff Notification</p>
+                </div>
+                <div style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+                  ${htmlContent}
+                </div>
+                <div style="border-top: 1px solid #1e293b; padding-top: 15px; margin-top: 20px; text-align: center; color: #64748b; font-size: 11px;">
+                  This is an automated system notification for administrators and staff of Syed Services.
+                </div>
+              </div>
+            `
+          });
+          console.log(`System alert sent to ${email}`);
+        } else {
+          console.log(`[EMAIL DEV MODE] Admin notification to ${email} (Subject: ${subject})`);
+        }
+      } catch (mailErr) {
+        console.error(`Failed to send mail to admin ${email}:`, mailErr);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send system notifications to admins:", error);
+  }
+}
 
 export async function sendAdminNotification(lead: any, files: any[]) {
   const adminEmail = process.env.ADMIN_EMAIL || "info@syedservices.com.pk";
