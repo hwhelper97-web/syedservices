@@ -12,6 +12,49 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const contentType = req.headers.get("content-type") || "";
+
+    // Support creating invoice via JSON
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      if (body.action === "CREATE_INVOICE" || body.totalAmount !== undefined) {
+        if (!["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+        const { applicationId, totalAmount, dueDate, invoiceNumber, status } = body;
+        const invNum = invoiceNumber || `INV-${Date.now().toString().slice(-6)}`;
+        const newInvoice = await prisma.invoice.create({
+          data: {
+            invoiceNumber: invNum,
+            applicationId: applicationId ? parseInt(String(applicationId), 10) : null,
+            totalAmount: parseFloat(String(totalAmount)),
+            dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 7 * 86400000),
+            status: status || "UNPAID",
+          },
+          include: {
+            application: {
+              include: {
+                client: {
+                  include: { user: true },
+                },
+              },
+            },
+            payments: true,
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            userId: session.userId,
+            action: "CREATE_INVOICE",
+            details: `Invoice ${invNum} of amount $${totalAmount} created by ${session.name}`,
+          },
+        });
+
+        return NextResponse.json({ success: true, invoice: newInvoice });
+      }
+    }
+
     const formData = await req.formData();
     const invoiceIdStr = formData.get("invoiceId") as string;
     const amountStr = formData.get("amount") as string;
@@ -160,54 +203,188 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { paymentId, status } = await req.json();
+    const body = await req.json();
+    const { paymentId, invoiceId, status, totalAmount, dueDate } = body;
 
-    if (!paymentId || !status) {
-      return NextResponse.json(
-        { error: "Payment ID and status are required" },
-        { status: 400 }
-      );
-    }
-
-    const payment = await prisma.payment.findUnique({
-      where: { id: parseInt(paymentId, 10) },
-    });
-
-    if (!payment) {
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-    }
-
-    const updatedPayment = await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status,
-        verifiedById: session.userId,
-      },
-    });
-
-    if (status === "VERIFIED") {
-      await prisma.invoice.update({
-        where: { id: payment.invoiceId },
-        data: { status: "PAID" },
+    // Case 1: Updating an invoice
+    if (invoiceId) {
+      const invId = parseInt(String(invoiceId), 10);
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: invId },
       });
+
+      if (!invoice) {
+        return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      }
+
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (totalAmount !== undefined) updateData.totalAmount = parseFloat(String(totalAmount));
+      if (dueDate) updateData.dueDate = new Date(dueDate);
+
+      const updatedInvoice = await prisma.invoice.update({
+        where: { id: invId },
+        data: updateData,
+        include: {
+          application: {
+            include: {
+              client: {
+                include: { user: true },
+              },
+            },
+          },
+          payments: true,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "UPDATE_INVOICE",
+          details: `Invoice ${invoice.invoiceNumber} updated by ${session.name}: Status=${status || invoice.status}, Amount=${totalAmount ?? invoice.totalAmount}`,
+        },
+      });
+
+      return NextResponse.json({ success: true, invoice: updatedInvoice });
     }
 
-    // Write audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: session.userId,
-        action: "VERIFY_PAYMENT",
-        details: `Payment ID ${paymentId} status verified: ${status}`,
-      },
-    });
+    // Case 2: Updating payment verification
+    if (paymentId && status) {
+      const payment = await prisma.payment.findUnique({
+        where: { id: parseInt(String(paymentId), 10) },
+      });
 
-    return NextResponse.json({ success: true, payment: updatedPayment });
-  } catch (error: any) {
-    console.error("Payment verify PATCH error:", error);
+      if (!payment) {
+        return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      }
+
+      const updatedPayment = await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status,
+          verifiedById: session.userId,
+        },
+      });
+
+      if (status === "VERIFIED") {
+        await prisma.invoice.update({
+          where: { id: payment.invoiceId },
+          data: { status: "PAID" },
+        });
+      }
+
+      // Write audit log
+      await prisma.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "VERIFY_PAYMENT",
+          details: `Payment ID ${paymentId} status verified: ${status}`,
+        },
+      });
+
+      return NextResponse.json({ success: true, payment: updatedPayment });
+    }
+
     return NextResponse.json(
-      { error: "Internal server error during payment verification" },
+      { error: "paymentId or invoiceId with status is required" },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    console.error("Payment PATCH error:", error);
+    return NextResponse.json(
+      { error: "Internal server error during update" },
       { status: 500 }
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getSession();
+
+    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    let invoiceIdStr = searchParams.get("invoiceId");
+    let paymentIdStr = searchParams.get("paymentId");
+
+    if (!invoiceIdStr && !paymentIdStr) {
+      try {
+        const body = await req.json();
+        if (body.invoiceId) invoiceIdStr = String(body.invoiceId);
+        if (body.paymentId) paymentIdStr = String(body.paymentId);
+      } catch (e) {
+        // empty body is fine
+      }
+    }
+
+    if (invoiceIdStr) {
+      const invoiceId = parseInt(invoiceIdStr, 10);
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+      });
+
+      if (!invoice) {
+        return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      }
+
+      await prisma.payment.deleteMany({
+        where: { invoiceId },
+      });
+
+      await prisma.invoice.delete({
+        where: { id: invoiceId },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "DELETE_INVOICE",
+          details: `Invoice ${invoice.invoiceNumber} ($${invoice.totalAmount}) deleted by ${session.name}`,
+        },
+      });
+
+      return NextResponse.json({ success: true, message: "Invoice deleted successfully" });
+    }
+
+    if (paymentIdStr) {
+      const paymentId = parseInt(paymentIdStr, 10);
+      const payment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+      });
+
+      if (!payment) {
+        return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      }
+
+      await prisma.payment.delete({
+        where: { id: paymentId },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "DELETE_PAYMENT",
+          details: `Payment transaction ${paymentId} deleted by ${session.name}`,
+        },
+      });
+
+      return NextResponse.json({ success: true, message: "Payment deleted successfully" });
+    }
+
+    return NextResponse.json(
+      { error: "invoiceId or paymentId parameter is required" },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    console.error("Payment DELETE error:", error);
+    return NextResponse.json(
+      { error: "Internal server error during deletion" },
+      { status: 500 }
+    );
+  }
+}
+
 

@@ -92,6 +92,16 @@ export async function PATCH(
     const { 
       status, 
       notes,
+      country,
+      visaCategory,
+      duration,
+      entryType,
+      travelDate,
+      returnDate,
+      purpose,
+      sponsor,
+      reference,
+      assignedStaffId,
       contractApprovedDays,
       contractPaymentAmount,
       contractFirstPartyName,
@@ -101,6 +111,19 @@ export async function PATCH(
     } = body;
 
     const updateData: any = {};
+
+    if (country !== undefined) updateData.country = country;
+    if (visaCategory !== undefined) updateData.visaCategory = visaCategory;
+    if (duration !== undefined) updateData.duration = duration;
+    if (entryType !== undefined) updateData.entryType = entryType;
+    if (travelDate !== undefined) updateData.travelDate = travelDate;
+    if (returnDate !== undefined) updateData.returnDate = returnDate;
+    if (purpose !== undefined) updateData.purpose = purpose;
+    if (sponsor !== undefined) updateData.sponsor = sponsor;
+    if (reference !== undefined) updateData.reference = reference;
+    if (assignedStaffId !== undefined) {
+      updateData.assignedStaffId = assignedStaffId ? parseInt(String(assignedStaffId), 10) : null;
+    }
 
     if (status) {
       updateData.status = status;
@@ -213,3 +236,75 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+
+    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id: appIdStr } = await params;
+    const applicationId = parseInt(appIdStr, 10);
+
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        client: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!application) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+
+    // Unlink any invoices tied to this application
+    await prisma.invoice.updateMany({
+      where: { applicationId },
+      data: { applicationId: null },
+    });
+
+    // Delete messages linked to this application if any
+    try {
+      await prisma.message.deleteMany({
+        where: { applicationId },
+      });
+    } catch (e) {
+      // ignore if non-existent or error
+    }
+
+    // Delete the application (cascades documents and statusHistory)
+    await prisma.application.delete({
+      where: { id: applicationId },
+    });
+
+    // Write audit log
+    await prisma.auditLog.create({
+      data: {
+        userId: session.userId,
+        action: "DELETE_APPLICATION",
+        details: `Application ${application.trackingId || applicationId} (${application.client?.user?.name || "Client"}) was deleted by ${session.name}`,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Application deleted successfully",
+    });
+  } catch (error: any) {
+    console.error("Application DELETE error:", error);
+    return NextResponse.json(
+      { error: "Internal server error during application deletion" },
+      { status: 500 }
+    );
+  }
+}
+
