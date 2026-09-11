@@ -66,31 +66,62 @@ export default function ExitPermitPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => data.append(key, value));
-    
-    // Append all selected files
-    Object.values(selectedFiles).forEach(file => {
-      data.append("files", file);
-    });
 
     try {
+      const activeFiles = Object.values(selectedFiles);
+      const uploadedFilesMeta: Array<{ fileName: string; fileUrl: string; fileType: string }> = [];
+
+      for (const file of activeFiles) {
+        try {
+          const signRes = await fetch("/api/leads/upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileType: file.type || "application/octet-stream",
+            }),
+          });
+
+          if (signRes.ok) {
+            const { signedUrl, publicUrl } = await signRes.json();
+            const uploadRes = await fetch(signedUrl, {
+              method: "PUT",
+              headers: { "Content-Type": file.type || "application/octet-stream" },
+              body: file,
+            });
+
+            if (uploadRes.ok) {
+              uploadedFilesMeta.push({
+                fileName: file.name,
+                fileUrl: publicUrl,
+                fileType: file.type.includes("pdf") ? "pdf" : "image",
+              });
+            }
+          }
+        } catch (fErr) {
+          console.error("File upload error:", fErr);
+        }
+      }
+
+      const payload = {
+        ...formData,
+        service: "Pakistan Visa Exit Permit",
+        files: uploadedFilesMeta,
+      };
+
       const res = await fetch("/api/leads", {
         method: "POST",
-        body: data,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      
-      let result;
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
+
+      let result: any = {};
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
         result = await res.json();
       } else {
         const text = await res.text();
         console.error("Non-JSON response:", res.status, text);
-        if (res.status === 413) {
-          throw new Error("The uploaded files are too large. Please compress your images and try again.");
-        }
         throw new Error(`Server returned error ${res.status}. Please try again later.`);
       }
 
@@ -98,11 +129,11 @@ export default function ExitPermitPage() {
         setTrackingId(result.trackingId);
         setStep(4); // Success step
       } else {
-        alert(result.error || "Submission failed.");
+        alert(result.error || "Submission failed. Please check your information and try again.");
       }
     } catch (err: any) {
       console.error("Submission error:", err);
-      alert(err.message || "Error submitting application.");
+      alert(err.message || "Error submitting application. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

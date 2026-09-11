@@ -5,29 +5,63 @@ import { sendAdminNotification, sendCustomerNotification, sendSystemNotification
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
+    const contentType = req.headers.get("content-type") || "";
     
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const service = formData.get("service") as string;
-    const message = formData.get("message") as string;
-    
-    // Visa specific fields
-    const dob = formData.get("dob") as string;
-    const fatherName = formData.get("fatherName") as string;
-    const motherName = formData.get("motherName") as string;
-    const maritalStatus = formData.get("maritalStatus") as string;
-    const spouseName = formData.get("spouseName") as string;
-    const passportNumber = formData.get("passportNumber") as string;
-    const passportExpiry = formData.get("passportExpiry") as string;
-    const country = formData.get("country") as string;
-    
-    // Get all files from all keys
+    let name = "";
+    let email = "";
+    let phone = "";
+    let service = "";
+    let message = "";
+    let dob = "";
+    let fatherName = "";
+    let motherName = "";
+    let maritalStatus = "";
+    let spouseName = "";
+    let passportNumber = "";
+    let passportExpiry = "";
+    let country = "";
+    let preUploadedFiles: Array<{ fileName: string; fileUrl: string; fileType?: string }> = [];
     const files: File[] = [];
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File && value.size > 0) {
-        files.push(value);
+
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      name = body.name || "";
+      email = body.email || "";
+      phone = body.phone || "";
+      service = body.service || "";
+      message = body.message || "";
+      dob = body.dob || "";
+      fatherName = body.fatherName || "";
+      motherName = body.motherName || "";
+      maritalStatus = body.maritalStatus || "";
+      spouseName = body.spouseName || "";
+      passportNumber = body.passportNumber || "";
+      passportExpiry = body.passportExpiry || "";
+      country = body.country || "";
+      if (Array.isArray(body.files)) {
+        preUploadedFiles = body.files;
+      }
+    } else {
+      const formData = await req.formData();
+      name = (formData.get("name") as string) || "";
+      email = (formData.get("email") as string) || "";
+      phone = (formData.get("phone") as string) || "";
+      service = (formData.get("service") as string) || "";
+      message = (formData.get("message") as string) || "";
+      dob = (formData.get("dob") as string) || "";
+      fatherName = (formData.get("fatherName") as string) || "";
+      motherName = (formData.get("motherName") as string) || "";
+      maritalStatus = (formData.get("maritalStatus") as string) || "";
+      spouseName = (formData.get("spouseName") as string) || "";
+      passportNumber = (formData.get("passportNumber") as string) || "";
+      passportExpiry = (formData.get("passportExpiry") as string) || "";
+      country = (formData.get("country") as string) || "";
+
+      // Get all files from formData
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File && value.size > 0) {
+          files.push(value);
+        }
       }
     }
 
@@ -59,8 +93,30 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Save files if any using Supabase storage
+    // Save files if any
     const savedFiles: Array<{ id: number; fileName: string; fileUrl: string; fileType: string }> = [];
+
+    // 1. Process pre-uploaded files (uploaded directly to Supabase storage)
+    if (preUploadedFiles && preUploadedFiles.length > 0) {
+      for (const item of preUploadedFiles) {
+        if (!item.fileName || !item.fileUrl) continue;
+        try {
+          const fileRecord = await prisma.file.create({
+            data: {
+              leadId: lead.id,
+              fileName: item.fileName,
+              fileUrl: item.fileUrl,
+              fileType: (item.fileType || "").includes("pdf") ? "pdf" : "image",
+            },
+          });
+          savedFiles.push(fileRecord);
+        } catch (dbErr) {
+          console.error("Error creating file record for pre-uploaded file:", dbErr);
+        }
+      }
+    }
+
+    // 2. Process legacy multipart/form-data files (if any)
     if (files && files.length > 0) {
       for (const file of files) {
         if (!file || file.size === 0) continue;
@@ -145,10 +201,10 @@ export async function POST(req: NextRequest) {
       leadId: lead.id 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("LEAD_SUBMISSION_ERROR:", error);
     return NextResponse.json(
-      { error: "Internal server error during submission" },
+      { error: error?.message || "Internal server error during submission" },
       { status: 500 }
     );
   }

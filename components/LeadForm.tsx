@@ -28,6 +28,7 @@ const visaCategories = [
 
 export default function LeadForm({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [success, setSuccess] = useState(false);
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
     passport: null,
@@ -58,11 +59,59 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
     hasInvitation: "No",
   });
 
+  // Client-side image optimizer to keep high-res uploads super fast and efficient
+  const optimizeImageIfNeeded = async (file: File): Promise<File> => {
+    if (!file.type.startsWith("image/")) return file;
+    if (file.size < 1.2 * 1024 * 1024) return file;
+
+    return new Promise((resolve) => {
+      const img = document.createElement("img");
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxDim = 2048;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              resolve(new File([blob], file.name, { type: file.type || "image/jpeg", lastModified: Date.now() }));
+            } else {
+              resolve(file);
+            }
+          },
+          file.type === "image/png" ? "image/png" : "image/jpeg",
+          0.85
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = url;
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 15 * 1024 * 1024) {
-        alert(`File "${file.name}" exceeds 15MB. Please upload a smaller file.`);
+      if (file.size > 25 * 1024 * 1024) {
+        alert(`File "${file.name}" exceeds 25MB. Please upload a smaller file.`);
         e.target.value = "";
         return;
       }
@@ -73,40 +122,101 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    const data = new FormData();
-    // Common fields
-    Object.entries(formData).forEach(([key, value]) => {
-      data.append(key, value);
-    });
-    
-    // Append files
-    Object.entries(files).forEach(([key, file]) => {
-      if (file) data.append(key, file);
-    });
+    setUploadStatus("Preparing application...");
 
     try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        body: data,
+      // 1. Gather all attached files
+      const activeFiles: Array<{ key: string; file: File }> = [];
+      Object.entries(files).forEach(([key, file]) => {
+        if (file) activeFiles.push({ key, file });
       });
 
-      if (res.ok) {
-        const result = await res.json();
+      const uploadedFilesMeta: Array<{ fileName: string; fileUrl: string; fileType: string }> = [];
+
+      // 2. Direct upload files to Supabase Storage via signed URLs (bypasses Vercel 4.5MB limit)
+      if (activeFiles.length > 0) {
+        for (let i = 0; i < activeFiles.length; i++) {
+          const { file } = activeFiles[i];
+          setUploadStatus(`Uploading document ${i + 1} of ${activeFiles.length}...`);
+
+          const optimizedFile = await optimizeImageIfNeeded(file);
+
+          const signRes = await fetch("/api/leads/upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: optimizedFile.name,
+              fileType: optimizedFile.type || "application/octet-stream",
+            }),
+          });
+
+          if (!signRes.ok) {
+            const signErr = await signRes.json().catch(() => ({}));
+            throw new Error(signErr.error || `Failed to authorize upload for ${file.name}`);
+          }
+
+          const { signedUrl, publicUrl } = await signRes.json();
+
+          // Direct PUT to Supabase Storage
+          const uploadRes = await fetch(signedUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": optimizedFile.type || "application/octet-stream",
+            },
+            body: optimizedFile,
+          });
+
+          if (!uploadRes.ok) {
+            throw new Error(`Direct upload failed for ${file.name}`);
+          }
+
+          uploadedFilesMeta.push({
+            fileName: file.name,
+            fileUrl: publicUrl,
+            fileType: file.type.includes("pdf") ? "pdf" : "image",
+          });
+        }
+      }
+
+      // 3. Submit application text data and file metadata as clean JSON
+      setUploadStatus("Finalizing application...");
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          files: uploadedFilesMeta,
+        }),
+      });
+
+      let result: any = {};
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        result = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Non-JSON response from /api/leads:", res.status, text);
+        if (res.status === 413) {
+          throw new Error("Uploaded files exceeded maximum size. Please try again.");
+        }
+        throw new Error(`Server returned error ${res.status}. Please try again later.`);
+      }
+
+      if (res.ok && result.success) {
         setFormData(prev => ({ ...prev, trackingId: result.trackingId }));
         setSuccess(true);
         setTimeout(() => {
           onClose();
         }, 10000); 
       } else {
-        const errData = await res.json().catch(() => ({}));
-        alert(errData.error || "Something went wrong. Please check your information and try again.");
+        alert(result.error || "Something went wrong. Please check your information and try again.");
       }
     } catch (err: any) {
-      console.error(err);
-      alert(err?.message || "Error submitting form. Please check your internet connection.");
+      console.error("Lead submission error:", err);
+      alert(err?.message || "Error submitting form. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
+      setUploadStatus("");
     }
   };
 
@@ -560,10 +670,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                 <button
                   disabled={loading}
                   type="submit"
-                  className="w-full premium-btn btn-primary !py-4 text-sm font-black uppercase tracking-widest mt-4"
+                  className="w-full premium-btn btn-primary !py-4 text-sm font-black uppercase tracking-widest mt-4 flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <><FiLoader className="animate-spin" /> Processing Application...</>
+                    <><FiLoader className="animate-spin" size={18} /> {uploadStatus || "Processing Application..."}</>
                   ) : (
                     isVisa ? "Submit Full Application" : "Submit Consultation Request"
                   )}

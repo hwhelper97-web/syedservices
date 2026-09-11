@@ -32,24 +32,62 @@ export default function PakistanVisaForm() {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      const data = new FormData();
 
-      data.append("name", form.fullName || "Applicant");
-      data.append("email", form.email || "");
-      data.append("phone", form.mobile || form.whatsapp || "");
-      data.append("service", "Pakistan Visa");
-      data.append("country", form.nationality || "Pakistan");
-      data.append("fatherName", form.fatherName || "");
-      data.append("motherName", form.motherName || "");
-      data.append("message", `Mobile: ${form.mobile || 'N/A'}, WhatsApp: ${form.whatsapp || 'N/A'}`);
-
-      Object.keys(files).forEach(key => {
-        if (files[key]) data.append(key, files[key]);
+      const activeFiles: File[] = [];
+      Object.keys(files).forEach((key) => {
+        if (files[key]) activeFiles.push(files[key]);
       });
+
+      const uploadedFilesMeta: Array<{ fileName: string; fileUrl: string; fileType: string }> = [];
+
+      for (const file of activeFiles) {
+        try {
+          const signRes = await fetch("/api/leads/upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileType: file.type || "application/octet-stream",
+            }),
+          });
+
+          if (signRes.ok) {
+            const { signedUrl, publicUrl } = await signRes.json();
+            const uploadRes = await fetch(signedUrl, {
+              method: "PUT",
+              headers: { "Content-Type": file.type || "application/octet-stream" },
+              body: file,
+            });
+
+            if (uploadRes.ok) {
+              uploadedFilesMeta.push({
+                fileName: file.name,
+                fileUrl: publicUrl,
+                fileType: file.type.includes("pdf") ? "pdf" : "image",
+              });
+            }
+          }
+        } catch (fErr) {
+          console.error("File upload error:", fErr);
+        }
+      }
+
+      const payload = {
+        name: form.fullName || "Applicant",
+        email: form.email || "",
+        phone: form.mobile || form.whatsapp || "",
+        service: "Pakistan Visa",
+        country: form.nationality || "Pakistan",
+        fatherName: form.fatherName || "",
+        motherName: form.motherName || "",
+        message: `Mobile: ${form.mobile || 'N/A'}, WhatsApp: ${form.whatsapp || 'N/A'}`,
+        files: uploadedFilesMeta,
+      };
 
       const res = await fetch("/api/leads", {
         method: "POST",
-        body: data,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -59,9 +97,9 @@ export default function PakistanVisaForm() {
         const errData = await res.json().catch(() => ({}));
         alert(errData.error || "Failed to submit visa application. Please check your details and try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Submission error:", err);
-      alert("Network error. Please try again.");
+      alert(err?.message || "Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
