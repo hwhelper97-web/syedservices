@@ -9,6 +9,7 @@ import {
   FiPlus, FiEdit3, FiTrash2, FiSearch, FiRefreshCw, 
   FiCopy, FiEye, FiCalendar, FiCreditCard, FiAlertTriangle, FiArrowUpRight
 } from "react-icons/fi";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 export default function AdminPaymentsPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -721,11 +722,12 @@ export default function AdminPaymentsPage() {
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                     Settlement Due Date
                   </label>
-                  <input
-                    type="date"
+                  <CustomDatePicker
                     value={editForm.dueDate}
-                    onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-white focus:border-yellow-400/60 focus:outline-none"
+                    onChange={(val) => setEditForm({ ...editForm, dueDate: val })}
+                    placeholder="Select Due Date"
+                    minYear={new Date().getFullYear() - 1}
+                    maxYear={new Date().getFullYear() + 5}
                   />
                 </div>
 
@@ -819,11 +821,12 @@ export default function AdminPaymentsPage() {
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                     Payment Due Date
                   </label>
-                  <input
-                    type="date"
+                  <CustomDatePicker
                     value={createForm.dueDate}
-                    onChange={(e) => setCreateForm({ ...createForm, dueDate: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-white focus:border-yellow-400/60 focus:outline-none"
+                    onChange={(val) => setCreateForm({ ...createForm, dueDate: val })}
+                    placeholder="Select Due Date"
+                    minYear={new Date().getFullYear()}
+                    maxYear={new Date().getFullYear() + 5}
                   />
                 </div>
 

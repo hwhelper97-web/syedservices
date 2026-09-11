@@ -157,7 +157,7 @@ export default function ClientDocumentsPage() {
             >
               <div className="flex items-start gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0 ${
-                  fileRecord ? "bg-green-500/10 border-green-500/20 text-green-500" : "bg-slate-900 border-slate-850 text-slate-500"
+                  fileRecord ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-yellow-400/10 border-yellow-400/30 text-yellow-400"
                 }`}>
                   {fileRecord ? <FiCheckCircle size={22} /> : <FiFileText size={22} />}
                 </div>

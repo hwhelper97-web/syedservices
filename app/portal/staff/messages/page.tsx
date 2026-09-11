@@ -171,10 +171,12 @@ export default function StaffMessagesPage() {
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
-                  <FiMessageSquare className="text-slate-600 text-4xl" />
+                  <div className="w-14 h-14 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center mx-auto text-2xl mb-1">
+                    <FiMessageSquare />
+                  </div>
                   <div>
                     <h5 className="text-white font-bold text-sm">No messages yet</h5>
-                    <p className="text-xs text-slate-500 max-w-xs mt-1">
+                    <p className="text-xs text-slate-400 max-w-xs mt-1">
                       Send a message to start chatting with {selectedClient.name}.
                     </p>
                   </div>
@@ -232,12 +234,12 @@ export default function StaffMessagesPage() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-4">
-            <div className="w-16 h-16 bg-slate-900 border border-slate-800 text-slate-600 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-full flex items-center justify-center shadow-lg shadow-yellow-400/5">
               <FiMessageSquare size={26} />
             </div>
             <div>
               <h4 className="text-white font-bold">Select a Client</h4>
-              <p className="text-xs text-slate-500 max-w-xs mt-1">
+              <p className="text-xs text-slate-400 max-w-xs mt-1">
                 Choose a client from the sidebar to view and send messages.
               </p>
             </div>

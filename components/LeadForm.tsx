@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiUpload, FiCheckCircle, FiLoader, FiGlobe } from "react-icons/fi";
+import { FiX, FiUpload, FiCheckCircle, FiLoader, FiGlobe, FiCalendar } from "react-icons/fi";
 import { countries } from "@/utils/countries";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 const services = [
   "Visa Services",
@@ -165,26 +166,28 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                 
                 {/* Basic Section */}
                 <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Primary Contact Information</h3>
+                  <h3 className="text-xs font-black text-yellow-400 uppercase tracking-[0.2em] border-b border-slate-800 pb-2">
+                    Primary Contact Information
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Full Name *</label>
                       <input
                         required
                         type="text"
                         placeholder="Full name as per passport"
-                        className="w-full text-sm py-2"
+                        className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email Address *</label>
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Email Address *</label>
                       <input
                         required
                         type="email"
                         placeholder="your@email.com"
-                        className="w-full text-sm py-2"
+                        className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
@@ -193,21 +196,21 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Phone Number *</label>
                       <input
                         required
                         type="tel"
                         placeholder="+92 300 1234567"
-                        className="w-full text-sm py-2"
+                        className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Interested Service *</label>
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Interested Service *</label>
                       <select
                         required
-                        className="w-full text-sm py-2"
+                        className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                         value={formData.service}
                         onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                       >
@@ -231,10 +234,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                       {/* Visa Category & Country */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Visa Category *</label>
+                          <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Visa Category *</label>
                           <select
                             required
-                            className="w-full text-sm py-2"
+                            className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                             value={formData.visaCategory}
                             onChange={(e) => setFormData({ ...formData, visaCategory: e.target.value })}
                           >
@@ -244,10 +247,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current Nationality *</label>
+                          <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Current Nationality *</label>
                           <select
                             required
-                            className="w-full text-sm py-2"
+                            className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                             value={formData.country}
                             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                           >
@@ -261,25 +264,28 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
 
                       {/* Personal Details */}
                       <div className="space-y-4">
-                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Personal & Family Details</h3>
+                        <h3 className="text-xs font-black text-yellow-400 uppercase tracking-[0.2em] border-b border-slate-800 pb-2">
+                          Personal & Family Details
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date of Birth *</label>
-                            <input
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Date of Birth *</label>
+                            <CustomDatePicker
                               required={isVisa}
-                              type="date"
-                              className="w-full text-sm py-2"
                               value={formData.dob}
-                              onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                              onChange={(val) => setFormData({ ...formData, dob: val })}
+                              placeholder="Select Date of Birth"
+                              minYear={1930}
+                              maxYear={new Date().getFullYear()}
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Father's Name *</label>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Father's Name *</label>
                             <input
                               required={isVisa}
                               type="text"
                               placeholder="Full Name"
-                              className="w-full text-sm py-2"
+                              className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                               value={formData.fatherName}
                               onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
                             />
@@ -287,21 +293,21 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mother's Name *</label>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Mother's Name *</label>
                             <input
                               required={isVisa}
                               type="text"
                               placeholder="Full Name"
-                              className="w-full text-sm py-2"
+                              className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                               value={formData.motherName}
                               onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Marital Status *</label>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Marital Status *</label>
                             <select
                               required={isVisa}
-                              className="w-full text-sm py-2"
+                              className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                               value={formData.maritalStatus}
                               onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })}
                             >
@@ -313,12 +319,12 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                           </div>
                           {formData.maritalStatus === "Married" && (
                             <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Spouse Name *</label>
+                              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Spouse Name *</label>
                               <input
                                 required={isVisa && formData.maritalStatus === "Married"}
                                 type="text"
                                 placeholder="Full Name"
-                                className="w-full text-sm py-2"
+                                className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                                 value={formData.spouseName}
                                 onChange={(e) => setFormData({ ...formData, spouseName: e.target.value })}
                               />
@@ -329,27 +335,30 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
 
                       {/* Passport Details */}
                       <div className="space-y-4">
-                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Passport Information</h3>
+                        <h3 className="text-xs font-black text-yellow-400 uppercase tracking-[0.2em] border-b border-slate-800 pb-2">
+                          Passport Information
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Passport Number *</label>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Passport Number *</label>
                             <input
                               required={isVisa}
                               type="text"
                               placeholder="Passport No"
-                              className="w-full text-sm py-2"
+                              className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                               value={formData.passportNumber}
                               onChange={(e) => setFormData({ ...formData, passportNumber: e.target.value })}
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Passport Expiry *</label>
-                            <input
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Passport Expiry *</label>
+                            <CustomDatePicker
                               required={isVisa}
-                              type="date"
-                              className="w-full text-sm py-2"
                               value={formData.passportExpiry}
-                              onChange={(e) => setFormData({ ...formData, passportExpiry: e.target.value })}
+                              onChange={(val) => setFormData({ ...formData, passportExpiry: val })}
+                              placeholder="Select Expiry Date"
+                              minYear={new Date().getFullYear() - 2}
+                              maxYear={new Date().getFullYear() + 25}
                             />
                           </div>
                         </div>
@@ -357,22 +366,44 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
 
                       {/* Document Uploads for Visa */}
                       <div className="space-y-4">
-                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Required Document Scans</h3>
+                        <h3 className="text-xs font-black text-yellow-400 uppercase tracking-[0.2em] border-b border-slate-800 pb-2">
+                          Required Document Scans
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {[
-                            { id: 'passport', label: 'Passport Scan *', icon: <FiGlobe /> },
-                            { id: 'photo', label: 'Recent Photograph *', icon: <FiUpload /> },
-                            { id: 'license', label: 'Driving License / Local ID *', icon: <FiUpload /> },
-                            { id: 'bankStatement', label: 'Bank Statement (1-3 Months) *', icon: <FiUpload /> },
+                            { id: 'passport', label: 'Passport Scan *', icon: <FiGlobe size={18} /> },
+                            { id: 'photo', label: 'Recent Photograph *', icon: <FiUpload size={18} /> },
+                            { id: 'license', label: 'Driving License / Local ID *', icon: <FiUpload size={18} /> },
+                            { id: 'bankStatement', label: 'Bank Statement (1-3 Months) *', icon: <FiUpload size={18} /> },
                           ].map((doc) => (
-                            <div key={doc.id} className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{doc.label}</label>
+                            <div key={doc.id} className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{doc.label}</label>
                               <div className="relative group">
-                                <div className={`border border-dashed ${files[doc.id] ? 'border-green-500 bg-green-500/5' : 'border-slate-700 bg-slate-900/50'} rounded-xl p-3 flex items-center gap-3 transition-colors`}>
-                                  <div className={`shrink-0 ${files[doc.id] ? 'text-green-500' : 'text-slate-500'}`}>{doc.icon}</div>
-                                  <p className="text-[10px] text-slate-400 truncate">
-                                    {files[doc.id] ? (files[doc.id] as File).name : "Upload Scan"}
-                                  </p>
+                                <div className={`border-2 border-dashed ${files[doc.id] ? 'border-green-500 bg-green-500/10' : 'border-slate-750 hover:border-yellow-400/60 bg-slate-950/70 hover:bg-slate-900/80'} rounded-2xl p-3.5 flex items-center justify-between gap-3 transition-all duration-200 cursor-pointer shadow-md`}>
+                                  <div className="flex items-center gap-3 truncate">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                                      files[doc.id] 
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/40' 
+                                        : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/30'
+                                    }`}>
+                                      {files[doc.id] ? <FiCheckCircle size={18} /> : doc.icon}
+                                    </div>
+                                    <div className="truncate">
+                                      <p className={`text-xs font-bold truncate ${files[doc.id] ? 'text-green-400' : 'text-slate-200'}`}>
+                                        {files[doc.id] ? (files[doc.id] as File).name : "Select File"}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    </div>
+                                  </div>
+
+                                  <span className={`shrink-0 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors ${
+                                    files[doc.id]
+                                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                      : 'bg-yellow-400 text-black shadow-md shadow-yellow-400/20 group-hover:bg-yellow-300'
+                                  }`}>
+                                    {files[doc.id] ? "Change" : "Browse"}
+                                  </span>
+
                                   <input
                                     required={isVisa}
                                     type="file"
@@ -387,10 +418,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                         </div>
 
                         {/* Invitation Letter Section */}
-                        <div className="space-y-4 pt-4 border-t border-white/5">
+                        <div className="space-y-4 pt-4 border-t border-slate-800">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invitation Letter from Pakistan</h4>
+                              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Invitation Letter from Pakistan</h4>
                               <p className="text-[10px] text-slate-400">Do you have an invitation letter? If not, we can provide one.</p>
                             </div>
                             <div className="flex gap-4">
@@ -404,21 +435,41 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                                     onChange={(e) => setFormData({ ...formData, hasInvitation: e.target.value })}
                                     className="accent-yellow-400"
                                   />
-                                  <span className="text-xs text-slate-300">{opt === 'Yes' ? 'I Have It' : 'I Need One'}</span>
+                                  <span className="text-xs font-semibold text-slate-300">{opt === 'Yes' ? 'I Have It' : 'I Need One'}</span>
                                 </label>
                               ))}
                             </div>
                           </div>
 
                           {formData.hasInvitation === 'Yes' ? (
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Invitation Letter *</label>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Upload Invitation Letter *</label>
                               <div className="relative group">
-                                <div className={`border border-dashed ${files.invitationLetter ? 'border-green-500 bg-green-500/5' : 'border-slate-700 bg-slate-900/50'} rounded-xl p-3 flex items-center gap-3 transition-colors`}>
-                                  <div className={`shrink-0 ${files.invitationLetter ? 'text-green-500' : 'text-slate-500'}`}><FiUpload /></div>
-                                  <p className="text-[10px] text-slate-400 truncate">
-                                    {files.invitationLetter ? (files.invitationLetter as File).name : "Upload Invitation Letter"}
-                                  </p>
+                                <div className={`border-2 border-dashed ${files.invitationLetter ? 'border-green-500 bg-green-500/10' : 'border-slate-750 hover:border-yellow-400/60 bg-slate-950/70 hover:bg-slate-900/80'} rounded-2xl p-3.5 flex items-center justify-between gap-3 transition-all duration-200 cursor-pointer shadow-md`}>
+                                  <div className="flex items-center gap-3 truncate">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                                      files.invitationLetter 
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/40' 
+                                        : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/30'
+                                    }`}>
+                                      {files.invitationLetter ? <FiCheckCircle size={18} /> : <FiUpload size={18} />}
+                                    </div>
+                                    <div className="truncate">
+                                      <p className={`text-xs font-bold truncate ${files.invitationLetter ? 'text-green-400' : 'text-slate-200'}`}>
+                                        {files.invitationLetter ? (files.invitationLetter as File).name : "Select Invitation Letter"}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500">PDF, JPG, PNG</p>
+                                    </div>
+                                  </div>
+
+                                  <span className={`shrink-0 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors ${
+                                    files.invitationLetter
+                                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                      : 'bg-yellow-400 text-black shadow-md shadow-yellow-400/20 group-hover:bg-yellow-300'
+                                  }`}>
+                                    {files.invitationLetter ? "Change" : "Browse"}
+                                  </span>
+
                                   <input
                                     required={isVisa && formData.hasInvitation === 'Yes'}
                                     type="file"
@@ -430,9 +481,9 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                               </div>
                             </div>
                           ) : (
-                            <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-xl p-4">
-                              <p className="text-[10px] text-yellow-400/80 leading-relaxed">
-                                <strong>Note:</strong> Since you don't have an invitation letter, our team will process and provide a legal invitation letter for your visa application as part of our service.
+                            <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-2xl p-4">
+                              <p className="text-xs text-yellow-400/90 leading-relaxed">
+                                <strong className="text-yellow-400 font-bold">Official Guarantee:</strong> Since you don't have an invitation letter, our legal team will sponsor and process a registered invitation letter for your visa application as part of our comprehensive service.
                               </p>
                             </div>
                           )}
@@ -446,10 +497,10 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nationality *</label>
+                        <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Nationality *</label>
                         <select
                           required
-                          className="w-full text-sm py-2"
+                          className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                           value={formData.country}
                           onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                         >
@@ -465,22 +516,25 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Message</label>
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Message</label>
                       <textarea
                         rows={3}
                         placeholder="Tell us about your requirements..."
-                        className="w-full text-sm py-2"
+                        className="w-full text-sm py-2.5 bg-slate-950/80 border-slate-800 rounded-xl focus:border-yellow-400/70"
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attach Documents (Optional)</label>
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Attach Documents (Optional)</label>
                       <div className="relative group">
-                        <div className="border border-dashed border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-colors group-hover:border-yellow-400/50 bg-slate-900/50">
-                          <FiUpload className="text-slate-500 mb-1 group-hover:text-yellow-400" size={20} />
-                          <p className="text-[10px] text-slate-400">Drag or click to upload</p>
+                        <div className="border-2 border-dashed border-slate-750 hover:border-yellow-400/60 rounded-2xl p-5 flex flex-col items-center justify-center transition-all bg-slate-950/70 hover:bg-slate-900/80 cursor-pointer shadow-md">
+                          <div className="w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400 mb-2 group-hover:scale-110 transition-transform">
+                            <FiUpload size={20} />
+                          </div>
+                          <p className="text-xs font-bold text-white">Drag or click to upload</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">PDF, JPG, PNG (Max 15MB)</p>
                           <input
                             type="file"
                             multiple
@@ -495,7 +549,9 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
                         </div>
                       </div>
                       {files.others && (
-                        <p className="text-[10px] text-green-500 mt-1">{(files.others as File).name} selected</p>
+                        <p className="text-xs font-bold text-green-400 mt-1.5 flex items-center gap-1.5">
+                          <FiCheckCircle size={14} /> {(files.others as File).name} selected
+                        </p>
                       )}
                     </div>
                   </>

@@ -91,9 +91,11 @@ export default function StaffTasksPage() {
       {/* Tasks */}
       {filtered.length === 0 ? (
         <div className="bg-[#0f172a]/50 border border-slate-800 border-dashed p-16 rounded-[2.5rem] text-center space-y-3">
-          <FiCheckCircle className="text-slate-600 text-4xl mx-auto" />
+          <div className="w-16 h-16 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center mx-auto text-2xl mb-2">
+            <FiCheckCircle />
+          </div>
           <h4 className="text-white font-bold">No Tasks Found</h4>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             {filter === "ALL" ? "No tasks have been assigned to you yet." : `No tasks with status: ${filter}.`}
           </p>
         </div>

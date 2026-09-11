@@ -9,6 +9,7 @@ import {
   FiAlertCircle
 } from "react-icons/fi";
 import Link from "next/link";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 function AgentNewApplicationForm() {
   const router = useRouter();
@@ -322,13 +323,14 @@ function AgentNewApplicationForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Date of Birth</label>
-              <input
-                type="date"
+              <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Date of Birth *</label>
+              <CustomDatePicker
                 value={dob}
-                onChange={(e) => setDob(e.target.value)}
+                onChange={(val) => setDob(val)}
+                placeholder="Select Date of Birth"
                 required
-                className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 focus:outline-none text-white"
+                minYear={1930}
+                maxYear={new Date().getFullYear()}
               />
             </div>
             <div>
@@ -536,7 +538,7 @@ function AgentNewApplicationForm() {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-slate-950 text-slate-400 rounded-2xl">
+                  <div className="p-3.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-2xl">
                     <FiBookOpen size={28} />
                   </div>
                 )}
@@ -552,7 +554,7 @@ function AgentNewApplicationForm() {
                   setPassportFile(file);
                   setPassportPreview(file ? URL.createObjectURL(file) : "");
                 }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-850 file:text-[10px] file:font-bold file:bg-slate-950 file:text-slate-300 hover:file:bg-slate-900 hover:file:text-white transition-colors cursor-pointer text-left"
+                className="w-full text-xs text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-yellow-400/30 file:text-[10px] file:font-bold file:bg-yellow-400/10 file:text-yellow-400 hover:file:bg-yellow-400 hover:file:text-black transition-colors cursor-pointer text-left"
               />
             </div>
 
@@ -578,7 +580,7 @@ function AgentNewApplicationForm() {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-slate-950 text-slate-400 rounded-2xl">
+                  <div className="p-3.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-2xl">
                     <FiCreditCard size={28} />
                   </div>
                 )}
@@ -594,7 +596,7 @@ function AgentNewApplicationForm() {
                   setIdCardFile(file);
                   setIdCardPreview(file ? URL.createObjectURL(file) : "");
                 }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-850 file:text-[10px] file:font-bold file:bg-slate-950 file:text-slate-300 hover:file:bg-slate-900 hover:file:text-white transition-colors cursor-pointer text-left"
+                className="w-full text-xs text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-yellow-400/30 file:text-[10px] file:font-bold file:bg-yellow-400/10 file:text-yellow-400 hover:file:bg-yellow-400 hover:file:text-black transition-colors cursor-pointer text-left"
               />
             </div>
 
@@ -620,7 +622,7 @@ function AgentNewApplicationForm() {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-slate-950 text-slate-400 rounded-2xl">
+                  <div className="p-3.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-2xl">
                     <FiUser size={28} />
                   </div>
                 )}
@@ -636,7 +638,7 @@ function AgentNewApplicationForm() {
                   setPictureFile(file);
                   setPicturePreview(file ? URL.createObjectURL(file) : "");
                 }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-850 file:text-[10px] file:font-bold file:bg-slate-950 file:text-slate-300 hover:file:bg-slate-900 hover:file:text-white transition-colors cursor-pointer text-left"
+                className="w-full text-xs text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-yellow-400/30 file:text-[10px] file:font-bold file:bg-yellow-400/10 file:text-yellow-400 hover:file:bg-yellow-400 hover:file:text-black transition-colors cursor-pointer text-left"
               />
             </div>
 
@@ -662,7 +664,7 @@ function AgentNewApplicationForm() {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-slate-950 text-slate-400 rounded-2xl">
+                  <div className="p-3.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-2xl">
                     <FiShield size={28} />
                   </div>
                 )}
@@ -678,7 +680,7 @@ function AgentNewApplicationForm() {
                   setNonCriminalFile(file);
                   setNonCriminalPreview(file ? URL.createObjectURL(file) : "");
                 }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-850 file:text-[10px] file:font-bold file:bg-slate-950 file:text-slate-300 hover:file:bg-slate-900 hover:file:text-white transition-colors cursor-pointer text-left"
+                className="w-full text-xs text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-yellow-400/30 file:text-[10px] file:font-bold file:bg-yellow-400/10 file:text-yellow-400 hover:file:bg-yellow-400 hover:file:text-black transition-colors cursor-pointer text-left"
               />
             </div>
 
@@ -704,7 +706,7 @@ function AgentNewApplicationForm() {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-slate-950 text-slate-400 rounded-2xl">
+                  <div className="p-3.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-2xl">
                     <FiCompass size={28} />
                   </div>
                 )}
@@ -719,7 +721,7 @@ function AgentNewApplicationForm() {
                   setPrevVisaFile(file);
                   setPrevVisaPreview(file ? URL.createObjectURL(file) : "");
                 }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-850 file:text-[10px] file:font-bold file:bg-slate-950 file:text-slate-300 hover:file:bg-slate-900 hover:file:text-white transition-colors cursor-pointer text-left"
+                className="w-full text-xs text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-yellow-400/30 file:text-[10px] file:font-bold file:bg-yellow-400/10 file:text-yellow-400 hover:file:bg-yellow-400 hover:file:text-black transition-colors cursor-pointer text-left"
               />
             </div>
 
@@ -782,8 +784,8 @@ function AgentNewApplicationForm() {
                       />
                     </div>
                   ) : (
-                    <div className="w-12 h-12 rounded-xl border border-dashed border-slate-800 flex items-center justify-center text-slate-600">
-                      <FiPaperclip size={14} />
+                    <div className="w-12 h-12 rounded-xl border border-dashed border-yellow-400/40 bg-yellow-400/10 flex items-center justify-center text-yellow-400">
+                      <FiPaperclip size={16} />
                     </div>
                   )}
                 </div>

@@ -396,13 +396,13 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
                       </a>
 
                       <div className="pt-2 border-t border-slate-800 mt-2">
-                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Attach Result (PDF)</label>
+                        <label className="text-[10px] text-slate-300 uppercase font-bold mb-2 block">Attach Result (PDF)</label>
                         <div className="relative group">
-                           <div className={`flex items-center justify-between p-3 bg-slate-900 border rounded-lg transition-all ${attachment ? 'border-yellow-400 bg-yellow-400/5' : 'border-slate-800'}`}>
-                              <span className="text-[10px] truncate pr-2 text-slate-400">
+                           <div className={`flex items-center justify-between p-3 bg-slate-900 border rounded-lg transition-all ${attachment ? 'border-yellow-400 bg-yellow-400/10' : 'border-slate-800 hover:border-yellow-400/50'}`}>
+                              <span className={`text-xs truncate pr-2 ${attachment ? 'text-yellow-400 font-bold' : 'text-slate-300'}`}>
                                 {attachment ? `✓ ${attachment.name}` : "Upload Visa/Permit PDF"}
                               </span>
-                              <FiDownload className="text-slate-600 group-hover:text-yellow-400 transition-colors" />
+                              <FiDownload className="text-yellow-400 group-hover:text-yellow-300 transition-colors text-base shrink-0" />
                               <input 
                                 type="file" 
                                 accept=".pdf"

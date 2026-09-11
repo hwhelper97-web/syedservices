@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiPhone, FiMail, FiMapPin, FiGlobe, FiAward, FiUser, FiChevronRight } from "react-icons/fi";
 import Image from "next/image";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 export default function TicketingPage() {
   const [formData, setFormData] = useState({
@@ -130,21 +131,21 @@ export default function TicketingPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Departure City</label>
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1">Departure City</label>
                     <input 
                       type="text" 
                       placeholder="e.g. Islamabad" 
-                      className="w-full bg-[#020617] border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none" 
+                      className="w-full bg-[#020617] border border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none text-white placeholder:text-slate-500" 
                       value={formData.departure}
                       onChange={(e) => setFormData({ ...formData, departure: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Destination City</label>
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1">Destination City</label>
                     <input 
                       type="text" 
                       placeholder="e.g. Dubai" 
-                      className="w-full bg-[#020617] border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none" 
+                      className="w-full bg-[#020617] border border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none text-white placeholder:text-slate-500" 
                       value={formData.destination}
                       onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                     />
@@ -152,21 +153,22 @@ export default function TicketingPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Travel Date</label>
-                  <input 
-                    type="date" 
-                    className="w-full bg-[#020617] border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none text-slate-400" 
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1">Travel Date</label>
+                  <CustomDatePicker
                     value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, date: val })}
+                    placeholder="Select Travel Date"
+                    minYear={new Date().getFullYear()}
+                    maxYear={new Date().getFullYear() + 5}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1">Phone Number</label>
                   <input 
                     type="tel" 
                     placeholder="+92 3XX XXXXXXX" 
-                    className="w-full bg-[#020617] border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none" 
+                    className="w-full bg-[#020617] border border-slate-800 rounded-2xl px-5 py-4 focus:border-yellow-400/50 transition-all outline-none text-white placeholder:text-slate-500" 
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />

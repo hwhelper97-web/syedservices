@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { FiCalendar, FiClock, FiCheckCircle, FiAlertCircle, FiLoader, FiPlusCircle } from "react-icons/fi";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 const TIME_SLOTS = [
   "10:00 AM - 11:00 AM",
@@ -94,14 +95,14 @@ export default function ClientAppointmentsPage() {
 
             <form onSubmit={handleBook} className="space-y-4">
               <div>
-                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Preferred Date</label>
-                <input
-                  type="date"
+                <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Preferred Date *</label>
+                <CustomDatePicker
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(val) => setDate(val)}
+                  placeholder="Select Appointment Date"
                   required
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 focus:outline-none"
+                  minYear={new Date().getFullYear()}
+                  maxYear={new Date().getFullYear() + 2}
                 />
               </div>
 

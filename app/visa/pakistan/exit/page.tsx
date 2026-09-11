@@ -294,10 +294,10 @@ export default function ExitPermitPage() {
                               <label className="text-xs text-slate-400 block ml-1">{doc.label} *</label>
                               <div className="relative group">
                                 <div className={`flex items-center justify-between p-4 bg-slate-900/80 border rounded-xl group-hover:border-yellow-400/50 transition-all ${selectedFiles[doc.id] ? 'border-green-500/50 bg-green-500/5' : 'border-slate-800'}`}>
-                                  <span className={`text-xs truncate pr-4 ${selectedFiles[doc.id] ? 'text-green-400 font-bold' : 'text-slate-500'}`}>
+                                  <span className={`text-xs truncate pr-4 ${selectedFiles[doc.id] ? 'text-green-400 font-bold' : 'text-slate-300'}`}>
                                     {selectedFiles[doc.id] ? `✓ ${selectedFiles[doc.id].name}` : "Select file (PDF or JPG)"}
                                   </span>
-                                  <FiUploadCloud className={`${selectedFiles[doc.id] ? 'text-green-400' : 'text-slate-600'} group-hover:text-yellow-400 transition-colors shrink-0`} />
+                                  <FiUploadCloud className={`${selectedFiles[doc.id] ? 'text-green-400' : 'text-yellow-400'} group-hover:text-yellow-300 transition-colors shrink-0 text-lg`} />
                                    <input 
                                      type="file" 
                                      accept=".pdf,.jpg,.jpeg"
@@ -309,9 +309,9 @@ export default function ExitPermitPage() {
                             </div>
                           ))}
                        </div>
-                       <p className="text-[10px] text-slate-600 mt-6 italic bg-yellow-400/5 p-3 rounded-lg border border-yellow-400/10">
-                         <FiAlertCircle className="inline mr-1" />
-                         Documents must be clear and readable. Total file size should not exceed 10MB.
+                       <p className="text-xs text-yellow-400/90 mt-6 bg-yellow-400/10 p-3.5 rounded-xl border border-yellow-400/20 flex items-center gap-2">
+                         <FiAlertCircle className="shrink-0 text-base" />
+                         <span>Documents must be clear and readable. Total file size should not exceed 10MB.</span>
                        </p>
                     </div>
 

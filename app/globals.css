@@ -9,6 +9,7 @@
   --text-muted: #94a3b8;
   --accent: #3b82f6;
   --success: #10b981;
+  color-scheme: dark;
 }
 
 /* Base Styling */
@@ -16,6 +17,7 @@ body {
   background: radial-gradient(circle at top, #0f172a, #020617);
   color: var(--text-main);
   min-height: 100vh;
+  color-scheme: dark;
 }
 
 /* Premium Components */
@@ -83,6 +85,28 @@ body {
    so that icon inputs (pl-12) are never overridden by this global rule. */
 input, select, textarea {
   @apply w-full bg-slate-900/50 border border-slate-700 rounded-lg py-3 text-white focus:outline-none focus:border-yellow-400/50 transition-colors;
+  color-scheme: dark;
+}
+
+/* Make native calendar icons bright, visible, and golden on dark theme */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) sepia(100%) saturate(600%) hue-rotate(5deg) brightness(1.25);
+  cursor: pointer;
+  opacity: 0.95;
+  padding: 4px;
+  border-radius: 6px;
+  background-color: rgba(250, 204, 21, 0.12);
+  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.18);
+  background-color: rgba(250, 204, 21, 0.25);
 }
 
 /* Default horizontal padding for inputs WITHOUT icons */

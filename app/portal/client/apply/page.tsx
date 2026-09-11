@@ -7,6 +7,7 @@ import {
   FiUser, FiFileText, FiBookOpen, FiGlobe, 
   FiArrowRight, FiArrowLeft, FiCheckCircle, FiLoader 
 } from "react-icons/fi";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 const STEPS = [
   { id: 1, name: "Personal & Passport", icon: <FiUser size={18} /> },
@@ -168,16 +169,17 @@ export default function VisaApplyPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">DOB *</label>
-                  <input
-                    type="date"
+                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">DOB *</label>
+                  <CustomDatePicker
                     value={formData.dob}
-                    onChange={(e) => updateField("dob", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 focus:outline-none"
+                    onChange={(val) => updateField("dob", val)}
+                    placeholder="Select Date of Birth"
+                    minYear={1930}
+                    maxYear={new Date().getFullYear()}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Gender</label>
+                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Gender</label>
                   <select
                     value={formData.gender}
                     onChange={(e) => updateField("gender", e.target.value)}
@@ -189,7 +191,7 @@ export default function VisaApplyPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Phone Number *</label>
+                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Phone Number *</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -202,7 +204,7 @@ export default function VisaApplyPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Passport Number *</label>
+                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Passport Number *</label>
                   <input
                     type="text"
                     value={formData.passportNumber}
@@ -212,12 +214,13 @@ export default function VisaApplyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Expiry Date *</label>
-                  <input
-                    type="date"
+                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Expiry Date *</label>
+                  <CustomDatePicker
                     value={formData.passportExpiryDate}
-                    onChange={(e) => updateField("passportExpiryDate", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 focus:outline-none"
+                    onChange={(val) => updateField("passportExpiryDate", val)}
+                    placeholder="Select Expiry Date"
+                    minYear={new Date().getFullYear() - 2}
+                    maxYear={new Date().getFullYear() + 25}
                   />
                 </div>
               </div>
@@ -297,12 +300,13 @@ export default function VisaApplyPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Planned Travel Date</label>
-                  <input
-                    type="date"
+                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">Planned Travel Date</label>
+                  <CustomDatePicker
                     value={formData.travelDate}
-                    onChange={(e) => updateField("travelDate", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50"
+                    onChange={(val) => updateField("travelDate", val)}
+                    placeholder="Select Travel Date"
+                    minYear={new Date().getFullYear()}
+                    maxYear={new Date().getFullYear() + 5}
                   />
                 </div>
               </div>
