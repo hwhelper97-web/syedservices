@@ -91,8 +91,8 @@ export default function AdminPaymentsPage() {
                 return (
                   <tr key={inv.id} className="hover:bg-slate-900/20 transition-colors">
                     <td className="p-5 font-bold text-white font-mono text-xs">{inv.invoiceNumber}</td>
-                    <td className="p-5 font-bold text-white">{inv.application.client.user.name}</td>
-                    <td className="p-5">{inv.application.visaCategory}</td>
+                    <td className="p-5 font-bold text-white">{inv.application?.client?.user?.name || "Client"}</td>
+                    <td className="p-5">{inv.application?.visaCategory || "General"}</td>
                     <td className="p-5 font-black text-white">${inv.totalAmount}</td>
                     <td className="p-5">
                       {manualPayment?.receiptUrl ? (

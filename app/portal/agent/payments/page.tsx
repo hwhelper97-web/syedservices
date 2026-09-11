@@ -102,9 +102,9 @@ export default function AgentPaymentsPage() {
             <tbody className="divide-y divide-slate-800/40">
               {approvedApps.map((app) => (
                 <tr key={app.id} className="hover:bg-slate-900/20 transition-colors">
-                  <td className="p-5 font-bold text-white">{app.client.user.name}</td>
-                  <td className="p-5">{app.country}</td>
-                  <td className="p-5">{app.visaCategory}</td>
+                  <td className="p-5 font-bold text-white">{app.client?.user?.name || "Client"}</td>
+                  <td className="p-5">{app.country || "N/A"}</td>
+                  <td className="p-5">{app.visaCategory || "N/A"}</td>
                   <td className="p-5 font-bold text-white">$150.00</td>
                   <td className="p-5 text-xs">
                     {new Date(app.updatedAt).toLocaleDateString()}

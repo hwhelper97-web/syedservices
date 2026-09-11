@@ -175,10 +175,10 @@ export default async function AgentDashboard() {
                 <tbody className="divide-y divide-slate-800/40">
                   {applications.map((app) => (
                     <tr key={app.id} className="hover:bg-slate-900/20 transition-colors">
-                      <td className="p-5 font-bold text-white">{app.client.user.name}</td>
-                      <td className="p-5">{app.country}</td>
-                      <td className="p-5">{app.visaCategory}</td>
-                      <td className="p-5 text-slate-500 text-xs font-mono">{app.trackingId}</td>
+                      <td className="p-5 font-bold text-white">{app.client?.user?.name || "Applicant"}</td>
+                      <td className="p-5">{app.country || "N/A"}</td>
+                      <td className="p-5">{app.visaCategory || "N/A"}</td>
+                      <td className="p-5 text-slate-500 text-xs font-mono">{app.trackingId || "—"}</td>
                       <td className="p-5">
                         <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
                           app.status === "APPROVED" ? "bg-green-500/10 text-green-400" :

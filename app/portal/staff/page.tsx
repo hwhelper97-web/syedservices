@@ -94,8 +94,8 @@ export default async function StaffDashboard() {
               {pendingApps.map((app) => (
                 <div key={app.id} className="bg-[#0f172a] border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
                   <div>
-                    <h4 className="font-bold text-white text-sm">{app.client.user.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{app.country} — {app.visaCategory}</p>
+                    <h4 className="font-bold text-white text-sm">{app.client?.user?.name || "Client"}</h4>
+                    <p className="text-xs text-slate-500 mt-1">{app.country || "N/A"} — {app.visaCategory || "N/A"}</p>
                   </div>
                   <Link 
                     href={`/portal/staff/applications/${app.id}`}

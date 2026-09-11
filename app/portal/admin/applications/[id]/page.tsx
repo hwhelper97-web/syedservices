@@ -710,7 +710,7 @@ export default function AdminApplicationDetailPage() {
           {/* Main profile */}
           <div className="bg-[#0f172a] border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
             <h3 className="text-xl font-black text-white tracking-tight border-b border-slate-800 pb-3 mb-6">
-              Client Dossier: {app.client.user.name}
+              Client Dossier: {app.client?.user?.name || "Client"}
             </h3>
 
             <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs text-slate-300">

@@ -30,10 +30,15 @@ export default function AgentApplicationsPage() {
   };
 
   const filteredApps = applications.filter((app) => {
+    const trackingStr = (app.trackingId || "").toLowerCase();
+    const clientNameStr = (app.client?.user?.name || "").toLowerCase();
+    const countryStr = (app.country || "").toLowerCase();
+    const search = searchTerm.toLowerCase();
+
     const matchesSearch = 
-      app.trackingId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.client.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.country.toLowerCase().includes(searchTerm.toLowerCase());
+      trackingStr.includes(search) ||
+      clientNameStr.includes(search) ||
+      countryStr.includes(search);
     
     const matchesStatus = statusFilter === "ALL" || app.status === statusFilter;
 
@@ -110,10 +115,10 @@ export default function AgentApplicationsPage() {
             <tbody className="divide-y divide-slate-800/40">
               {filteredApps.map((app) => (
                 <tr key={app.id} className="hover:bg-slate-900/20 transition-colors group">
-                  <td className="p-5 font-bold text-white">{app.client.user.name}</td>
-                  <td className="p-5">{app.country}</td>
-                  <td className="p-5">{app.visaCategory}</td>
-                  <td className="p-5 text-slate-500 font-mono text-xs">{app.trackingId}</td>
+                  <td className="p-5 font-bold text-white">{app.client?.user?.name || "Applicant"}</td>
+                  <td className="p-5">{app.country || "N/A"}</td>
+                  <td className="p-5">{app.visaCategory || "N/A"}</td>
+                  <td className="p-5 text-slate-500 font-mono text-xs">{app.trackingId || "—"}</td>
                   <td className="p-5 text-xs">
                     {new Date(app.createdAt).toLocaleDateString()}
                   </td>

@@ -53,7 +53,7 @@ export default async function AdminDashboard() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[120px] pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
-            Administrator Console: <span className="text-yellow-400">Saeed Arman</span>
+            Administrator Console: <span className="text-yellow-400">{session.name || "Administrator"}</span>
           </h2>
           <p className="text-slate-400 text-sm max-w-xl">
             Monitor whole agency metrics, approve financial transactions, assign staff privileges, and audit log activities.
@@ -107,7 +107,12 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Recent Applications */}
         <div className="lg:col-span-7 space-y-6">
-          <h3 className="text-xl font-black text-white tracking-tight">Recent System Submissions</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-black text-white tracking-tight">Recent System Submissions</h3>
+            <Link href="/portal/admin/applications" className="text-xs font-bold text-yellow-400 hover:underline">
+              View All →
+            </Link>
+          </div>
 
           {recentApps.length === 0 ? (
             <div className="bg-[#0f172a]/40 border border-slate-800 p-8 rounded-[2rem] text-center text-xs text-slate-500">
@@ -121,13 +126,14 @@ export default async function AdminDashboard() {
                     <th className="p-4">Client</th>
                     <th className="p-4">Destination</th>
                     <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/40">
                   {recentApps.map((app) => (
                     <tr key={app.id} className="hover:bg-slate-900/10 transition-colors">
-                      <td className="p-4 font-bold text-white">{app.client.user.name}</td>
-                      <td className="p-4">{app.country}</td>
+                      <td className="p-4 font-bold text-white">{app.client?.user?.name || "Client"}</td>
+                      <td className="p-4">{app.country || "N/A"}</td>
                       <td className="p-4">
                         <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                           app.status === "APPROVED" ? "bg-green-500/10 text-green-400" :
@@ -136,6 +142,14 @@ export default async function AdminDashboard() {
                         }`}>
                           {app.status}
                         </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <Link
+                          href={`/portal/admin/applications/${app.id}`}
+                          className="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-slate-300 hover:text-yellow-400 transition-colors"
+                        >
+                          View
+                        </Link>
                       </td>
                     </tr>
                   ))}
