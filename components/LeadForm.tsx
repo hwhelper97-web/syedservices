@@ -59,7 +59,13 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
     if (e.target.files && e.target.files[0]) {
-      setFiles(prev => ({ ...prev, [key]: e.target.files![0] }));
+      const file = e.target.files[0];
+      if (file.size > 15 * 1024 * 1024) {
+        alert(`File "${file.name}" exceeds 15MB. Please upload a smaller file.`);
+        e.target.value = "";
+        return;
+      }
+      setFiles(prev => ({ ...prev, [key]: file }));
     }
   };
 
@@ -92,11 +98,12 @@ export default function LeadForm({ onClose }: { onClose: () => void }) {
           onClose();
         }, 10000); 
       } else {
-        alert("Something went wrong. Please try again.");
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Something went wrong. Please check your information and try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error submitting form.");
+      alert(err?.message || "Error submitting form. Please check your internet connection.");
     } finally {
       setLoading(false);
     }

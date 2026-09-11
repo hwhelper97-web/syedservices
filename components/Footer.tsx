@@ -17,21 +17,28 @@ const footerLinks = [
   {
     title: "Company",
     links: [
-      { name: "About Us", href: "#" },
+      { name: "About Us", href: "/consultancy" },
       { name: "Our Offices", href: "/offices" },
-      { name: "Our Success", href: "#" },
-      { name: "Testimonials", href: "#" },
-      { name: "Contact", href: "#" },
+      { name: "Our Success", href: "/success" },
+      { name: "Testimonials", href: "/#testimonials" },
+      { name: "Contact", href: "/contact" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
-      { name: "Cookie Policy", href: "#" },
+      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Terms of Service", href: "/terms" },
+      { name: "Cookie Policy", href: "/terms" },
     ],
   },
+];
+
+const socialLinks = [
+  { Icon: FiFacebook, href: "https://facebook.com", name: "Facebook" },
+  { Icon: FiTwitter, href: "https://twitter.com", name: "Twitter" },
+  { Icon: FiInstagram, href: "https://instagram.com", name: "Instagram" },
+  { Icon: FiLinkedin, href: "https://linkedin.com", name: "LinkedIn" },
 ];
 
 export default function Footer() {
@@ -53,8 +60,15 @@ export default function Footer() {
               visa and immigration solutions for clients worldwide.
             </p>
             <div className="flex gap-4 items-center">
-              {[FiFacebook, FiTwitter, FiInstagram, FiLinkedin].map((Icon, i) => (
-                <a key={i} href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-yellow-400 hover:text-black transition-all">
+              {socialLinks.map(({ Icon, href, name }, i) => (
+                <a 
+                  key={i} 
+                  href={href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  aria-label={name}
+                  className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-yellow-400 hover:text-black transition-all"
+                >
                   <Icon size={18} />
                 </a>
               ))}

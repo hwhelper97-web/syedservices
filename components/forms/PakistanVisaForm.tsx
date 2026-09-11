@@ -22,21 +22,49 @@ const countries = [
   "Russia",
 ];
 export default function PakistanVisaForm() {
-    const router = useRouter();
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<any>({});
   const [files, setFiles] = useState<any>({});
   const [isAfghan, setIsAfghan] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    const data = new FormData();
+    try {
+      setSubmitting(true);
+      const data = new FormData();
 
-    Object.keys(form).forEach(key => data.append(key, form[key]));
-    Object.keys(files).forEach(key => data.append(key, files[key]));
-    console.log("Submitting:", form); 
-    await axios.post("http://localhost:5000/api/visa/pakistan", data);
+      data.append("name", form.fullName || "Applicant");
+      data.append("email", form.email || "");
+      data.append("phone", form.mobile || form.whatsapp || "");
+      data.append("service", "Pakistan Visa");
+      data.append("country", form.nationality || "Pakistan");
+      data.append("fatherName", form.fatherName || "");
+      data.append("motherName", form.motherName || "");
+      data.append("message", `Mobile: ${form.mobile || 'N/A'}, WhatsApp: ${form.whatsapp || 'N/A'}`);
 
-    router.push("/success");
+      Object.keys(files).forEach(key => {
+        if (files[key]) data.append(key, files[key]);
+      });
+
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        body: data,
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        router.push(`/success?trackingId=${result.trackingId}`);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to submit visa application. Please check your details and try again.");
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -151,9 +179,11 @@ export default function PakistanVisaForm() {
                 Back
               </button>
 
-              <button onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-yellow-500 to-yellow-400 text-black py-3 rounded-xl font-bold hover:scale-105 transition">
-                Submit
+              <button 
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-yellow-500 to-yellow-400 text-black py-3 rounded-xl font-bold hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                {submitting ? "Submitting Application..." : "Submit"}
               </button>
             </div>
           </>

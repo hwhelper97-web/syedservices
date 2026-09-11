@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMenu, FiX, FiPhone, FiChevronRight, FiLock, FiChevronDown, FiGlobe, FiBriefcase, FiBook, FiShield, FiHeart, FiPlus, FiFileText, FiDollarSign, FiSearch } from "react-icons/fi";
 import { useLanguage } from "@/contexts/LanguageContext";
+import LeadForm from "@/components/LeadForm";
 
 const LanguageSwitcher = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -87,12 +88,20 @@ export default function Navbar() {
     { name: t('track'), href: "/track" },
   ];
 
+  const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenForm = () => setIsLeadFormOpen(true);
+    window.addEventListener('openLeadForm', handleOpenForm);
+    return () => window.removeEventListener('openLeadForm', handleOpenForm);
   }, []);
 
   return (
@@ -175,10 +184,7 @@ export default function Navbar() {
           </a>
           <button 
             className="premium-btn btn-primary !py-2 !px-6 text-sm"
-            onClick={() => {
-              const event = new CustomEvent('openLeadForm');
-              window.dispatchEvent(event);
-            }}
+            onClick={() => setIsLeadFormOpen(true)}
           >
             {t('apply_now')} <FiChevronRight className={dir === 'rtl' ? 'rotate-180' : ''} />
           </button>
@@ -212,60 +218,61 @@ export default function Navbar() {
                 return (
                   <div key={link.name}>
                     <div 
-                      className="text-lg font-medium text-slate-300 hover:text-yellow-400 flex items-center justify-between cursor-pointer py-1"
-                      onClick={() => {
-                        if (link.dropdown) {
-                          setMobileDropdown(isDropdownOpen ? null : link.name);
-                        } else {
-                          setIsOpen(false);
-                          router.push(link.href);
-                        }
-                      }}
-                    >
-                      <span>{link.name}</span>
-                      {link.dropdown && (
-                        <FiChevronRight className={`transition-transform ${isDropdownOpen ? "rotate-90" : ""} ${dir === 'rtl' ? 'rotate-180' : ''}`} />
-                      )}
-                    </div>
-                    
-                    <AnimatePresence>
-                      {link.dropdown && isDropdownOpen && (
-                        <motion.div 
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className={`grid grid-cols-2 gap-2 mt-4 ml-2 pl-4 border-l border-white/5 overflow-hidden ${dir === 'rtl' ? 'mr-2 pr-4 border-l-0 border-r border-white/5' : ''}`}
-                        >
-                          {visaSubLinks.map((sub) => (
-                            <Link 
-                              key={sub.name}
-                              href={sub.href}
-                              onClick={() => setIsOpen(false)}
-                              className="text-xs text-slate-500 hover:text-yellow-400 py-2 flex items-center gap-2"
-                            >
-                              {sub.name}
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    className="text-lg font-medium text-slate-300 hover:text-yellow-400 flex items-center justify-between cursor-pointer py-1"
+                    onClick={() => {
+                      if (link.dropdown) {
+                        setMobileDropdown(isDropdownOpen ? null : link.name);
+                      } else {
+                        setIsOpen(false);
+                        router.push(link.href);
+                      }
+                    }}
+                  >
+                    <span>{link.name}</span>
+                    {link.dropdown && (
+                      <FiChevronRight className={`transition-transform ${isDropdownOpen ? "rotate-90" : ""} ${dir === 'rtl' ? 'rotate-180' : ''}`} />
+                    )}
                   </div>
-                );
-              })}
-              <button 
-                className="premium-btn btn-primary w-full mt-4"
-                onClick={() => {
-                  setIsOpen(false);
-                  const event = new CustomEvent('openLeadForm');
-                  window.dispatchEvent(event);
-                }}
-              >
-                {t('apply_now')}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+                  
+                  <AnimatePresence>
+                    {link.dropdown && isDropdownOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className={`grid grid-cols-2 gap-2 mt-4 ml-2 pl-4 border-l border-white/5 overflow-hidden ${dir === 'rtl' ? 'mr-2 pr-4 border-l-0 border-r border-white/5' : ''}`}
+                      >
+                        {visaSubLinks.map((sub) => (
+                          <Link 
+                            key={sub.name}
+                            href={sub.href}
+                            onClick={() => setIsOpen(false)}
+                            className="text-xs text-slate-500 hover:text-yellow-400 py-2 flex items-center gap-2"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+            <button 
+              className="premium-btn btn-primary w-full mt-4"
+              onClick={() => {
+                setIsOpen(false);
+                setIsLeadFormOpen(true);
+              }}
+            >
+              {t('apply_now')}
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    {isLeadFormOpen && <LeadForm onClose={() => setIsLeadFormOpen(false)} />}
+  </nav>
   );
 }

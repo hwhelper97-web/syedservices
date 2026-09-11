@@ -205,7 +205,7 @@ model AgentProfile {
 
 model Application {
   id                 Int                       @id @default(autoincrement())
-  trackingId         String                    @unique
+  trackingId         String?                   @unique
   clientId           Int
   client             ClientProfile             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   agentId            Int?
@@ -287,8 +287,8 @@ model Appointment {
 model Invoice {
   id            Int           @id @default(autoincrement())
   invoiceNumber String        @unique
-  applicationId Int
-  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId Int?
+  application   Application?  @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   totalAmount   Float
   status        PaymentStatus @default(UNPAID)
   dueDate       DateTime

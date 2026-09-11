@@ -73,37 +73,51 @@ export async function sendSystemNotificationToAdmins({
   }
 }
 
-export async function sendAdminNotification(lead: any, files: any[]) {
-  const adminEmail = process.env.ADMIN_EMAIL || "info@syedservices.com.pk";
-  const transporter = getTransporter();
-
-  const attachments = files.map(file => ({
-    filename: file.fileName,
-    path: path.join(process.cwd(), "public", file.fileUrl),
-  }));
-
-  const mailOptions = {
-    from: `"Syed Services Notification" <${process.env.EMAIL_USER}>`,
-    to: adminEmail,
-    subject: `New Lead: ${lead.service} from ${lead.name}`,
-    html: `
-      <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #fbbf24;">New Lead Submission</h2>
-        <p><strong>Tracking ID:</strong> ${lead.trackingId}</p>
-        <p><strong>Name:</strong> ${lead.name}</p>
-        <p><strong>Email:</strong> ${lead.email || 'N/A'}</p>
-        <p><strong>Phone:</strong> ${lead.phone}</p>
-        <p><strong>Service:</strong> ${lead.service}</p>
-        <p><strong>Message:</strong></p>
-        <p style="background: #f9f9f9; padding: 10px; border-radius: 5px;">${lead.message || 'No message provided'}</p>
-        <hr />
-        <p><strong>Files Attached:</strong> ${files.length}</p>
-      </div>
-    `,
-    attachments,
-  };
-
+export async function sendAdminNotification(lead: any, files: any[] = []) {
   try {
+    const adminEmail = process.env.ADMIN_EMAIL || "info@syedservices.com.pk";
+    const transporter = getTransporter();
+
+    // Prepare safe attachments if they are valid URLs
+    const attachments = (files || [])
+      .filter(f => f && f.fileUrl && f.fileUrl.startsWith("http"))
+      .map(file => ({
+        filename: file.fileName,
+        path: file.fileUrl,
+      }));
+
+    const fileListHtml = files && files.length > 0
+      ? `<div style="margin-top: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <strong style="color: #0f172a;">Uploaded Documents (${files.length}):</strong>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+            ${files.map((f: any) => `<li style="margin-bottom: 4px;"><a href="${f.fileUrl}" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: underline;">${f.fileName}</a></li>`).join('')}
+          </ul>
+        </div>`
+      : '<p style="color: #64748b; font-size: 13px;">No documents attached.</p>';
+
+    const mailOptions = {
+      from: `"Syed Services Notification" <${process.env.EMAIL_USER}>`,
+      to: adminEmail,
+      subject: `New Lead: ${lead.service} from ${lead.name}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; color: #1e293b;">
+          <h2 style="color: #d97706; margin-top: 0;">New Lead Submission</h2>
+          <p><strong>Tracking ID:</strong> <span style="font-family: monospace; font-size: 16px; font-weight: bold; color: #d97706;">${lead.trackingId}</span></p>
+          <p><strong>Name:</strong> ${lead.name}</p>
+          <p><strong>Email:</strong> ${lead.email || 'N/A'}</p>
+          <p><strong>Phone:</strong> ${lead.phone}</p>
+          <p><strong>Service:</strong> ${lead.service}</p>
+          ${lead.country ? `<p><strong>Nationality / Country:</strong> ${lead.country}</p>` : ''}
+          ${lead.passportNumber ? `<p><strong>Passport Number:</strong> ${lead.passportNumber}</p>` : ''}
+          <p><strong>Message:</strong></p>
+          <p style="background: #f9f9f9; padding: 10px; border-radius: 5px;">${lead.message || 'No message provided'}</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          ${fileListHtml}
+        </div>
+      `,
+      attachments,
+    };
+
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       await transporter.sendMail(mailOptions);
     }
@@ -115,27 +129,27 @@ export async function sendAdminNotification(lead: any, files: any[]) {
 export async function sendCustomerNotification(lead: any) {
   if (!lead.email) return;
 
-  const transporter = getTransporter();
-  const mailOptions = {
-    from: `"Syed Services" <${process.env.EMAIL_USER}>`,
-    to: lead.email,
-    subject: `Application Received - Tracking ID: ${lead.trackingId}`,
-    html: `
-      <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
-        <h2 style="color: #fbbf24;">Application Received!</h2>
-        <p>Dear ${lead.name},</p>
-        <p>Thank you for choosing Syed Services. We have received your application for <strong>${lead.service}</strong>.</p>
-        <div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin: 20px 0; border: 1px solid #fcd34d;">
-          <p style="margin: 0; font-weight: bold; color: #92400e;">Your Tracking ID: ${lead.trackingId}</p>
-        </div>
-        <p>You can track your application status anytime using the link below:</p>
-        <a href="https://syedservices.com.pk/track?id=${lead.trackingId}" style="display: inline-block; background: #fbbf24; color: black; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 10px;">Track Application</a>
-        <p style="margin-top: 20px; color: #666; font-size: 12px;">If you have any questions, reply to this email or contact us on WhatsApp at +92 309 9797771.</p>
-      </div>
-    `,
-  };
-
   try {
+    const transporter = getTransporter();
+    const mailOptions = {
+      from: `"Syed Services" <${process.env.EMAIL_USER}>`,
+      to: lead.email,
+      subject: `Application Received - Tracking ID: ${lead.trackingId}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
+          <h2 style="color: #fbbf24;">Application Received!</h2>
+          <p>Dear ${lead.name},</p>
+          <p>Thank you for choosing Syed Services. We have received your application for <strong>${lead.service}</strong>.</p>
+          <div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin: 20px 0; border: 1px solid #fcd34d;">
+            <p style="margin: 0; font-weight: bold; color: #92400e;">Your Tracking ID: ${lead.trackingId}</p>
+          </div>
+          <p>You can track your application status anytime using the link below:</p>
+          <a href="https://www.syedservices.com.pk/track?id=${lead.trackingId}" style="display: inline-block; background: #fbbf24; color: black; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 10px;">Track Application</a>
+          <p style="margin-top: 20px; color: #666; font-size: 12px;">If you have any questions, reply to this email or contact us on WhatsApp at +92 309 9797771.</p>
+        </div>
+      `,
+    };
+
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       await transporter.sendMail(mailOptions);
     }
