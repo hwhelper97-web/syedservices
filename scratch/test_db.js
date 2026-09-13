@@ -1,14 +1,16 @@
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-const { Client } = require('pg');
-const client = new Client({
-  connectionString: "postgresql://postgres.uzvyxhjohegqymnudboi:%40Blackzerox22%40@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require",
-});
+async function test() {
+  console.log("Testing connection to database...");
+  try {
+    const userCount = await prisma.user.count();
+    console.log("Connected successfully! User count:", userCount);
+  } catch (err) {
+    console.error("Connection error:", err);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
-client.connect()
-  .then(() => {
-    console.log('Connected successfully');
-    client.end();
-  })
-  .catch(err => {
-    console.error('Connection error', err.stack);
-  });
+test();

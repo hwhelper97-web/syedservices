@@ -14,31 +14,55 @@ export default async function ClientDashboard() {
     redirect("/portal/login");
   }
 
-  // Fetch client profile and active applications
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-    include: {
-      clientProfile: {
-        include: {
-          applications: {
-            orderBy: { createdAt: "desc" },
-            include: {
-              documents: true,
-              invoices: true,
-            }
-          },
-          appointments: {
-            orderBy: { date: "desc" },
-            take: 3,
-          }
-        }
-      }
-    }
-  });
+  let user = null;
+  let applications: any[] = [];
+  let appointments: any[] = [];
 
-  const profile = user?.clientProfile;
-  const applications = profile?.applications || [];
-  const appointments = profile?.appointments || [];
+  try {
+    // Fetch client profile and active applications
+    user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      include: {
+        clientProfile: {
+          include: {
+            applications: {
+              orderBy: { createdAt: "desc" },
+              include: {
+                documents: true,
+                invoices: true,
+              },
+            },
+            appointments: {
+              orderBy: { date: "desc" },
+              take: 3,
+            },
+          },
+        },
+      },
+    });
+
+    if (user && !user.clientProfile) {
+      // Ensure client profile exists
+      try {
+        const newProfile = await prisma.clientProfile.create({
+          data: { userId: user.id },
+          include: {
+            applications: true,
+            appointments: true,
+          },
+        });
+        applications = newProfile.applications || [];
+        appointments = newProfile.appointments || [];
+      } catch (e) {
+        console.warn("Could not auto-create client profile", e);
+      }
+    } else if (user?.clientProfile) {
+      applications = user.clientProfile.applications || [];
+      appointments = user.clientProfile.appointments || [];
+    }
+  } catch (error) {
+    console.error("Client dashboard data fetch error:", error);
+  }
 
   // Stats calculation
   const totalApps = applications.length;

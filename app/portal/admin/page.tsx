@@ -10,61 +10,62 @@ export default async function AdminDashboard() {
     redirect("/portal/login");
   }
 
-  // Aggregate database statistics
-  const totalApplications = await prisma.application.count();
-  const pendingVerification = await prisma.application.count({
-    where: { status: "WAITING_CONFIRMATION" }
-  });
-  const pendingInvoices = await prisma.invoice.count({
-    where: { status: "UNPAID" }
-  });
-  const totalUsers = await prisma.user.count();
-
-  // Fetch recent applications
-  const recentApps = await prisma.application.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      client: {
+  try {
+    // Aggregate database statistics
+    const [totalApplications, pendingVerification, pendingInvoices, totalUsers, recentApps, logs] = await Promise.all([
+      prisma.application.count().catch(() => 0),
+      prisma.application.count({ where: { status: "WAITING_CONFIRMATION" } }).catch(() => 0),
+      prisma.invoice.count({ where: { status: "UNPAID" } }).catch(() => 0),
+      prisma.user.count().catch(() => 0),
+      prisma.application.findMany({
+        orderBy: { createdAt: "desc" },
         include: {
-          user: true
-        }
-      }
-    },
-    take: 6
-  });
+          client: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        take: 6,
+      }).catch(() => []),
+      prisma.auditLog.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: true,
+        },
+        take: 6,
+      }).catch(() => []),
+    ]);
 
-  // Fetch recent audit logs
-  const logs = await prisma.auditLog.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: true
-    },
-    take: 6
-  });
+    // Completely safe JSON serialization to eliminate Date object serialization errors in Next.js
+    const safeRecentApps = JSON.parse(JSON.stringify(recentApps));
+    const safeLogs = JSON.parse(JSON.stringify(logs));
 
-  // Serialize dates for client components
-  const serializedRecentApps = recentApps.map(app => ({
-    ...app,
-    createdAt: app.createdAt.toISOString(),
-    updatedAt: app.updatedAt.toISOString(),
-    contractAcceptedAt: app.contractAcceptedAt ? app.contractAcceptedAt.toISOString() : null,
-  }));
-
-  const serializedLogs = logs.map(log => ({
-    ...log,
-    createdAt: log.createdAt.toISOString(),
-  }));
-
-  return (
-    <AdminDashboardClient
-      userName={session.name || "Administrator"}
-      userRole={session.role}
-      totalApplications={totalApplications}
-      pendingVerification={pendingVerification}
-      pendingInvoices={pendingInvoices}
-      totalUsers={totalUsers}
-      recentApps={serializedRecentApps}
-      logs={serializedLogs}
-    />
-  );
+    return (
+      <AdminDashboardClient
+        userName={session.name || "Administrator"}
+        userRole={session.role}
+        totalApplications={totalApplications}
+        pendingVerification={pendingVerification}
+        pendingInvoices={pendingInvoices}
+        totalUsers={totalUsers}
+        recentApps={safeRecentApps}
+        logs={safeLogs}
+      />
+    );
+  } catch (error) {
+    console.error("Admin dashboard load error:", error);
+    return (
+      <AdminDashboardClient
+        userName={session.name || "Administrator"}
+        userRole={session.role}
+        totalApplications={0}
+        pendingVerification={0}
+        pendingInvoices={0}
+        totalUsers={0}
+        recentApps={[]}
+        logs={[]}
+      />
+    );
+  }
 }
