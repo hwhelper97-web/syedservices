@@ -28,6 +28,11 @@ export default function AdminApplicationsListPage() {
   const [deletingApp, setDeletingApp] = useState<any | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Batch Selection & Deletion State
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
   // Toast State
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
@@ -178,6 +183,57 @@ export default function AdminApplicationsListPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  // Batch Selection Helpers
+  const isAllSelected = filteredApps.length > 0 && filteredApps.every((a) => selectedIds.includes(a.id));
+  const isSomeSelected = selectedIds.length > 0 && !isAllSelected;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredApps.map((a) => a.id));
+    }
+  };
+
+  const handleToggleSelectOne = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  // Batch Delete Execution
+  const handleConfirmBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+
+    try {
+      const res = await fetch("/api/applications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(data.message || `Successfully deleted ${selectedIds.length} applications!`);
+        setApplications((prev) => prev.filter((a) => !selectedIds.includes(a.id)));
+        setSelectedIds([]);
+        setBatchDeleteOpen(false);
+      } else {
+        showToast(data.error || "Failed to delete selected applications", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Network error", "error");
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -381,6 +437,31 @@ export default function AdminApplicationsListPage() {
               </option>
             ))}
           </select>
+
+          {/* Quick Select All Button */}
+          {filteredApps.length > 0 && (
+            <button
+              type="button"
+              onClick={handleToggleSelectAll}
+              className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-md ${
+                isAllSelected
+                  ? "bg-yellow-400 text-black border-yellow-400 shadow-yellow-400/20 font-black"
+                  : "bg-slate-950/80 text-slate-300 border-slate-800 hover:bg-slate-900 hover:text-white"
+              }`}
+              title={isAllSelected ? "Deselect All" : `Select all ${filteredApps.length} applications`}
+            >
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = isSomeSelected;
+                }}
+                readOnly
+                className="pointer-events-none w-3.5 h-3.5 rounded accent-yellow-400 cursor-pointer"
+              />
+              <span>{isAllSelected ? "Deselect All" : `Select All (${filteredApps.length})`}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -408,6 +489,21 @@ export default function AdminApplicationsListPage() {
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-900/60 text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800">
               <tr>
+                {/* Select All Table Header Checkbox */}
+                <th className="p-5 w-12 text-center">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeSelected;
+                      }}
+                      onChange={handleToggleSelectAll}
+                      className="w-4 h-4 rounded text-yellow-400 focus:ring-yellow-400 bg-slate-950 border-slate-700 cursor-pointer accent-yellow-400"
+                      title={isAllSelected ? "Deselect All Applications" : `Select all ${filteredApps.length} applications`}
+                    />
+                  </div>
+                </th>
                 <th className="p-5">Applicant / Client</th>
                 <th className="p-5">Destination & Plan</th>
                 <th className="p-5">Tracking Reference</th>
@@ -422,9 +518,27 @@ export default function AdminApplicationsListPage() {
                 const clientEmail = app.client?.user?.email || "";
                 const tracking = app.trackingId || `APP-${app.id}`;
                 const statusColorClass = VISA_STATUS_COLORS[app.status] || "text-yellow-400 bg-yellow-500/10 border-yellow-500/20";
+                const isSelected = selectedIds.includes(app.id);
 
                 return (
-                  <tr key={app.id} className="hover:bg-slate-900/40 transition-colors group">
+                  <tr 
+                    key={app.id} 
+                    className={`hover:bg-slate-900/40 transition-colors group ${
+                      isSelected ? "bg-yellow-500/[0.08] border-l-2 border-l-yellow-400" : ""
+                    }`}
+                  >
+                    {/* Row Checkbox */}
+                    <td className="p-5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleToggleSelectOne(app.id, e as any)}
+                          className="w-4 h-4 rounded text-yellow-400 focus:ring-yellow-400 bg-slate-950 border-slate-700 cursor-pointer accent-yellow-400"
+                        />
+                      </div>
+                    </td>
+
                     {/* Client */}
                     <td className="p-5">
                       <div className="flex items-center gap-3">
@@ -781,6 +895,136 @@ export default function AdminApplicationsListPage() {
                 >
                   {deleteLoading ? <FiLoader className="animate-spin" size={15} /> : <FiTrash2 size={15} />}
                   {deleteLoading ? "Deleting..." : "Confirm Delete"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING BATCH ACTIONS TOOLBAR */}
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-[#0f172a]/95 backdrop-blur-xl border border-yellow-400/40 rounded-3xl p-4 md:px-7 shadow-2xl flex flex-wrap items-center justify-between gap-4 max-w-2xl w-[92%]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-black text-sm border border-yellow-400/30">
+                {selectedIds.length}
+              </div>
+              <div>
+                <span className="text-white font-extrabold text-sm block leading-tight">
+                  {selectedIds.length} Application{selectedIds.length > 1 ? "s" : ""} Selected
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {isAllSelected ? "All filtered dossiers selected" : `out of ${filteredApps.length} filtered results`}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!isAllSelected && (
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Select All ({filteredApps.length})
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                Clear
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBatchDeleteOpen(true)}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black transition-all shadow-lg shadow-red-600/30 cursor-pointer"
+              >
+                <FiTrash2 size={15} />
+                <span>Delete Selected ({selectedIds.length})</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* BATCH DELETE MULTIPLE APPLICATIONS CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {batchDeleteOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0f172a] border border-red-500/30 w-full max-w-lg rounded-[2.5rem] p-6 md:p-8 shadow-2xl space-y-6"
+            >
+              <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto text-2xl">
+                <FiTrash2 />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-black text-white">
+                  Permanently Delete {selectedIds.length} Dossiers?
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You are about to delete <strong className="text-white font-bold">{selectedIds.length}</strong> selected applications in a single batch operation.
+                </p>
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-400 text-left space-y-1">
+                  <div className="font-bold flex items-center gap-1.5 text-red-300">
+                    <FiAlertTriangle /> Irreversible Administrative Action
+                  </div>
+                  <div>
+                    This will permanently remove all attached documents, unbind associated invoices, and clear status audit logs for these {selectedIds.length} applications.
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview of selected dossiers */}
+              <div className="max-h-40 overflow-y-auto bg-slate-950/90 border border-slate-800 rounded-2xl p-3 text-xs divide-y divide-slate-800/60 font-mono">
+                {applications
+                  .filter((a) => selectedIds.includes(a.id))
+                  .slice(0, 6)
+                  .map((app) => (
+                    <div key={app.id} className="py-1.5 flex items-center justify-between text-slate-300">
+                      <span className="text-yellow-400 font-bold">{app.trackingId || `APP-${app.id}`}</span>
+                      <span className="text-slate-400 truncate max-w-[200px]">
+                        {app.client?.user?.name || "Client"} ({app.country || "Visa"})
+                      </span>
+                    </div>
+                  ))}
+                {selectedIds.length > 6 && (
+                  <div className="py-1.5 text-center text-slate-500 italic text-[11px]">
+                    ...and {selectedIds.length - 6} more applications
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setBatchDeleteOpen(false)}
+                  disabled={batchDeleting}
+                  className="w-1/2 py-3.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-2xl text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmBatchDelete}
+                  disabled={batchDeleting}
+                  className="w-1/2 flex items-center justify-center gap-2 py-3.5 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl text-xs cursor-pointer shadow-lg shadow-red-600/30 disabled:opacity-50"
+                >
+                  {batchDeleting ? <FiLoader className="animate-spin" size={15} /> : <FiTrash2 size={15} />}
+                  {batchDeleting ? "Deleting Dossiers..." : `Confirm Delete (${selectedIds.length})`}
                 </button>
               </div>
             </motion.div>

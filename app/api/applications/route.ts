@@ -291,3 +291,77 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session.role !== "SUPER_ADMIN" && session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { ids } = body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: "Please provide an array of application IDs to delete." }, { status: 400 });
+    }
+
+    const applicationIds = ids
+      .map((id: any) => parseInt(String(id), 10))
+      .filter((id: number) => !isNaN(id));
+
+    if (applicationIds.length === 0) {
+      return NextResponse.json({ error: "No valid application IDs provided." }, { status: 400 });
+    }
+
+    // 1. Unlink any invoices tied to these applications
+    await prisma.invoice.updateMany({
+      where: { applicationId: { in: applicationIds } },
+      data: { applicationId: null },
+    });
+
+    // 2. Delete messages linked to these applications if any
+    try {
+      await prisma.message.deleteMany({
+        where: { applicationId: { in: applicationIds } },
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    // 3. Delete the applications (cascades documents and statusHistory)
+    const deleteResult = await prisma.application.deleteMany({
+      where: { id: { in: applicationIds } },
+    });
+
+    // 4. Write audit log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "BATCH_DELETE_APPLICATIONS",
+          details: `Batch deleted ${deleteResult.count} applications (IDs: ${applicationIds.join(", ")}) by ${session.name}`,
+        },
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted ${deleteResult.count} applications.`,
+      count: deleteResult.count,
+    });
+  } catch (error: any) {
+    console.error("Batch DELETE applications error:", error);
+    return NextResponse.json(
+      { error: "Internal server error during batch application deletion" },
+      { status: 500 }
+    );
+  }
+}
