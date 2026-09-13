@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 import { VISA_STATUS_OPTIONS } from "@/lib/visaPipeline";
+import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
 export default function AdminApplicationDetailPage() {
   const params = useParams();
@@ -23,6 +24,12 @@ export default function AdminApplicationDetailPage() {
   const [contractDays, setContractDays] = useState("30 Days");
   const [contractAmount, setContractAmount] = useState("1000 USD");
   const [contractFirstParty, setContractFirstParty] = useState("Eng Syed Saif Ur Rehman");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4500);
+  };
 
   // AI Assistant states
   const [aiAction, setAiAction] = useState("");
@@ -68,21 +75,20 @@ export default function AdminApplicationDetailPage() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        alert("Application status updated successfully!");
+        showToast("Application status updated successfully!", "success");
         setNotes("");
         fetchApplicationDetails();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || "Failed to update status", "error");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      showToast(e.message || "Network error while updating status", "error");
     } finally {
       setUpdating(false);
     }
   };
-
-
-
-
-
 
   const handlePrintContract = () => {
     if (!app) return;
@@ -90,7 +96,7 @@ export default function AdminApplicationDetailPage() {
     
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Please allow popups to print the contract.");
+      showToast("Please allow popups in your browser to print the contract.", "error");
       return;
     }
     
@@ -690,6 +696,9 @@ export default function AdminApplicationDetailPage() {
 
   return (
     <div className="space-y-8">
+      {/* Toast Notification */}
+      <PortalToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link 

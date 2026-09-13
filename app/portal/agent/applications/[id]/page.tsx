@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 
 import { VISA_PIPELINE as STATUS_PIPELINE, VISA_STATUS_COLORS as STATUS_COLORS } from "@/lib/visaPipeline";
+import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
 function InfoField({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -38,9 +39,14 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const [app, setApp] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [signatureName, setSignatureName] = useState("");
   const [signing, setSigning] = useState(false);
+  const [signatureName, setSignatureName] = useState("");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4500);
+  };
 
   useEffect(() => {
     fetchApplication();
@@ -52,11 +58,9 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       const data = await res.json();
       if (res.ok) {
         setApp(data.application);
-      } else {
-        setError(data.error || "Failed to load application");
       }
     } catch (e) {
-      setError("Failed to connect to server");
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -64,27 +68,28 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
 
   const handleSignContract = async () => {
     if (!signatureName.trim()) {
-      alert("Please type your full name to sign the contract.");
+      showToast("Please type your full name to sign the contract.", "error");
       return;
     }
     setSigning(true);
     try {
-      const res = await fetch(`/api/applications/${id}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/applications/${id}/contract`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contractAccepted: true,
-          contractSignatureName: signatureName,
+          signatureName: signatureName.trim(),
         }),
       });
       if (res.ok) {
+        showToast("Contract successfully signed and registered!", "success");
         await fetchApplication();
       } else {
-        alert("Failed to submit contract signature.");
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || "Failed to submit contract signature.", "error");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Connection error.");
+      showToast(e.message || "Connection error.", "error");
     } finally {
       setSigning(false);
     }
@@ -95,7 +100,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Please allow popups to print the contract.");
+      showToast("Please allow popups in your browser to print the contract.", "error");
       return;
     }
     
@@ -671,6 +676,8 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Toast Notification */}
+      <PortalToast toast={toast} onClose={() => setToast(null)} />
 
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

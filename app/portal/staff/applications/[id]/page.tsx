@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 
 import { VISA_PIPELINE as STATUS_PIPELINE, VISA_STATUS_COLORS as STATUS_COLORS, VISA_STATUS_OPTIONS } from "@/lib/visaPipeline";
+import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
 function InfoField({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -45,6 +46,12 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
   const [contractDays, setContractDays] = useState("30 Days");
   const [contractAmount, setContractAmount] = useState("1000 USD");
   const [contractFirstParty, setContractFirstParty] = useState("Eng Syed Saif Ur Rehman");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4500);
+  };
 
   useEffect(() => { fetchApplication(); }, [id]);
 
@@ -81,11 +88,16 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
         body: JSON.stringify(payload),
       });
       if (res.ok) {
+        showToast("Application status updated successfully!", "success");
         await fetchApplication();
         setUpdateNote("");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || "Failed to update status", "error");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      showToast(e.message || "Network error while updating status", "error");
     } finally {
       setUpdating(false);
     }
@@ -97,7 +109,7 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
     
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Please allow popups to print the contract.");
+      showToast("Please allow popups in your browser to print the contract.", "error");
       return;
     }
     
@@ -662,6 +674,9 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Toast Notification */}
+      <PortalToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

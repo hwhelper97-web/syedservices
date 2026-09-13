@@ -8,6 +8,7 @@ import {
   FiPaperclip, FiDownload, FiMessageSquare, FiShield 
 } from "react-icons/fi";
 import { VISA_PIPELINE, VISA_STATUS_COLORS } from "@/lib/visaPipeline";
+import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
 export default function ClientApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -17,6 +18,12 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
   const [signing, setSigning] = useState(false);
   const [signatureName, setSignatureName] = useState("");
   const [signSuccess, setSignSuccess] = useState(false);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4500);
+  };
 
   useEffect(() => {
     fetchApplication();
@@ -40,7 +47,7 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
 
   const handleSignContract = async () => {
     if (!signatureName.trim()) {
-      alert("Please enter your full legal name to digitally sign the contract.");
+      showToast("Please enter your full legal name to digitally sign the contract.", "error");
       return;
     }
 
@@ -55,12 +62,13 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
       const data = await res.json();
       if (res.ok) {
         setSignSuccess(true);
+        showToast("Contract successfully signed and registered!", "success");
         fetchApplication();
       } else {
-        alert(data.error || "Failed to sign contract");
+        showToast(data.error || "Failed to sign contract", "error");
       }
-    } catch (e) {
-      alert("Network error while signing contract");
+    } catch (e: any) {
+      showToast(e.message || "Network error while signing contract", "error");
     } finally {
       setSigning(false);
     }
@@ -97,6 +105,9 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
+      {/* Reusable Toast Notification */}
+      <PortalToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link

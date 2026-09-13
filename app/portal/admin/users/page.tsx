@@ -7,6 +7,7 @@ import {
   FiShield, FiUser, FiMail, FiLock, FiPhone
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
 const ROLE_STYLES: Record<string, string> = {
   SUPER_ADMIN: "bg-purple-500/15 text-purple-300 border border-purple-500/20",
@@ -22,6 +23,12 @@ export default function AdminUsersPage() {
   const [registering, setRegistering] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4500);
+  };
 
   // Add form states
   const [name, setName] = useState("");
@@ -144,9 +151,10 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error(data.error || "Failed to delete user");
 
       setDeleteUser(null);
+      showToast("User account deleted successfully.", "success");
       fetchUsers();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message || "Failed to delete user", "error");
     } finally {
       setDeleteLoading(false);
     }
@@ -162,6 +170,9 @@ export default function AdminUsersPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10">
+      {/* Toast Notification */}
+      <PortalToast toast={toast} onClose={() => setToast(null)} />
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* ─── Register Form ─── */}

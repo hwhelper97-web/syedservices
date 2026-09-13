@@ -6,11 +6,18 @@ import {
   FiX, FiSave, FiAlertTriangle, FiCheckCircle
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
 export default function AdminClientsListPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4500);
+  };
 
   // Edit modal state
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -101,9 +108,10 @@ export default function AdminClientsListPage() {
       if (!res.ok) throw new Error(data.error || "Failed to delete client");
 
       setDeleteUser(null);
+      showToast("Client successfully removed.", "success");
       fetchUsers();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message || "Failed to delete client", "error");
     } finally {
       setDeleteLoading(false);
     }
@@ -124,6 +132,9 @@ export default function AdminClientsListPage() {
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
+      {/* Toast Notification */}
+      <PortalToast toast={toast} onClose={() => setToast(null)} />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-black text-white tracking-tight">Client Database</h3>
