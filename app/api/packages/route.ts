@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
+    const searchParams = req.nextUrl?.searchParams || new URL(req.url, "http://localhost:3000").searchParams;
     const country = searchParams.get("country");
     const featured = searchParams.get("featured");
     const all = searchParams.get("all");

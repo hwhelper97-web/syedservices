@@ -5,6 +5,59 @@ import { supabase } from "@/lib/supabase";
 import fs from "fs";
 import path from "path";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id: appIdStr } = await params;
+    const applicationId = parseInt(appIdStr, 10);
+
+    if (isNaN(applicationId)) {
+      return NextResponse.json({ error: "Invalid application ID" }, { status: 400 });
+    }
+
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        client: {
+          include: {
+            user: true,
+          },
+        },
+        documents: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!application) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+
+    if (session.role === "CLIENT" && application.client?.userId !== session.userId) {
+      return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      documents: application.documents,
+    });
+  } catch (error: any) {
+    console.error("GET_DOCUMENTS_ERROR:", error);
+    return NextResponse.json(
+      { error: "Internal server error fetching documents" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

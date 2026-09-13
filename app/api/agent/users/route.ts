@@ -10,12 +10,20 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const agentProfile = await prisma.agentProfile.findUnique({
+    let agentProfile = await prisma.agentProfile.findUnique({
       where: { userId: session.userId },
     });
 
     if (!agentProfile) {
-      return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
+      // Auto-create agent profile if agent user lacks one
+      const agentCode = `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
+      agentProfile = await prisma.agentProfile.create({
+        data: {
+          userId: session.userId,
+          agentCode,
+          agencyName: `${session.name}'s Agency`,
+        },
+      });
     }
 
     // Fetch clients created by this agent or who have applications with this agent

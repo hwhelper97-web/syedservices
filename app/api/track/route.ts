@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const trackingId = searchParams.get("id");
+  const trackingId = (
+    searchParams.get("id") ||
+    searchParams.get("trackingId") ||
+    searchParams.get("trackingNumber") ||
+    searchParams.get("code") ||
+    ""
+  ).trim();
 
   if (!trackingId) {
     return NextResponse.json({ error: "Tracking ID is required" }, { status: 400 });
