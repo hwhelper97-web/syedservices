@@ -5,7 +5,8 @@ import Link from "next/link";
 import { 
   FiArrowLeft, FiLoader, FiFileText, FiClock, 
   FiCheckCircle, FiAlertCircle, FiMapPin, FiCalendar, 
-  FiPaperclip, FiDownload, FiMessageSquare, FiShield, FiArchive
+  FiPaperclip, FiDownload, FiMessageSquare, FiShield, FiArchive,
+  FiAward, FiSend, FiPrinter, FiEye, FiUser, FiGlobe, FiX
 } from "react-icons/fi";
 import { VISA_PIPELINE, VISA_STATUS_COLORS } from "@/lib/visaPipeline";
 import PortalToast, { ToastMessage } from "@/components/PortalToast";
@@ -19,6 +20,7 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
   const [signatureName, setSignatureName] = useState("");
   const [signSuccess, setSignSuccess] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [showLegalModal, setShowLegalModal] = useState(false);
 
   // Download states
   const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
@@ -167,6 +169,156 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
     }
   };
 
+  const handlePrintContract = () => {
+    if (!app) return;
+    const clientUser = app.client?.user;
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Please allow popups in your browser to print the contract.", "error");
+      return;
+    }
+    
+    const contractDate = app.contractAcceptedAt 
+      ? new Date(app.contractAcceptedAt).toLocaleDateString()
+      : new Date().toLocaleDateString();
+
+    const clientName = clientUser?.name || "Client";
+    const fatherName = app.client?.fatherName || "N/A";
+    const passportNo = app.client?.passportNumber || "N/A";
+    const address = app.client?.currentAddress || "N/A";
+    const phone = app.client?.phone || "N/A";
+    const email = clientUser?.email || "N/A";
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Legal Visa Service Contract - Syed Services</title>
+          <meta charset="utf-8">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+          <style>
+            @page { size: A4; margin: 15mm; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { font-family: 'Inter', sans-serif; color: #0f172a; line-height: 1.5; margin: 0; padding: 20px; font-size: 12px; background: #fff; }
+            .container { width: 100%; max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 40px; border-radius: 8px; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; }
+            .company-name { font-size: 20px; font-weight: 900; color: #0f172a; }
+            .meta { text-align: right; font-size: 11px; }
+            .title { text-align: center; margin: 20px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+            .title h1 { margin: 0; font-size: 16px; font-weight: 900; }
+            .table-parties { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+            .table-parties th, .table-parties td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; vertical-align: top; }
+            .table-parties th { background-color: #f8fafc; font-weight: bold; }
+            .clauses { margin-bottom: 25px; font-size: 11px; line-height: 1.6; color: #334155; }
+            .clauses h4 { margin: 12px 0 4px 0; font-size: 12px; color: #0f172a; font-weight: bold; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+            .sig-box { width: 45%; border: 1px dashed #94a3b8; padding: 15px; border-radius: 6px; }
+            .stamp { text-align: center; margin-top: 20px; }
+            .no-print { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+            @media print { .no-print { display: none !important; } body { padding: 0; } .container { border: none; padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="no-print">
+              <button onclick="window.print()" style="padding: 10px 20px; background: #eab308; border: none; font-weight: bold; border-radius: 6px; cursor: pointer;">
+                Print / Save Legal Agreement (PDF)
+              </button>
+            </div>
+
+            <div class="header">
+              <div>
+                <div class="company-name">SYED SERVICES</div>
+                <div style="font-size: 10px; color: #64748b;">Visa Consultancy, Invitation & Travel Services</div>
+                <div style="font-size: 10px; color: #64748b;">Peshawar · Islamabad · Kabul</div>
+              </div>
+              <div class="meta">
+                <div>Contract Ref: <strong>${app.trackingId}</strong></div>
+                <div>Date Executed: <strong>${contractDate}</strong></div>
+                <div>Status: <strong>LEGALLY BINDING / EXECUTED</strong></div>
+              </div>
+            </div>
+
+            <div class="title">
+              <h1>LEGAL VISA CONSULTANCY & SERVICE AGREEMENT</h1>
+              <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Executed under applicable contract and electronic transaction regulations</p>
+            </div>
+
+            <table class="table-parties">
+              <thead>
+                <tr>
+                  <th width="50%">First Party (Service Provider / Party A)</th>
+                  <th width="50%">Second Party (Client & Applicant / Party B)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Syed Services Ltd. / Travel Consultancy</strong><br>
+                    <strong>Authorized Representative:</strong> ${app.contractFirstPartyName || "Eng Syed Saif Ur Rehman"}<br>
+                    <strong>Head Office:</strong> University Road / Saddar, Peshawar, Pakistan<br>
+                    <strong>Phone / WhatsApp:</strong> +92 310 9797771<br>
+                    <strong>Email:</strong> info@syedservices.com.pk
+                  </td>
+                  <td>
+                    <strong>Legal Name:</strong> ${clientName}<br>
+                    <strong>Father's Name:</strong> ${fatherName}<br>
+                    <strong>Passport Number:</strong> ${passportNo}<br>
+                    <strong>Residential Address:</strong> ${address}<br>
+                    <strong>Phone:</strong> ${phone} | <strong>Email:</strong> ${email}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="clauses">
+              <h4>1. SCOPE OF SERVICES</h4>
+              <p>Party A agrees to provide professional consultancy, documentation preparation, submission processing, and embassy liaison for the Second Party's visa application for <strong>${app.country} (${app.visaCategory})</strong>.</p>
+
+              <h4>2. AGREED TIMELINE & PROCESSING TERMS</h4>
+              <p>Estimated processing duration is designated at approximately <strong>${app.contractApprovedDays || "30"} days</strong>. Party B acknowledges that embassy processing schedules are subject to sovereign consular authorities and diplomatic discretion.</p>
+
+              <h4>3. FINANCIAL TERMS & FEE STRUCTURE</h4>
+              <p>The total service fee agreed upon between both parties is <strong>$${app.contractPaymentAmount || app.packagePrice || "0"} USD</strong>. Official invoices issued under transaction reference <strong>${app.trackingId}</strong> constitute the definitive accounting ledger.</p>
+
+              <h4>4. APPLICANT UNDERTAKING & DOCUMENTARY AUTHENTICITY</h4>
+              <p>Party B explicitly warrants that all identity documents, passports, photos, certificates, and family information submitted are 100% genuine, authentic, and correct under penalty of legal disqualification.</p>
+
+              <h4>5. DISPUTE RESOLUTION & JURISDICTION</h4>
+              <p>This agreement is entered into electronically and is legally binding. Any dispute arising under or in connection with this agreement shall be subject to the exclusive jurisdiction of the competent courts of law.</p>
+            </div>
+
+            <div class="signatures">
+              <div class="sig-box">
+                <p style="margin: 0 0 5px 0; font-size: 10px; text-transform: uppercase; color: #64748b;">Signed on Behalf of Party A:</p>
+                <p style="margin: 0; font-weight: bold; color: #0f172a;">${app.contractFirstPartyName || "Eng Syed Saif Ur Rehman"}</p>
+                <p style="margin: 3px 0 0 0; font-size: 10px; color: #166534; font-weight: bold;">Verified Corporate Seal Applied</p>
+              </div>
+
+              <div class="sig-box">
+                <p style="margin: 0 0 5px 0; font-size: 10px; text-transform: uppercase; color: #64748b;">Digitally Signed by Party B (Client):</p>
+                <p style="margin: 0; font-weight: bold; color: #0f172a;">${app.contractSignatureName || clientName}</p>
+                <p style="margin: 3px 0 0 0; font-size: 10px; color: #166534; font-weight: bold;">
+                  ${app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : "Signed & Executed"}
+                </p>
+              </div>
+            </div>
+
+            <div class="stamp">
+              <p style="font-size: 9px; color: #94a3b8; margin-top: 25px;">
+                Official Digital Contract ID: ${app.trackingId} · Verified and Enforceable under Electronic Transactions Ordinance
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
@@ -196,8 +348,12 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
 
   const currentStepIndex = VISA_PIPELINE.findIndex((p) => p.key === app.status);
 
+  // Check for specialized documents
+  const approvedVisaDoc = app.documents?.find((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType));
+  const submissionProofDoc = app.documents?.find((d: any) => ["submission_confirmation", "embassy_submission_proof"].includes(d.documentType));
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
+    <div className="space-y-8 max-w-6xl mx-auto pb-12">
       {/* Reusable Toast Notification */}
       <PortalToast toast={toast} onClose={() => setToast(null)} />
 
@@ -216,6 +372,108 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
           <FiMessageSquare size={14} /> Message Advisor
         </Link>
       </div>
+
+      {/* 1. CELEBRATORY APPROVED VISA BANNER (IF APPROVED OR VISA DOCUMENT AVAILABLE) */}
+      {(app.status === "APPROVED" || approvedVisaDoc) && (
+        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900/60 border-2 border-emerald-500/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden animate-pulse-subtle">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 blur-[120px] pointer-events-none" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                  <FiAward size={14} /> OFFICIAL VISA ISSUED & APPROVED
+                </span>
+                <span className="text-xs text-emerald-400 font-mono font-bold">
+                  Grant Verified
+                </span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white">
+                🎉 Congratulations, {app.client?.user?.name || "Client"}!
+              </h2>
+              <p className="text-slate-300 text-xs max-w-xl leading-relaxed">
+                Your official visa application for <strong>{app.country} ({app.visaCategory})</strong> has been successfully APPROVED and issued by immigration authorities. Download your official document below.
+              </p>
+            </div>
+
+            {approvedVisaDoc ? (
+              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                <a
+                  href={approvedVisaDoc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3.5 bg-slate-900 border border-emerald-500/40 text-emerald-400 font-black text-xs rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                >
+                  <FiEye size={15} /> View eVisa
+                </a>
+                <button
+                  type="button"
+                  onClick={(e) => handleDownloadSingle(approvedVisaDoc, e)}
+                  disabled={downloadingDocId === approvedVisaDoc.id}
+                  className="px-6 py-3.5 bg-gradient-to-r from-emerald-400 to-teal-400 text-black font-black text-xs rounded-xl hover:scale-105 transition-all cursor-pointer shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+                >
+                  {downloadingDocId === approvedVisaDoc.id ? (
+                    <>
+                      <FiLoader className="animate-spin" /> Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <FiDownload size={15} /> Download Approved Visa
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 px-5 py-3 rounded-2xl text-center">
+                <span className="text-xs font-bold text-emerald-400">Status: Approved</span>
+                <p className="text-[10px] text-slate-400 mt-0.5">Official visa file is being synced by desk officers.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2. OFFICIAL EMBASSY SUBMISSION CONFIRMATION CARD (IF AVAILABLE) */}
+      {submissionProofDoc && (
+        <div className="bg-gradient-to-r from-cyan-950/60 via-[#0f172a] to-slate-900 border border-cyan-500/40 rounded-[2.5rem] p-6 md:p-8 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                <FiSend size={22} />
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">
+                  Embassy / Consular Confirmation Slip
+                </span>
+                <h4 className="text-base font-black text-white">
+                  Official Visa Submission Email & Acknowledgment Slip
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Your visa file has been officially registered with the embassy. Review your submission slip here.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 shrink-0 self-start sm:self-auto">
+              <a
+                href={submissionProofDoc.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 bg-slate-900 border border-cyan-500/30 text-cyan-400 font-bold text-xs rounded-xl hover:bg-slate-800 transition-all flex items-center gap-1.5"
+              >
+                <FiEye /> View Slip
+              </a>
+              <button
+                type="button"
+                onClick={(e) => handleDownloadSingle(submissionProofDoc, e)}
+                disabled={downloadingDocId === submissionProofDoc.id}
+                className="px-5 py-2.5 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-cyan-500/10"
+              >
+                <FiDownload /> Download Slip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header Banner */}
       <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden">
@@ -315,9 +573,41 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
 
         {/* Contract & Agreement */}
         <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-8 space-y-6 shadow-xl">
-          <div className="flex items-center gap-2 pb-4 border-b border-slate-800">
-            <FiShield className="text-yellow-400" />
-            <h4 className="text-sm font-black text-white uppercase tracking-wider">Service Agreement / Contract</h4>
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <FiShield className="text-yellow-400" />
+              <h4 className="text-sm font-black text-white uppercase tracking-wider">Service Agreement / Contract</h4>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handlePrintContract}
+                className="px-2.5 py-1 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-yellow-400 text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer"
+                title="Print official legal contract PDF"
+              >
+                <FiPrinter size={11} /> Print PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Legal summary box */}
+          <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 text-xs space-y-2.5">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-400">First Party (Provider):</span>
+              <strong className="text-white">{app.contractFirstPartyName || "Eng Syed Saif Ur Rehman (Syed Services)"}</strong>
+            </div>
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-400">Second Party (Client):</span>
+              <strong className="text-white">{app.client?.user?.name || "Client"}</strong>
+            </div>
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-400">Approved Timeline:</span>
+              <strong className="text-yellow-400 font-mono">{app.contractApprovedDays || "30"} Days</strong>
+            </div>
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-400">Agreed Service Fee:</span>
+              <strong className="text-emerald-400 font-mono">${app.contractPaymentAmount || app.packagePrice || "0"} USD</strong>
+            </div>
           </div>
 
           {app.contractStatus === "SENT" && !app.contractAccepted ? (
@@ -335,7 +625,7 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
                 </label>
                 <input
                   type="text"
-                  placeholder="Your Full Name"
+                  placeholder="Your Full Legal Name"
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
                   className="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-yellow-400 outline-none"
@@ -345,26 +635,42 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
               <button
                 onClick={handleSignContract}
                 disabled={signing}
-                className="w-full py-3 bg-yellow-400 text-black font-extrabold text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer"
+                className="w-full py-3 bg-yellow-400 text-black font-extrabold text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer shadow-lg shadow-yellow-400/10"
               >
-                {signing ? "Digitally Signing..." : "Sign Agreement"}
+                {signing ? "Digitally Signing Legal Contract..." : "Sign Legal Agreement"}
               </button>
             </div>
           ) : app.contractAccepted ? (
             <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-2 text-center">
               <FiCheckCircle className="text-emerald-400 mx-auto" size={24} />
-              <p className="text-xs font-bold text-emerald-400">Agreement Digitally Signed</p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs font-bold text-emerald-400">Agreement Digitally Signed & Legally Enforceable</p>
+              <p className="text-[11px] text-slate-300">
                 Signed by: <strong>{app.contractSignatureName}</strong>
               </p>
-              <p className="text-[10px] text-slate-500">
+              <p className="text-[10px] text-slate-400 font-mono">
                 {app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : ""}
               </p>
+              <button
+                type="button"
+                onClick={handlePrintContract}
+                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold hover:bg-slate-850"
+              >
+                <FiPrinter size={13} /> View & Download Full Signed Contract
+              </button>
             </div>
           ) : (
-            <p className="text-xs text-slate-500 italic py-4">
-              Contract review will be issued once initial documentation is approved by case officers.
-            </p>
+            <div className="space-y-3">
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Official bilateral service contract details and legal representation clauses are registered under file <strong>{app.trackingId}</strong>.
+              </p>
+              <button
+                type="button"
+                onClick={handlePrintContract}
+                className="w-full py-2.5 bg-slate-900 border border-slate-800 text-yellow-400 text-xs font-bold rounded-xl hover:bg-slate-850 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <FiEye /> View & Print Contract Document
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -447,3 +753,4 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
     </div>
   );
 }
+

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import fs from "fs";
+import path from "path";
 
 export async function POST(
   req: Request,
@@ -25,7 +27,16 @@ export async function POST(
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
       include: {
-        client: true,
+        client: {
+          include: {
+            user: true,
+          },
+        },
+        agent: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
@@ -39,7 +50,7 @@ export async function POST(
     }
 
     const formData = await req.formData();
-    const documentType = formData.get("documentType") as string; // passport, cnic, photo, bank_statement, invitation_letter
+    const documentType = formData.get("documentType") as string;
     const file = formData.get("file") as File;
 
     if (!documentType || !file) {
@@ -49,46 +60,54 @@ export async function POST(
       );
     }
 
-    // Write file to disk
-   const bytes = await file.arrayBuffer();
-const buffer = Buffer.from(bytes);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const extension = safeName.split(".").pop()?.toLowerCase() || "bin";
+    const storagePath = `applications/${applicationId}/${Date.now()}_${safeName}`;
 
-const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    let fileUrl = "";
 
-const extension =
-  safeName.split(".").pop()?.toLowerCase() || "bin";
+    // 1. Try Supabase Storage
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from("documents")
+        .upload(storagePath, buffer, {
+          contentType: file.type || "application/octet-stream",
+          upsert: true,
+        });
 
-const storagePath =
-  `applications/${applicationId}/${Date.now()}_${safeName}`;
-
-const { error: uploadError } = await supabase.storage
-  .from("documents")
-  .upload(storagePath, buffer, {
-    contentType: file.type,
-    upsert: true,
-  });
-
-if (uploadError) {
-  console.error(uploadError);
-
-  return NextResponse.json(
-    {
-      error: uploadError.message,
-    },
-    {
-      status: 500,
+      if (!uploadError) {
+        const { data } = supabase.storage
+          .from("documents")
+          .getPublicUrl(storagePath);
+        fileUrl = data.publicUrl;
+      }
+    } catch (storageErr) {
+      console.warn("Supabase storage error, attempting local storage fallback:", storageErr);
     }
-  );
-}
 
-const { data } = supabase.storage
-  .from("documents")
-  .getPublicUrl(storagePath);
+    // 2. Fallback to local storage if Supabase upload was not successful
+    if (!fileUrl) {
+      try {
+        const localDir = path.join(process.cwd(), "public", "uploads", "documents", appIdStr);
+        if (!fs.existsSync(localDir)) {
+          fs.mkdirSync(localDir, { recursive: true });
+        }
+        const localFileName = `${Date.now()}_${safeName}`;
+        const localFilePath = path.join(localDir, localFileName);
+        fs.writeFileSync(localFilePath, buffer);
+        fileUrl = `/uploads/documents/${appIdStr}/${localFileName}`;
+      } catch (localErr) {
+        console.warn("Local storage fallback failed, using Base64 data URL:", localErr);
+        const mime = file.type || "application/pdf";
+        fileUrl = `data:${mime};base64,${buffer.toString("base64")}`;
+      }
+    }
 
-const fileUrl = data.publicUrl;
-const fileType = extension;
+    const fileType = extension;
 
-    // Insert or update Document in DB
+    // Insert Document in DB
     const document = await prisma.document.create({
       data: {
         applicationId,
@@ -99,6 +118,53 @@ const fileType = extension;
         fileType,
       },
     });
+
+    // If Admin/Staff uploaded an Approved Visa or Submission Confirmation:
+    if (["approved_visa", "issued_visa"].includes(documentType)) {
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          status: "APPROVED",
+        },
+      });
+
+      // Notify Client
+      if (application.client?.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: application.client.userId,
+            title: "🎉 VISA APPROVED & ISSUED!",
+            message: `Congratulations! Your visa for ${application.country} (${application.trackingId}) has been APPROVED and issued. You can view and download your official visa document now.`,
+            actionUrl: `/portal/client/applications/${application.id}`,
+            category: "PIPELINE",
+            priority: "HIGH",
+          },
+        });
+      }
+    } else if (["submission_confirmation", "embassy_submission_proof"].includes(documentType)) {
+      if (["DRAFT", "WAITING_CONFIRMATION", "DEAL_CONFIRMED", "SENT_FOR_INVITATION", "INVITATION_ARRIVED", "FILE_READY_EMBASSY"].includes(application.status)) {
+        await prisma.application.update({
+          where: { id: applicationId },
+          data: {
+            status: "APPLICATION_SUBMITTED",
+          },
+        });
+      }
+
+      // Notify Client
+      if (application.client?.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: application.client.userId,
+            title: "Embassy Submission Confirmation Available",
+            message: `Your visa application (${application.trackingId}) for ${application.country} has been officially submitted. View and download your submission proof in the portal.`,
+            actionUrl: `/portal/client/applications/${application.id}`,
+            category: "PIPELINE",
+            priority: "HIGH",
+          },
+        });
+      }
+    }
 
     // Audit log
     await prisma.auditLog.create({
@@ -121,3 +187,4 @@ const fileType = extension;
     );
   }
 }
+

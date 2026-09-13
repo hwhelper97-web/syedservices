@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   FiFileText, FiUser, FiGlobe, FiAlertCircle, 
   FiCpu, FiCopy, FiLoader, FiCheckCircle, FiDownload, 
-  FiCornerDownRight, FiArrowLeft, FiEye, FiImage, FiArchive, FiPaperclip, FiPrinter, FiDollarSign
+  FiCornerDownRight, FiArrowLeft, FiEye, FiImage, FiArchive, FiPaperclip, FiPrinter, FiDollarSign,
+  FiUploadCloud, FiAward, FiSend, FiShield
 } from "react-icons/fi";
 import Link from "next/link";
 import { VISA_STATUS_OPTIONS } from "@/lib/visaPipeline";
@@ -30,9 +31,88 @@ export default function AdminApplicationDetailPage() {
   const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
 
+  // Admin upload states for Submission Confirmation and Approved Visa
+  const [submissionFile, setSubmissionFile] = useState<File | null>(null);
+  const [uploadingSubmission, setUploadingSubmission] = useState(false);
+  const [submissionRemarks, setSubmissionRemarks] = useState("");
+
+  const [approvedVisaFile, setApprovedVisaFile] = useState<File | null>(null);
+  const [uploadingVisa, setUploadingVisa] = useState(false);
+  const [visaGrantNumber, setVisaGrantNumber] = useState("");
+  const [visaExpiryDate, setVisaExpiryDate] = useState("");
+
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 4500);
+  };
+
+  const handleUploadSubmissionProof = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!submissionFile) {
+      showToast("Please choose a submission confirmation document or screenshot to upload.", "error");
+      return;
+    }
+
+    setUploadingSubmission(true);
+    try {
+      const formData = new FormData();
+      formData.append("documentType", "submission_confirmation");
+      formData.append("file", submissionFile);
+
+      const res = await fetch(`/api/applications/${appIdStr}/documents`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to upload submission confirmation");
+      }
+
+      showToast("Embassy submission confirmation uploaded and dispatched to client!", "success");
+      setSubmissionFile(null);
+      setSubmissionRemarks("");
+      fetchApplicationDetails();
+    } catch (err: any) {
+      showToast(err.message, "error");
+    } finally {
+      setUploadingSubmission(false);
+    }
+  };
+
+  const handleUploadApprovedVisa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!approvedVisaFile) {
+      showToast("Please select the official approved visa file to upload.", "error");
+      return;
+    }
+
+    setUploadingVisa(true);
+    try {
+      const formData = new FormData();
+      formData.append("documentType", "approved_visa");
+      formData.append("file", approvedVisaFile);
+
+      const res = await fetch(`/api/applications/${appIdStr}/documents`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to upload approved visa");
+      }
+
+      showToast("🎉 Approved Visa uploaded! Application status marked as APPROVED.", "success");
+      setApprovedVisaFile(null);
+      setVisaGrantNumber("");
+      setVisaExpiryDate("");
+      fetchApplicationDetails();
+    } catch (err: any) {
+      showToast(err.message, "error");
+    } finally {
+      setUploadingVisa(false);
+    }
   };
 
   // Helper to format safe sanitized filenames with Applicant Name and Visa Tracking Number
@@ -1262,6 +1342,198 @@ export default function AdminApplicationDetailPage() {
             >
               {updating ? "Updating..." : "Save Status Logs"}
             </button>
+          </div>
+
+          {/* 1. Official Embassy Submission Confirmation Dispatcher */}
+          <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400"><FiSend size={16} /></span>
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">
+                  Official Embassy Submission Proof / Email Confirmation
+                </h4>
+              </div>
+              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold uppercase">
+                Client Dispatch
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Upload the official submission confirmation email, appointment slip, or embassy acknowledgment receipt. The client will be able to view and download it directly in their portal.
+            </p>
+
+            {/* Check if already uploaded */}
+            {app.documents?.some((d: any) => d.documentType === "submission_confirmation") && (
+              <div className="p-4 bg-cyan-950/40 border border-cyan-500/30 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
+                    <FiCheckCircle /> Active Submission Confirmation Attached
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Ready for Client
+                  </span>
+                </div>
+                {app.documents.filter((d: any) => d.documentType === "submission_confirmation").map((subDoc: any) => (
+                  <div key={subDoc.id} className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-slate-200 font-mono truncate max-w-xs">{subDoc.fileName}</span>
+                    <div className="flex gap-2">
+                      <a
+                        href={subDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-slate-900 border border-slate-800 text-cyan-400 rounded-lg text-xs font-bold hover:bg-slate-850"
+                      >
+                        View
+                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDownloadSingle(subDoc, e)}
+                        className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-lg text-xs font-bold hover:bg-cyan-500/30 cursor-pointer"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload Form */}
+            <form onSubmit={handleUploadSubmissionProof} className="space-y-4 pt-2">
+              <div>
+                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">
+                  Select Submission Confirmation File (PDF / Image / Screenshot)
+                </label>
+                <label className="w-full py-5 border border-dashed border-slate-800 hover:border-cyan-400/40 rounded-2xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors bg-slate-950/50">
+                  <FiUploadCloud className="text-cyan-400" size={22} />
+                  <span className="text-xs font-semibold text-slate-300">
+                    {submissionFile ? submissionFile.name : "Choose Embassy Email / Submission Slip"}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    PDF, JPG, PNG up to 15MB
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && setSubmissionFile(e.target.files[0])}
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploadingSubmission || !submissionFile}
+                className="w-full py-3.5 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2"
+              >
+                {uploadingSubmission ? (
+                  <>
+                    <FiLoader className="animate-spin" /> Dispatching Submission Confirmation...
+                  </>
+                ) : (
+                  <>
+                    <FiSend /> Upload & Send Submission Confirmation to Client
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* 2. Official Approved Visa / eVisa Dispatcher */}
+          <div className="bg-gradient-to-br from-emerald-950/40 via-[#0f172a] to-slate-900 border border-emerald-500/30 rounded-[2.5rem] p-8 shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] pointer-events-none" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400"><FiAward size={18} /></span>
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">
+                  Upload & Issue Approved Visa / eVisa Grant
+                </h4>
+              </div>
+              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+                Final Issuance
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              When the client's visa is granted, upload the official electronic visa (eVisa), visa sticker scan, or grant notice here. Uploading will automatically mark the status as <strong>APPROVED</strong> and notify the client with a celebratory alert.
+            </p>
+
+            {/* Check if already approved visa exists */}
+            {app.documents?.some((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType)) && (
+              <div className="p-4 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                    <FiCheckCircle /> Official Approved Visa Issued
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold">
+                    ACTIVE GRANT
+                  </span>
+                </div>
+                {app.documents.filter((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType)).map((vDoc: any) => (
+                  <div key={vDoc.id} className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-slate-200 font-mono truncate max-w-xs">{vDoc.fileName}</span>
+                    <div className="flex gap-2">
+                      <a
+                        href={vDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-slate-900 border border-slate-800 text-emerald-400 rounded-lg text-xs font-bold hover:bg-slate-850"
+                      >
+                        View Visa
+                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDownloadSingle(vDoc, e)}
+                        className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-xs font-bold hover:bg-emerald-500/30 cursor-pointer"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload Approved Visa Form */}
+            <form onSubmit={handleUploadApprovedVisa} className="space-y-4 pt-2">
+              <div>
+                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">
+                  Select Approved Visa Document / eVisa Grant (PDF / JPG / PNG)
+                </label>
+                <label className="w-full py-6 border border-dashed border-emerald-500/40 hover:border-emerald-400 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-slate-950/60">
+                  <FiAward className="text-emerald-400" size={26} />
+                  <span className="text-xs font-semibold text-slate-200">
+                    {approvedVisaFile ? approvedVisaFile.name : "Choose Official Approved Visa File"}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    Official eVisa PDF or high-resolution sticker scan
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && setApprovedVisaFile(e.target.files[0])}
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploadingVisa || !approvedVisaFile}
+                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-xs rounded-xl hover:from-emerald-400 hover:to-teal-300 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+              >
+                {uploadingVisa ? (
+                  <>
+                    <FiLoader className="animate-spin" /> Uploading & Delivering Approved Visa...
+                  </>
+                ) : (
+                  <>
+                    <FiAward size={16} /> Issue Approved Visa & Send to Client
+                  </>
+                )}
+              </button>
+            </form>
           </div>
 
           {/* Contract Status Card */}
