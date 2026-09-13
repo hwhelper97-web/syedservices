@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const session = await getSession();
 
-    if (!session || !["SUPER_ADMIN", "ADMIN", "STAFF"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

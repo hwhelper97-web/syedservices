@@ -10,7 +10,11 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const leadId = parseInt(id);
+    const leadId = parseInt(id, 10);
+
+    if (isNaN(leadId)) {
+      return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+    }
 
     const lead = await prisma.lead.findUnique({
       where: { id: leadId },
@@ -33,12 +37,30 @@ export async function POST(
     if (attachmentFile) {
       const buffer = Buffer.from(await attachmentFile.arrayBuffer());
       
-      // Save to public directory for direct download
-      const fileName = `${id}_${Date.now()}_${attachmentFile.name}`;
-      const publicPath = path.join(process.cwd(), "public/uploads/results", fileName);
-      await fs.writeFile(publicPath, buffer);
-      
-      attachmentUrl = `https://syedservices.com.pk/uploads/results/${fileName}`;
+      try {
+        const uploadDir = path.join(process.cwd(), "public/uploads/results");
+        await fs.mkdir(uploadDir, { recursive: true });
+        const fileName = `${id}_${Date.now()}_${attachmentFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+        const publicPath = path.join(uploadDir, fileName);
+        await fs.writeFile(publicPath, buffer);
+        attachmentUrl = `https://syedservices.com.pk/uploads/results/${fileName}`;
+      } catch (fsErr) {
+        console.warn("Could not write result file locally:", fsErr);
+        try {
+          const { supabase } = await import("@/lib/supabase");
+          const safeName = `results/${id}_${Date.now()}_${attachmentFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+          const { error: upErr } = await supabase.storage.from("documents").upload(safeName, buffer, {
+            contentType: attachmentFile.type || "application/octet-stream",
+            upsert: true,
+          });
+          if (!upErr) {
+            const { data } = supabase.storage.from("documents").getPublicUrl(safeName);
+            attachmentUrl = data.publicUrl;
+          }
+        } catch (sbErr) {
+          // ignore
+        }
+      }
       
       attachment = {
         buffer,

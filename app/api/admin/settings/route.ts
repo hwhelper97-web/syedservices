@@ -43,7 +43,7 @@ export async function GET() {
   try {
     const session = await getSession();
 
-    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -82,7 +82,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await getSession();
 
-    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

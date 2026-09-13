@@ -17,6 +17,10 @@ export async function POST(
     const { id: appIdStr } = await params;
     const applicationId = parseInt(appIdStr, 10);
 
+    if (isNaN(applicationId)) {
+      return NextResponse.json({ error: "Invalid application ID" }, { status: 400 });
+    }
+
     // Verify application ownership (or admin/agent role)
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
@@ -30,7 +34,7 @@ export async function POST(
     }
 
     // Role check
-    if (session.role === "CLIENT" && application.client.userId !== session.userId) {
+    if (session.role === "CLIENT" && application.client?.userId !== session.userId) {
       return NextResponse.json({ error: "Access Denied" }, { status: 403 });
     }
 

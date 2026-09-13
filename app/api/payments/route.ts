@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     if (contentType.includes("application/json")) {
       const body = await req.json();
       if (body.action === "CREATE_INVOICE" || body.totalAmount !== undefined) {
-        if (!["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+        if (!["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER"].includes(session.role)) {
           return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { applicationId, totalAmount, dueDate, invoiceNumber, status } = body;
@@ -83,17 +83,40 @@ export async function POST(req: Request) {
     let receiptUrl = null;
 
     if (file) {
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "receipts");
-      await mkdir(uploadDir, { recursive: true });
+      try {
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "receipts");
+        await mkdir(uploadDir, { recursive: true });
 
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
-      const cleanFileName = `${invoiceId}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-      const filePath = path.join(uploadDir, cleanFileName);
+        const cleanFileName = `${invoiceId}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+        const filePath = path.join(uploadDir, cleanFileName);
 
-      await writeFile(filePath, buffer);
-      receiptUrl = `/uploads/receipts/${cleanFileName}`;
+        await writeFile(filePath, buffer);
+        receiptUrl = `/uploads/receipts/${cleanFileName}`;
+      } catch (fsErr) {
+        console.warn("Local receipt file write failed, trying Supabase / base64 fallback:", fsErr);
+        try {
+          const { supabase } = await import("@/lib/supabase");
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          const cleanFileName = `receipts/${invoiceId}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+          const { error: upErr } = await supabase.storage.from("documents").upload(cleanFileName, buffer, {
+            contentType: file.type || "application/octet-stream",
+            upsert: true,
+          });
+          if (!upErr) {
+            const { data } = supabase.storage.from("documents").getPublicUrl(cleanFileName);
+            receiptUrl = data.publicUrl;
+          } else {
+            receiptUrl = `data:${file.type || "image/jpeg"};base64,${buffer.toString("base64")}`;
+          }
+        } catch (fbErr) {
+          const bytes = await file.arrayBuffer();
+          receiptUrl = `data:${file.type || "image/jpeg"};base64,${Buffer.from(bytes).toString("base64")}`;
+        }
+      }
     }
 
     // Create payment entry
@@ -148,7 +171,7 @@ export async function GET() {
 
     let invoices: any[] = [];
 
-    if (session.role === "SUPER_ADMIN" || session.role === "ADMIN") {
+    if (["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       invoices = await prisma.invoice.findMany({
         orderBy: { createdAt: "desc" },
         include: {
@@ -199,7 +222,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await getSession();
 
-    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -302,7 +325,7 @@ export async function DELETE(req: Request) {
   try {
     const session = await getSession();
 
-    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

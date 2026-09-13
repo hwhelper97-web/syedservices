@@ -14,8 +14,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    const cleanEmail = (email || "").toLowerCase().trim();
+
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: cleanEmail, mode: "insensitive" } },
     });
 
     if (existingUser) {
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
       const agentCode = `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
       user = await prisma.user.create({
         data: {
-          email,
+          email: cleanEmail,
           passwordHash,
           name,
           role: "AGENT",
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
     } else {
       user = await prisma.user.create({
         data: {
-          email,
+          email: cleanEmail,
           passwordHash,
           name,
           role: "CLIENT",

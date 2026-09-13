@@ -5,7 +5,7 @@ import { getSession, hashPassword, verifyPassword } from "@/lib/auth";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session || session.role !== "AGENT") {
+    if (!session || !["AGENT", "AGENCY_OWNER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -41,7 +41,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const session = await getSession();
-    if (!session || session.role !== "AGENT") {
+    if (!session || !["AGENT", "AGENCY_OWNER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

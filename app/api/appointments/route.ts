@@ -76,7 +76,7 @@ export async function GET() {
 
     let appointments: any[] = [];
 
-    if (session.role === "SUPER_ADMIN" || session.role === "ADMIN") {
+    if (["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       appointments = await prisma.appointment.findMany({
         orderBy: { date: "asc" },
         include: {

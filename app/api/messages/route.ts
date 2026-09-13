@@ -31,13 +31,13 @@ export async function POST(req: Request) {
         include: { sender: true }
       });
 
-      if (lastReceivedMessage && ["SUPER_ADMIN", "ADMIN", "STAFF"].includes(lastReceivedMessage.sender.role)) {
+      if (lastReceivedMessage && ["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(lastReceivedMessage.sender.role)) {
         targetReceiverId = lastReceivedMessage.senderId;
       } else {
-        // Fallback: auto-route to first Admin/Super Admin
+        // Fallback: auto-route to first Admin/Super Admin/Manager
         const adminUser = await prisma.user.findFirst({
           where: {
-            role: { in: ["SUPER_ADMIN", "ADMIN"] }
+            role: { in: ["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER"] }
           }
         });
         if (!adminUser) {
@@ -175,8 +175,8 @@ export async function GET(req: Request) {
       });
     } else {
       // If session is ADMIN, SUPER_ADMIN, or STAFF, they view the target partner's (client/agent) thread
-      if (!partnerId) {
-        return NextResponse.json({ error: "Partner ID is required" }, { status: 400 });
+      if (!partnerId || isNaN(partnerId)) {
+        return NextResponse.json({ error: "Valid Partner ID is required" }, { status: 400 });
       }
       messages = await prisma.message.findMany({
         where: {

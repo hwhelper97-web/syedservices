@@ -15,6 +15,10 @@ export async function GET(
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
 
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Invalid invoice ID" }, { status: 400 });
+    }
+
     const invoice = await prisma.invoice.findUnique({
       where: { id },
       include: {
@@ -48,12 +52,16 @@ export async function PATCH(
 ) {
   try {
     const session = await getSession();
-    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
+
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Invalid invoice ID" }, { status: 400 });
+    }
 
     const invoice = await prisma.invoice.findUnique({ where: { id } });
     if (!invoice) {
@@ -109,12 +117,16 @@ export async function DELETE(
 ) {
   try {
     const session = await getSession();
-    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
+
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Invalid invoice ID" }, { status: 400 });
+    }
 
     const invoice = await prisma.invoice.findUnique({ where: { id } });
     if (!invoice) {

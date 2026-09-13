@@ -11,8 +11,13 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    const leadId = parseInt(id, 10);
+
+    if (isNaN(leadId)) {
+      return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+    }
+
     const { status } = await req.json();
-    const leadId = parseInt(id);
 
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
@@ -38,7 +43,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const leadId = parseInt(id);
+    const leadId = parseInt(id, 10);
+
+    if (isNaN(leadId)) {
+      return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+    }
 
     // Delete files from filesystem
     const leadDir = path.join(process.cwd(), "public/uploads", id);

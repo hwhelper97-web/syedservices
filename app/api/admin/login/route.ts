@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       const portalUser = await prisma.user.findUnique({
         where: { email },
       });
-      if (portalUser && ["SUPER_ADMIN", "ADMIN"].includes(portalUser.role)) {
+      if (portalUser && ["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(portalUser.role)) {
         await setSessionCookie({
           userId: portalUser.id,
           email: portalUser.email,

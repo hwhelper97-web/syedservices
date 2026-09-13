@@ -246,7 +246,7 @@ export async function GET(req: Request) {
 
     let applications: any[] = [];
 
-    if (session.role === "SUPER_ADMIN" || session.role === "ADMIN") {
+    if (["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       applications = await prisma.application.findMany({
         orderBy: { createdAt: "desc" },
         include: {
@@ -300,7 +300,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.role !== "SUPER_ADMIN" && session.role !== "ADMIN") {
+    if (!["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER"].includes(session.role)) {
       return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
     }
 

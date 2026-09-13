@@ -182,6 +182,12 @@ export async function PATCH(req: Request) {
     }
 
     const targetPartnerId = parseInt(partnerId, 10);
+    if (isNaN(targetPartnerId)) {
+      return NextResponse.json(
+        { error: "Invalid partnerId" },
+        { status: 400 }
+      );
+    }
 
     const isAdminOrStaff = [
       "SUPER_ADMIN",

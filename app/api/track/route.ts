@@ -21,6 +21,26 @@ export async function GET(req: NextRequest) {
     });
 
     if (!lead) {
+      const app = await prisma.application.findUnique({
+        where: { trackingId },
+        include: {
+          client: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+
+      if (app) {
+        return NextResponse.json({
+          name: app.client?.user?.name || "Applicant",
+          service: `${app.country} - ${app.visaCategory}`,
+          status: app.status.replace(/_/g, " "),
+          createdAt: app.createdAt,
+        });
+      }
+
       return NextResponse.json({ error: "Application not found" }, { status: 404 });
     }
 

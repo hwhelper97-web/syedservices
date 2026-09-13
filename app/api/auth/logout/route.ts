@@ -13,10 +13,10 @@ export async function POST() {
     );
   }
 }
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await clearSessionCookie();
-    return NextResponse.redirect(new URL("/portal/login", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"));
+    return NextResponse.redirect(new URL("/portal/login", req.url));
   } catch (error) {
     return NextResponse.json({ success: true });
   }

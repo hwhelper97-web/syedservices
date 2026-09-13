@@ -24,8 +24,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const parsedAppId = parseInt(applicationId, 10);
+    if (isNaN(parsedAppId)) {
+      return NextResponse.json(
+        { error: "Invalid Application ID" },
+        { status: 400 }
+      );
+    }
+
     const app = await prisma.application.findUnique({
-      where: { id: parseInt(applicationId, 10) },
+      where: { id: parsedAppId },
       include: {
         client: {
           include: {

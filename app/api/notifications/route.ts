@@ -129,8 +129,13 @@ export async function PATCH(req: Request) {
     }
 
     if (notificationId) {
+      const notifId = parseInt(notificationId, 10);
+      if (isNaN(notifId)) {
+        return NextResponse.json({ error: "Invalid notificationId" }, { status: 400 });
+      }
+
       await prisma.notification.update({
-        where: { id: parseInt(notificationId, 10) },
+        where: { id: notifId },
         data: {
           isRead: true,
           readAt: new Date(),
