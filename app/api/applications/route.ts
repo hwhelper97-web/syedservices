@@ -14,13 +14,21 @@ export async function POST(req: Request) {
     const body = await req.json();
     let clientProfileId: number;
     let agentProfileId: number | null = null;
-    if (session.role === "AGENT") {
-      const agentProfile = await prisma.agentProfile.findUnique({
+    if (["AGENT", "AGENCY_OWNER"].includes(session.role)) {
+      let agentProfile = await prisma.agentProfile.findUnique({
         where: { userId: session.userId },
         include: { user: true }
       });
       if (!agentProfile) {
-        return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
+        const agentCode = `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
+        agentProfile = await prisma.agentProfile.create({
+          data: {
+            userId: session.userId,
+            agentCode,
+            agencyName: `${session.name || "Agency"}'s Office`,
+          },
+          include: { user: true }
+        });
       }
 
       if (
@@ -282,7 +290,7 @@ export async function GET(req: Request) {
 
     let applications: any[] = [];
 
-    if (["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
+    if (["SUPER_ADMIN", "ADMIN", "STAFF", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
       applications = await prisma.application.findMany({
         orderBy: { createdAt: "desc" },
         include: {
@@ -295,7 +303,7 @@ export async function GET(req: Request) {
           invoices: true,
         }
       });
-    } else if (session.role === "AGENT") {
+    } else if (["AGENT", "AGENCY_OWNER"].includes(session.role)) {
       applications = await prisma.application.findMany({
         where: { agent: { userId: session.userId } },
         orderBy: { createdAt: "desc" },
