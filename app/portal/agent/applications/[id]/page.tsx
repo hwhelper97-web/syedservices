@@ -39,6 +39,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const [app, setApp] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [signing, setSigning] = useState(false);
   const [signatureName, setSignatureName] = useState("");
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -58,9 +59,12 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       const data = await res.json();
       if (res.ok) {
         setApp(data.application);
+      } else {
+        setError(data.error || "Failed to load application");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Failed to connect to server");
     } finally {
       setLoading(false);
     }
