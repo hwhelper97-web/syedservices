@@ -6,29 +6,115 @@ import {
   FiArrowLeft, FiLoader, FiUser, FiFileText, FiClock,
   FiCheckCircle, FiAlertCircle, FiMapPin, FiCalendar,
   FiPhone, FiBook, FiBriefcase, FiUsers, FiPaperclip,
-  FiCircle, FiChevronRight, FiDownload, FiEye, FiImage, FiArchive, FiPrinter
+  FiCircle, FiChevronRight, FiDownload, FiEye, FiImage, FiArchive, FiPrinter,
+  FiShield, FiGlobe, FiDollarSign, FiChevronDown, FiChevronUp, FiAward,
+  FiMail, FiSend, FiCopy, FiLayers, FiCheck, FiExternalLink
 } from "react-icons/fi";
 
 import { VISA_PIPELINE as STATUS_PIPELINE, VISA_STATUS_COLORS as STATUS_COLORS } from "@/lib/visaPipeline";
 import PortalToast, { ToastMessage } from "@/components/PortalToast";
 
-function InfoField({ label, value }: { label: string; value?: string | null }) {
+function DetailBox({ 
+  icon, 
+  label, 
+  value, 
+  mono = false, 
+  copyable = false,
+  highlight = false,
+  badge = false,
+  badgeColor = "yellow",
+  isLink = false,
+  href = ""
+}: { 
+  icon?: React.ReactNode; 
+  label: string; 
+  value?: string | number | null;
+  mono?: boolean;
+  copyable?: boolean;
+  highlight?: boolean;
+  badge?: boolean;
+  badgeColor?: "yellow" | "emerald" | "blue" | "slate";
+  isLink?: boolean;
+  href?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!value) return;
+    navigator.clipboard.writeText(String(value));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const badgeStyles = {
+    yellow: "bg-yellow-400/10 text-yellow-400 border-yellow-400/20",
+    emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    slate: "bg-slate-900 text-slate-300 border-slate-800"
+  };
+
   return (
-    <div className="space-y-1">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <p className="text-sm font-semibold text-white">
-        {value || <span className="text-slate-600 font-normal italic">Not provided</span>}
-      </p>
+    <div className="p-3.5 bg-slate-950/60 hover:bg-slate-900/60 border border-slate-850/80 hover:border-slate-750 rounded-2xl transition-all flex flex-col justify-between group shadow-sm">
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 truncate">
+          {icon && <span className="text-yellow-400/80 shrink-0">{icon}</span>}
+          <span className="truncate">{label}</span>
+        </span>
+        {copyable && value && (
+          <button 
+            type="button" 
+            onClick={handleCopy}
+            className="text-slate-500 hover:text-yellow-400 transition-colors p-0.5 rounded cursor-pointer shrink-0"
+            title="Copy Value"
+          >
+            {copied ? <FiCheck size={11} className="text-emerald-400" /> : <FiCopy size={11} />}
+          </button>
+        )}
+      </div>
+
+      <div className="min-w-0">
+        {value ? (
+          isLink ? (
+            <a 
+              href={href || String(value)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-yellow-400 hover:underline flex items-center gap-1 truncate"
+            >
+              <span className="truncate">{value}</span>
+              <FiExternalLink size={10} className="shrink-0" />
+            </a>
+          ) : badge ? (
+            <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-bold border ${badgeStyles[badgeColor]} ${mono ? "font-mono" : ""} truncate max-w-full`}>
+              {value}
+            </span>
+          ) : (
+            <p className={`text-xs md:text-[13px] font-bold ${highlight ? "text-yellow-400" : "text-slate-100"} ${mono ? "font-mono" : ""} truncate`}>
+              {value}
+            </p>
+          )
+        ) : (
+          <p className="text-xs text-slate-600 italic font-normal">Not provided</p>
+        )}
+      </div>
     </div>
   );
 }
 
-function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function SectionCard({ title, icon, badge, children }: { title: string; icon: React.ReactNode; badge?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-6 space-y-5 shadow-xl">
-      <div className="flex items-center gap-2 pb-3 border-b border-slate-800/60">
-        <span className="text-yellow-400">{icon}</span>
-        <h4 className="text-sm font-black text-white uppercase tracking-wider">{title}</h4>
+    <div className="bg-[#0f172a] border border-slate-800/80 hover:border-slate-750 rounded-3xl p-5 md:p-6 space-y-4 shadow-xl transition-all">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
+        <div className="flex items-center gap-2.5">
+          <span className="text-yellow-400 p-1.5 bg-yellow-400/10 border border-yellow-400/20 rounded-xl">{icon}</span>
+          <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider">{title}</h4>
+        </div>
+        {badge && (
+          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400 uppercase font-mono">
+            {badge}
+          </span>
+        )}
       </div>
       {children}
     </div>
@@ -43,6 +129,8 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [signing, setSigning] = useState(false);
   const [signatureName, setSignatureName] = useState("");
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [isContractExpanded, setIsContractExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "personal" | "visa" | "family" | "career" | "passport" | "documents">("overview");
 
   // Download states
   const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
@@ -813,357 +901,531 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
         {/* ── Left: Application Details ── */}
         <div className="xl:col-span-8 space-y-6">
 
-          {/* Visa Processing Contract Card */}
+          {/* 1. Pakistan Visa Service Contract Card */}
           {app.contractStatus && app.contractStatus !== "PENDING" && (
-            <div className="bg-[#0f172a] border border-yellow-400/30 rounded-[2rem] p-8 shadow-2xl space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full blur-3xl -z-10" />
+            <div>
+              {app.contractAccepted && !isContractExpanded ? (
+                /* MINIMIZED LUXURY COMPACT CONTRACT CARD */
+                <div className="bg-gradient-to-r from-emerald-950/40 via-[#0f172a] to-slate-900/90 border border-emerald-500/30 rounded-3xl p-5 md:p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:border-emerald-500/50">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                          <FiCheckCircle size={14} className="text-emerald-400" />
+                          <span>Pakistan Visa Service Contract — Executed & Legally Binding</span>
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                          {app.trackingId}
+                        </span>
+                      </div>
 
-              {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
-                <div className="flex items-center gap-3">
-                  <span className="text-yellow-400"><FiFileText size={24} /></span>
-                  <div>
-                    <h3 className="text-lg font-black text-white tracking-tight uppercase">{app.country ? `${app.country} Visa Service Contract` : "Visa Service Contract"}</h3>
-                    <h4 className="text-xs text-slate-500 font-bold tracking-wider uppercase font-mono mt-0.5">د ویزې خدماتو رسمي تړون پاڼه</h4>
-                  </div>
-                </div>
-                {app.contractAccepted && (
-                  <button
-                    onClick={handlePrintContract}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 hover:bg-yellow-400/5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all text-xs font-semibold cursor-pointer"
-                    title="Print Official Letterhead / PDF"
-                  >
-                    <FiPrinter size={13} /> Print / Save PDF
-                  </button>
-                )}
-              </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="p-2.5 bg-slate-950/80 border border-slate-850 rounded-xl">
+                          <span className="text-slate-500 text-[9px] uppercase font-bold block">Party A (Consultancy)</span>
+                          <strong className="text-white text-xs truncate block mt-0.5">Eng Syed Saif Ur Rehman</strong>
+                        </div>
+                        <div className="p-2.5 bg-slate-950/80 border border-slate-850 rounded-xl">
+                          <span className="text-slate-500 text-[9px] uppercase font-bold block">Party B (Partner)</span>
+                          <strong className="text-white text-xs truncate block mt-0.5">{app.contractSignatureName || app.agent?.agencyName || clientUser?.name}</strong>
+                        </div>
+                        <div className="p-2.5 bg-slate-950/80 border border-slate-850 rounded-xl">
+                          <span className="text-slate-500 text-[9px] uppercase font-bold block">Agreed Service Fee</span>
+                          <strong className="text-emerald-400 font-mono text-xs block mt-0.5">${app.contractPaymentAmount || "1000 USD"}</strong>
+                        </div>
+                        <div className="p-2.5 bg-slate-950/80 border border-slate-850 rounded-xl">
+                          <span className="text-slate-500 text-[9px] uppercase font-bold block">Guaranteed Timeline</span>
+                          <strong className="text-yellow-400 font-mono text-xs block mt-0.5">{app.contractApprovedDays || "30 Days"}</strong>
+                        </div>
+                      </div>
 
-              {/* Bilingual Agreement Details */}
-              <div className="space-y-6 text-sm text-slate-300 leading-relaxed border-b border-slate-800/60 pb-6">
-                
-                {/* Intro */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-white uppercase tracking-wider">English Version</p>
-                    <p className="text-slate-400 text-xs">
-                      This contract is made and executed on <span className="text-slate-200">{new Date(app.updatedAt).toLocaleDateString()}</span> between <strong>Syed Services (Party A)</strong> and <strong>{app.agent?.agencyName || "Agent Partner"} (Party B)</strong> regarding the visa application processing of <strong>{clientUser?.name}</strong> for <strong>{app.country ? `${app.country} Visa` : "Visa"}</strong>.
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-right" dir="rtl">
-                    <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider font-mono">پښتو نسخه</p>
-                    <p className="text-slate-400 text-xs leading-6">
-                      دا تړون د لومړي لوري <strong>سید ویزې خدمات (Syed Services)</strong> او دوهم لوري <strong>{app.agent?.agencyName || "شریک استازی"}</strong> ترمنځ د کاندید <strong>{clientUser?.name}</strong> لپاره <strong>د ویزې (${app.country || "Visa"})</strong> پروسس په هکله لاسلیک شو.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Timing clause */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/40 p-4 border border-slate-850 rounded-2xl">
-                  <div className="space-y-1">
-                    <h5 className="text-xs font-black text-white uppercase flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                      1. Visa Process Timeline
-                    </h5>
-                    <p className="text-slate-400 text-xs pl-3">
-                      Party A guarantees that the visa process will be fully processed and decided within <strong className="text-yellow-400">{app.contractApprovedDays || "30 Days"}</strong> from the date of final document submission to the embassy/consulate.
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
-                    <h5 className="text-xs font-black text-yellow-400 uppercase flex items-center justify-end gap-1.5">
-                      ۱. د ویزې د پروسس کاري موده
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                    </h5>
-                    <p className="text-slate-400 text-xs leading-6">
-                      لومړی لوری تضمین کوي چې دغه پروسه به د سفارت یا کنسولګرۍ د اسنادو بشپړیدو څخه وروسته په دقیق ډول د <strong className="text-yellow-400">{app.contractApprovedDays || "۳۰"}</strong> ورځو دننه نهایي کیږي.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Fees/Payment clause */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/40 p-4 border border-slate-850 rounded-2xl">
-                  <div className="space-y-1">
-                    <h5 className="text-xs font-black text-white uppercase flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                      2. Payment Terms (Upon Visa Grant)
-                    </h5>
-                    <p className="text-slate-400 text-xs pl-3">
-                      Party B agrees to pay the final service amount of <strong className="text-yellow-400">{app.contractPaymentAmount || "1000 USD"}</strong> to Party A strictly *after* the visa has been successfully issued and the passport has been handed over. No prepayment of visa service fee is required before approval.
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
-                    <h5 className="text-xs font-black text-yellow-400 uppercase flex items-center justify-end gap-1.5">
-                      ۲. د ویزې څخه وروسته د ورکړې شرایط
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                    </h5>
-                    <p className="text-slate-400 text-xs leading-6">
-                      دوهم لوری موافقه کوي چې د ویزې د بریا څخه وروسته به په سمدستي توګه د تړون شوي قیمت <strong className="text-yellow-400">{app.contractPaymentAmount || "۱۰۰۰ ډالر"}</strong> لومړي لوري ته تادیه کوي. د کار څخه مخکې هیڅ فیس نشته.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Embassy Official Fee clause */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-red-500/5 p-4 border border-red-500/10 rounded-2xl">
-                  <div className="space-y-1">
-                    <h5 className="text-xs font-black text-white uppercase flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                      3. Official Embassy Fee Responsibility
-                    </h5>
-                    <p className="text-slate-400 text-xs pl-3">
-                      <strong>Important Notice:</strong> The official visa application fee charged by the Embassy/Consulate shall be paid directly by the Applicant himself and is not included in the service fee outlined above.
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
-                    <h5 className="text-xs font-black text-yellow-400 uppercase flex items-center justify-end gap-1.5">
-                      ۳. د سفارت رسمي فیس د تادیې مسؤلیت
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                    </h5>
-                    <p className="text-slate-400 text-xs leading-6">
-                      <strong>مهم یادونه:</strong> په سفارت کې د ویزې رسمي فیس به په خپله د غوښتونکي (Applicant) لخوا تادیه کیږي او د پورته ذکر شوي خدمت فیس کې شامل نه دی.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Terms and compliance */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <h5 className="text-xs font-black text-white uppercase">4. Default & Compliance</h5>
-                    <p className="text-slate-400 text-xs">
-                      If Party A fails to secure the visa within the stated timeframe, the application will be withdrawn and no fee will be charged to Party B. Both parties agree that electronic signatures hold full binding legal authority and can be presented in a court of law.
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-right" dir="rtl">
-                    <h5 className="text-xs font-black text-yellow-400 uppercase">۴. مکلفیتونه او پریکړه</h5>
-                    <p className="text-slate-400 text-xs leading-6">
-                      که لومړی لوری په تړون شوي وخت کې کار ترسره نه کړي، نو پروسه لغوه کیږي او په دوهم لوري هیڅ لګښت نه راځي. دواړه لوري موافقه کوي چې بریښنایي لاسلیک قانوني حیثیت لري او په محکمه کې وړاندې کیدای شي.
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Signature Section */}
-              {!app.contractAccepted ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">
-                        Type Your Full Name to Sign / د بریښنایي لاسلیک لپاره خپل نوم ولیکئ
-                      </label>
-                      <input
-                        type="text"
-                        value={signatureName}
-                        onChange={(e) => setSignatureName(e.target.value)}
-                        placeholder="e.g. Agency Director Name"
-                        className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-xs focus:border-yellow-400/50 focus:outline-none text-white placeholder-slate-600"
-                      />
+                      <p className="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-emerald-300 font-medium">✍️ Digitally Signed by <strong>{app.contractSignatureName}</strong></span>
+                        <span className="text-slate-600 hidden sm:inline">·</span>
+                        <span className="text-slate-500 text-[10px] font-mono">{app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : ""}</span>
+                      </p>
                     </div>
-                    <div>
+
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
                       <button
-                        onClick={handleSignContract}
-                        disabled={signing || !signatureName.trim()}
-                        className="w-full py-3 bg-yellow-400 text-black font-black text-xs uppercase tracking-wider rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+                        type="button"
+                        onClick={() => setIsContractExpanded(true)}
+                        className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                       >
-                        {signing ? "Signing..." : "Accept & Sign Contract / تړون لاسلیک کړئ"}
+                        <FiEye size={13} className="text-yellow-400" />
+                        <span>View Contract</span>
+                        <FiChevronDown size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePrintContract}
+                        className="px-4 py-2 bg-emerald-500 text-black font-black text-xs rounded-xl hover:bg-emerald-400 transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/10"
+                        title="Print Official Contract Letterhead / PDF"
+                      >
+                        <FiPrinter size={13} />
+                        <span>Print PDF</span>
                       </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <FiCheckCircle size={14} /> Contract Digitally Signed & Active
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      Signed electronically by {app.contractSignatureName} on {app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : ""}
-                    </p>
-                  </div>
-                  <div className="px-4 py-2 border border-dashed border-emerald-500/30 rounded-xl font-mono text-emerald-400 font-bold text-xs uppercase select-none">
-                    {app.contractSignatureName} // SIGNED
-                  </div>
-                </div>
-              )}
+                /* EXPANDED FULL BILINGUAL CONTRACT CARD */
+                <div className="bg-[#0f172a] border border-yellow-400/30 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden transition-all">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full blur-3xl -z-10" />
 
-            </div>
-          )}
-
-          {/* Personal Information */}
-          <SectionCard title="Personal Information" icon={<FiUser size={16} />}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5">
-              <InfoField label="Full Name" value={clientUser?.name} />
-              <InfoField label="Passport Number" value={client?.passportNumber} />
-              <InfoField label="Date of Birth" value={client?.dob} />
-              <InfoField label="Nationality" value={client?.nationality} />
-              <InfoField label="Gender" value={client?.gender} />
-              <InfoField label="Birth Place" value={client?.birthPlace} />
-              <InfoField label="Religion" value={client?.religion} />
-              <InfoField label="Profession" value={client?.profession} />
-            </div>
-            <div className="pt-4 border-t border-slate-800/60 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5">
-              <InfoField label="Visa Category" value={app.visaCategory} />
-              <InfoField label="Country" value={app.country} />
-              <InfoField label="Duration" value={app.duration ? `${app.duration} days` : null} />
-              <InfoField label="Entry Type" value={app.entryType} />
-              <InfoField label="Travel Date" value={app.travelDate} />
-              <InfoField label="Return Date" value={app.returnDate} />
-              <InfoField label="Purpose" value={app.purpose} />
-              <InfoField label="Qualification" value={client?.qualification} />
-            </div>
-          </SectionCard>
-
-          {/* Contact */}
-          <SectionCard title="Contact & Address" icon={<FiPhone size={16} />}>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-5">
-              <InfoField label="Email" value={clientUser?.email} />
-              <InfoField label="Phone" value={client?.phone} />
-              <InfoField label="Emergency Contact" value={client?.emergencyContact} />
-              <div className="col-span-2">
-                <InfoField label="Current Address" value={client?.currentAddress} />
-              </div>
-              <div className="col-span-2">
-                <InfoField label="Permanent Address" value={client?.permanentAddress} />
-              </div>
-            </div>
-          </SectionCard>
-
-          {/* Family Details */}
-          <SectionCard title="Family Details" icon={<FiUsers size={16} />}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5">
-              <InfoField label="Father's Name" value={client?.fatherName} />
-              <InfoField label="Mother's Name" value={client?.motherName} />
-              <InfoField label="Spouse Name" value={client?.spouseName} />
-              <InfoField label="Children" value={client?.childrenCount !== undefined ? String(client.childrenCount) : null} />
-            </div>
-          </SectionCard>
-
-          {/* Education & Employment */}
-          <SectionCard title="Education & Employment" icon={<FiBriefcase size={16} />}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5">
-              <InfoField label="High School" value={client?.highSchool} />
-              <InfoField label="College" value={client?.college} />
-              <InfoField label="Bachelor's" value={client?.bachelor} />
-              <InfoField label="Master's" value={client?.master} />
-              <InfoField label="Graduation Year" value={client?.graduationYear} />
-              <InfoField label="CGPA" value={client?.cgpa} />
-              <InfoField label="Company" value={client?.companyName} />
-              <InfoField label="Position" value={client?.position} />
-              <InfoField label="Salary" value={client?.salary} />
-              <InfoField label="Experience" value={client?.experienceYears ? `${client.experienceYears} yrs` : null} />
-            </div>
-          </SectionCard>
-
-          {/* Passport */}
-          <SectionCard title="Passport Information" icon={<FiBook size={16} />}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5">
-              <InfoField label="Passport Number" value={client?.passportNumber} />
-              <InfoField label="Issue Date" value={client?.passportIssueDate} />
-              <InfoField label="Expiry Date" value={client?.passportExpiryDate} />
-              <InfoField label="Issue Place" value={client?.passportIssuePlace} />
-              <InfoField label="Previous Passport" value={app.previousPassportNumber} />
-              <InfoField label="Visited Countries" value={app.visitedCountries} />
-              <InfoField label="Previous Visas" value={app.previousVisas} />
-              <InfoField label="Visa Refusals" value={app.visaRefusals} />
-            </div>
-          </SectionCard>
-
-          {/* Documents */}
-          {app.documents && app.documents.length > 0 && (
-            <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] shadow-xl overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-800/60 bg-slate-900/30">
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-400"><FiPaperclip size={16} /></span>
-                  <h4 className="text-sm font-black text-white uppercase tracking-wider">Uploaded Documents</h4>
-                  <span className="text-[9px] font-bold px-2 py-0.5 bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 rounded-full">
-                    {app.documents.length} file{app.documents.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadAllZip}
-                  disabled={downloadingZip}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-yellow-400 text-black font-black text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-60"
-                  title="Download all files in a single ZIP named with Applicant Name and Tracking ID"
-                >
-                  {downloadingZip ? (
-                    <>
-                      <FiLoader className="animate-spin" size={13} /> Packaging ZIP...
-                    </>
-                  ) : (
-                    <>
-                      <FiArchive size={13} /> Download All (ZIP)
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Document List */}
-              <div className="divide-y divide-slate-800/40">
-                {app.documents.map((doc: any) => {
-                  const ext = doc.fileName?.split(".").pop()?.toLowerCase() || doc.fileType || "";
-                  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
-                  const sizeKB = doc.fileSize ? (doc.fileSize / 1024).toFixed(1) : null;
-
-                  return (
-                    <div key={doc.id} className="flex items-center gap-4 p-5 hover:bg-slate-900/20 transition-colors group">
-                      {/* Icon */}
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
-                        isImage
-                          ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                          : "bg-yellow-400/10 border-yellow-400/20 text-yellow-400"
-                      }`}>
-                        {isImage ? <FiImage size={20} /> : <FiFileText size={20} />}
-                      </div>
-
-                      {/* File Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white capitalize">{doc.documentType.replace(/_/g, " ")}</p>
-                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                          <span className="text-[10px] text-slate-500 truncate max-w-[180px]">{doc.fileName}</span>
-                          {sizeKB && <span className="text-[10px] text-slate-600">· {sizeKB} KB</span>}
-                          <span className="text-[9px] uppercase font-bold text-slate-600">.{ext}</span>
-                        </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          <FiCheckCircle size={10} className="text-green-400" />
-                          <span className="text-[9px] text-green-400 font-bold">Uploaded</span>
-                        </div>
-                      </div>
-
-                      {/* Thumbnail */}
-                      {isImage && (
-                        <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shrink-0 hidden sm:block">
-                          <img src={doc.fileUrl} alt={doc.documentType} className="w-full h-full object-cover"
-                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-                          className="p-2.5 bg-slate-900 border border-slate-800 hover:border-blue-400/30 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-xl transition-all"
-                          title="View">
-                          <FiEye size={15} />
-                        </a>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDownloadSingle(doc, e)}
-                          disabled={downloadingDocId === doc.id}
-                          className="p-2.5 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 hover:bg-yellow-400/5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all cursor-pointer disabled:opacity-60"
-                          title={`Download direct file: ${getDocFileName(doc)}`}
-                        >
-                          {downloadingDocId === doc.id ? (
-                            <FiLoader className="animate-spin text-yellow-400" size={15} />
-                          ) : (
-                            <FiDownload size={15} />
-                          )}
-                        </button>
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+                    <div className="flex items-center gap-3">
+                      <span className="text-yellow-400 p-2 bg-yellow-400/10 border border-yellow-400/20 rounded-2xl">
+                        <FiFileText size={22} />
+                      </span>
+                      <div>
+                        <h3 className="text-base md:text-lg font-black text-white tracking-tight uppercase">
+                          {app.country ? `${app.country} Visa Service Contract` : "Visa Service Contract"}
+                        </h3>
+                        <h4 className="text-xs text-slate-500 font-bold tracking-wider uppercase font-mono mt-0.5">
+                          د ویزې خدماتو رسمي تړون پاڼه
+                        </h4>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {app.contractAccepted && (
+                        <button
+                          type="button"
+                          onClick={() => setIsContractExpanded(false)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl transition-all text-xs font-bold cursor-pointer"
+                        >
+                          <FiChevronUp size={13} />
+                          <span>Minimize</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handlePrintContract}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-400 text-black hover:bg-yellow-300 rounded-xl transition-all text-xs font-black cursor-pointer shadow-md shadow-yellow-400/10"
+                        title="Print Official Letterhead / PDF"
+                      >
+                        <FiPrinter size={13} /> Print / Save PDF
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bilingual Agreement Details */}
+                  <div className="space-y-6 text-sm text-slate-300 leading-relaxed border-b border-slate-800/60 pb-6">
+                    
+                    {/* Intro */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-white uppercase tracking-wider">English Version</p>
+                        <p className="text-slate-400 text-xs">
+                          This contract is made and executed on <span className="text-slate-200">{new Date(app.updatedAt).toLocaleDateString()}</span> between <strong>Syed Services (Party A)</strong> and <strong>{app.agent?.agencyName || "Agent Partner"} (Party B)</strong> regarding the visa application processing of <strong>{clientUser?.name}</strong> for <strong>{app.country ? `${app.country} Visa` : "Visa"}</strong>.
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right" dir="rtl">
+                        <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider font-mono">پښتو نسخه</p>
+                        <p className="text-slate-400 text-xs leading-6">
+                          دا تړون د لومړي لوري <strong>سید ویزې خدمات (Syed Services)</strong> او دوهم لوري <strong>{app.agent?.agencyName || "شریک استازی"}</strong> ترمنځ د کاندید <strong>{clientUser?.name}</strong> لپاره <strong>د ویزې (${app.country || "Visa"})</strong> پروسس په هکله لاسلیک شو.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Timing clause */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/40 p-4 border border-slate-850 rounded-2xl">
+                      <div className="space-y-1">
+                        <h5 className="text-xs font-black text-white uppercase flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                          1. Visa Process Timeline
+                        </h5>
+                        <p className="text-slate-400 text-xs pl-3">
+                          Party A guarantees that the visa process will be fully processed and decided within <strong className="text-yellow-400">{app.contractApprovedDays || "30 Days"}</strong> from the date of final document submission to the embassy/consulate.
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
+                        <h5 className="text-xs font-black text-yellow-400 uppercase flex items-center justify-end gap-1.5">
+                          ۱. د ویزې د پروسس کاري موده
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                        </h5>
+                        <p className="text-slate-400 text-xs leading-6">
+                          لومړی لوری تضمین کوي چې دغه پروسه به د سفارت یا کنسولګرۍ د اسنادو بشپړیدو څخه وروسته په دقیق ډول د <strong className="text-yellow-400">{app.contractApprovedDays || "۳۰"}</strong> ورځو دننه نهایي کیږي.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Fees/Payment clause */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/40 p-4 border border-slate-850 rounded-2xl">
+                      <div className="space-y-1">
+                        <h5 className="text-xs font-black text-white uppercase flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                          2. Payment Terms (Upon Visa Grant)
+                        </h5>
+                        <p className="text-slate-400 text-xs pl-3">
+                          Party B agrees to pay the final service amount of <strong className="text-yellow-400">{app.contractPaymentAmount || "1000 USD"}</strong> to Party A strictly *after* the visa has been successfully issued and the passport has been handed over. No prepayment of visa service fee is required before approval.
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
+                        <h5 className="text-xs font-black text-yellow-400 uppercase flex items-center justify-end gap-1.5">
+                          ۲. د ویزې څخه وروسته د ورکړې شرایط
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                        </h5>
+                        <p className="text-slate-400 text-xs leading-6">
+                          دوهم لوری موافقه کوي چې د ویزې د بریا څخه وروسته به په سمدستي توګه د تړون شوي قیمت <strong className="text-yellow-400">{app.contractPaymentAmount || "۱۰۰۰ ډالر"}</strong> لومړي لوري ته تادیه کوي. د کار څخه مخکې هیڅ فیس نشته.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Embassy Official Fee clause */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-red-500/5 p-4 border border-red-500/10 rounded-2xl">
+                      <div className="space-y-1">
+                        <h5 className="text-xs font-black text-white uppercase flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                          3. Official Embassy Fee Responsibility
+                        </h5>
+                        <p className="text-slate-400 text-xs pl-3">
+                          <strong>Important Notice:</strong> The official visa application fee charged by the Embassy/Consulate shall be paid directly by the Applicant himself and is not included in the service fee outlined above.
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
+                        <h5 className="text-xs font-black text-yellow-400 uppercase flex items-center justify-end gap-1.5">
+                          ۳. د سفارت رسمي فیس د تادیې مسؤلیت
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                        </h5>
+                        <p className="text-slate-400 text-xs leading-6">
+                          <strong>مهم یادونه:</strong> په سفارت کې د ویزې رسمي فیس به په خپله د غوښتونکي (Applicant) لخوا تادیه کیږي او د پورته ذکر شوي خدمت فیس کې شامل نه دی.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Terms and compliance */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <h5 className="text-xs font-black text-white uppercase">4. Default & Compliance</h5>
+                        <p className="text-slate-400 text-xs">
+                          If Party A fails to secure the visa within the stated timeframe, the application will be withdrawn and no fee will be charged to Party B. Both parties agree that electronic signatures hold full binding legal authority and can be presented in a court of law.
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right" dir="rtl">
+                        <h5 className="text-xs font-black text-yellow-400 uppercase">۴. مکلفیتونه او پریکړه</h5>
+                        <p className="text-slate-400 text-xs leading-6">
+                          که لومړی لوری په تړون شوي وخت کې کار ترسره نه کړي، نو پروسه لغوه کیږي او په دوهم لوري هیڅ لګښت نه راځي. دواړه لوري موافقه کوي چې بریښنایي لاسلیک قانوني حیثیت لري او په محکمه کې وړاندې کیدای شي.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Signature Section */}
+                  {!app.contractAccepted ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div>
+                          <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">
+                            Type Your Full Name to Sign / د بریښنایي لاسلیک لپاره خپل نوم ولیکئ
+                          </label>
+                          <input
+                            type="text"
+                            value={signatureName}
+                            onChange={(e) => setSignatureName(e.target.value)}
+                            placeholder="e.g. Agency Director Name"
+                            className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-xs focus:border-yellow-400/50 focus:outline-none text-white placeholder-slate-600"
+                          />
+                        </div>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={handleSignContract}
+                            disabled={signing || !signatureName.trim()}
+                            className="w-full py-3 bg-yellow-400 text-black font-black text-xs uppercase tracking-wider rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+                          >
+                            {signing ? "Signing..." : "Accept & Sign Contract / تړون لاسلیک کړئ"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <FiCheckCircle size={14} /> Contract Digitally Signed & Active
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Signed electronically by {app.contractSignatureName} on {app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : ""}
+                        </p>
+                      </div>
+                      <div className="px-4 py-2 border border-dashed border-emerald-500/30 rounded-xl font-mono text-emerald-400 font-bold text-xs uppercase select-none">
+                        {app.contractSignatureName} // SIGNED
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
             </div>
           )}
+
+          {/* 2. Interactive Dossier Section Navigator / Tab Switcher */}
+          <div className="bg-[#0f172a] border border-slate-800/80 p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto scrollbar-thin shadow-lg">
+            {[
+              { id: "overview", label: "Complete Dossier", icon: <FiLayers size={13} /> },
+              { id: "personal", label: "Personal & Contact", icon: <FiUser size={13} /> },
+              { id: "visa", label: "Visa & Journey", icon: <FiGlobe size={13} /> },
+              { id: "family", label: "Family Records", icon: <FiUsers size={13} /> },
+              { id: "career", label: "Education & Career", icon: <FiBriefcase size={13} /> },
+              { id: "passport", label: "Passport & Travel", icon: <FiBook size={13} /> },
+              { id: "documents", label: `Documents (${app.documents?.length || 0})`, icon: <FiPaperclip size={13} /> },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-yellow-400 text-black shadow-md shadow-yellow-400/15"
+                      : "text-slate-400 hover:text-white hover:bg-slate-900/60"
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 3. Redesigned Premium Application Layout Content */}
+          <div className="space-y-6">
+
+            {/* TAB: OVERVIEW (ALL CATEGORIES GROUPED IN SLEEK BENTO GRIDS) */}
+            {(activeTab === "overview" || activeTab === "personal") && (
+              <SectionCard title="Applicant & Personal Details" icon={<FiUser size={16} />} badge="Profile">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailBox icon={<FiUser />} label="Full Legal Name" value={clientUser?.name} highlight />
+                  <DetailBox icon={<FiBook />} label="Passport No" value={client?.passportNumber} mono copyable />
+                  <DetailBox icon={<FiCalendar />} label="Date of Birth" value={client?.dob} />
+                  <DetailBox icon={<FiGlobe />} label="Nationality" value={client?.nationality || "Afghanistan"} badge badgeColor="blue" />
+                  <DetailBox icon={<FiUser />} label="Gender" value={client?.gender} />
+                  <DetailBox icon={<FiMapPin />} label="Birth Place" value={client?.birthPlace} />
+                  <DetailBox icon={<FiShield />} label="Religion" value={client?.religion} />
+                  <DetailBox icon={<FiBriefcase />} label="Profession" value={client?.profession} />
+                  <DetailBox icon={<FiMail />} label="Email Address" value={clientUser?.email} isLink href={`mailto:${clientUser?.email}`} />
+                  <DetailBox icon={<FiPhone />} label="Phone / WhatsApp" value={client?.phone} isLink href={client?.phone ? `https://wa.me/${client.phone.replace(/[^0-9]/g, "")}` : undefined} />
+                  <DetailBox icon={<FiPhone />} label="Emergency Contact" value={client?.emergencyContact} />
+                  <DetailBox icon={<FiAward />} label="Qualification" value={client?.qualification} />
+                </div>
+                {client?.currentAddress && (
+                  <div className="pt-2">
+                    <DetailBox icon={<FiMapPin />} label="Current Residential Address" value={client.currentAddress} />
+                  </div>
+                )}
+              </SectionCard>
+            )}
+
+            {(activeTab === "overview" || activeTab === "visa") && (
+              <SectionCard title="Visa & Journey Specifications" icon={<FiGlobe size={16} />} badge="Specifications">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailBox icon={<FiGlobe />} label="Destination" value={app.country} badge badgeColor="yellow" />
+                  <DetailBox icon={<FiFileText />} label="Visa Category" value={app.visaCategory} highlight />
+                  <DetailBox icon={<FiClock />} label="Stay Duration" value={app.duration ? `${app.duration} Days` : "30 Days"} />
+                  <DetailBox icon={<FiShield />} label="Entry Type" value={app.entryType || "Single Entry"} />
+                  <DetailBox icon={<FiCalendar />} label="Planned Travel" value={app.travelDate || "Flexible"} />
+                  <DetailBox icon={<FiCalendar />} label="Return Date" value={app.returnDate || "Open"} />
+                  <DetailBox icon={<FiDollarSign />} label="Official Fee" value={`$${app.packagePrice || app.package?.priceUSD || 250} USD`} mono highlight />
+                  <DetailBox icon={<FiLayers />} label="Package Tier" value={app.package?.title || "Standard Service"} />
+                </div>
+                {(app.purpose || app.sponsor || app.reference) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    {app.purpose && <DetailBox icon={<FiFileText />} label="Purpose of Visit" value={app.purpose} />}
+                    {app.sponsor && <DetailBox icon={<FiUser />} label="Sponsor Details" value={app.sponsor} />}
+                    {app.reference && <DetailBox icon={<FiLayers />} label="Reference / Notes" value={app.reference} />}
+                  </div>
+                )}
+              </SectionCard>
+            )}
+
+            {(activeTab === "overview" || activeTab === "family") && (
+              <SectionCard title="Official Family & Civil Records" icon={<FiUsers size={16} />} badge="Family">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailBox icon={<FiUser />} label="Father's Full Name" value={client?.fatherName} />
+                  <DetailBox icon={<FiUser />} label="Mother's Full Name" value={client?.motherName} />
+                  <DetailBox icon={<FiUsers />} label="Marital Status" value={client?.maritalStatus || "Single"} badge badgeColor={client?.maritalStatus === "Married" ? "emerald" : "slate"} />
+                  <DetailBox icon={<FiUsers />} label="Children Count" value={client?.childrenCount !== undefined ? `${client.childrenCount} Children` : "0"} mono />
+                  {client?.maritalStatus === "Married" && (
+                    <>
+                      <DetailBox icon={<FiUser />} label="Spouse / Wife Name" value={client?.spouseName} highlight />
+                      <div className="col-span-2 sm:col-span-3">
+                        <DetailBox icon={<FiUsers />} label="Children Details" value={client?.childrenDetails || "None specified"} />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SectionCard>
+            )}
+
+            {(activeTab === "overview" || activeTab === "career") && (
+              <SectionCard title="Education & Professional Background" icon={<FiBriefcase size={16} />} badge="Career">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailBox icon={<FiBriefcase />} label="Company / Employer" value={client?.companyName} />
+                  <DetailBox icon={<FiAward />} label="Position / Role" value={client?.position} />
+                  <DetailBox icon={<FiDollarSign />} label="Monthly Salary" value={client?.salary} mono />
+                  <DetailBox icon={<FiClock />} label="Work Experience" value={client?.experienceYears ? `${client.experienceYears} Years` : null} />
+                  <DetailBox icon={<FiBook />} label="Bachelor Degree" value={client?.bachelor} />
+                  <DetailBox icon={<FiBook />} label="Master Degree" value={client?.master} />
+                  <DetailBox icon={<FiCalendar />} label="Graduation Year" value={client?.graduationYear} mono />
+                  <DetailBox icon={<FiAward />} label="CGPA / Grade" value={client?.cgpa} mono />
+                </div>
+                {client?.employerAddress && (
+                  <div className="pt-2">
+                    <DetailBox icon={<FiMapPin />} label="Employer Office Address" value={client.employerAddress} />
+                  </div>
+                )}
+              </SectionCard>
+            )}
+
+            {(activeTab === "overview" || activeTab === "passport") && (
+              <SectionCard title="Passport & Travel History" icon={<FiBook size={16} />} badge="Passport">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailBox icon={<FiBook />} label="Passport Number" value={client?.passportNumber} mono copyable highlight />
+                  <DetailBox icon={<FiCalendar />} label="Issue Date" value={client?.passportIssueDate} />
+                  <DetailBox icon={<FiCalendar />} label="Expiry Date" value={client?.passportExpiryDate} />
+                  <DetailBox icon={<FiMapPin />} label="Issue Place" value={client?.passportIssuePlace} />
+                  <DetailBox icon={<FiBook />} label="Previous Passport" value={app.previousPassportNumber} mono />
+                  <DetailBox icon={<FiGlobe />} label="Visited Countries" value={app.visitedCountries} />
+                  <DetailBox icon={<FiFileText />} label="Previous Visas" value={app.previousVisas} />
+                  <DetailBox icon={<FiAlertCircle />} label="Visa Refusals" value={app.visaRefusals} />
+                </div>
+              </SectionCard>
+            )}
+
+            {/* Uploaded Documents Section */}
+            {(activeTab === "overview" || activeTab === "documents") && (
+              <div className="bg-[#0f172a] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-800/60 bg-slate-900/40">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-yellow-400 p-1.5 bg-yellow-400/10 border border-yellow-400/20 rounded-xl">
+                      <FiPaperclip size={16} />
+                    </span>
+                    <div>
+                      <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider">
+                        Verified Dossier Documents
+                      </h4>
+                      <p className="text-[10px] text-slate-500 font-mono">
+                        {app.documents?.length || 0} attached files
+                      </p>
+                    </div>
+                  </div>
+
+                  {app.documents && app.documents.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadAllZip}
+                      disabled={downloadingZip}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-yellow-400 text-black font-black text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer shadow-md shadow-yellow-400/10 disabled:opacity-60"
+                      title="Download all files in a single ZIP named with Applicant Name and Tracking ID"
+                    >
+                      {downloadingZip ? (
+                        <>
+                          <FiLoader className="animate-spin" size={13} /> Packaging ZIP...
+                        </>
+                      ) : (
+                        <>
+                          <FiArchive size={13} /> Download All (ZIP)
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Documents List */}
+                {(!app.documents || app.documents.length === 0) ? (
+                  <div className="text-center py-10 text-xs text-slate-500">
+                    No documents uploaded for this application yet.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-800/40">
+                    {app.documents.map((doc: any) => {
+                      const ext = doc.fileName?.split(".").pop()?.toLowerCase() || doc.fileType || "";
+                      const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+                      const sizeKB = doc.fileSize ? (doc.fileSize / 1024).toFixed(1) : null;
+
+                      return (
+                        <div key={doc.id} className="flex items-center gap-3.5 p-4 hover:bg-slate-900/40 transition-colors group">
+                          {/* Icon */}
+                          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border ${
+                            isImage
+                              ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                              : "bg-yellow-400/10 border-yellow-400/20 text-yellow-400"
+                          }`}>
+                            {isImage ? <FiImage size={18} /> : <FiFileText size={18} />}
+                          </div>
+
+                          {/* File Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs md:text-sm font-bold text-white capitalize truncate">
+                                {doc.documentType.replace(/_/g, " ")}
+                              </p>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-400 uppercase font-mono">
+                                .{ext}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
+                              <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{doc.fileName}</span>
+                              {sizeKB && <span className="text-[10px] text-slate-600">· {sizeKB} KB</span>}
+                              <span className="text-[9px] text-emerald-400 font-bold flex items-center gap-1">
+                                <FiCheck size={10} /> Verified
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Image Thumbnail */}
+                          {isImage && (
+                            <div className="w-11 h-11 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shrink-0 hidden sm:block">
+                              <img
+                                src={doc.fileUrl}
+                                alt={doc.documentType}
+                                className="w-full h-full object-cover"
+                                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 bg-slate-900 border border-slate-800 hover:border-blue-400/40 text-slate-400 hover:text-blue-400 rounded-xl transition-all"
+                              title="View Document in new tab"
+                            >
+                              <FiEye size={13} />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDownloadSingle(doc, e)}
+                              disabled={downloadingDocId === doc.id}
+                              className="p-2 bg-slate-900 border border-slate-800 hover:border-yellow-400/40 text-slate-400 hover:text-yellow-400 rounded-xl transition-all cursor-pointer disabled:opacity-60"
+                              title={`Download ${getDocFileName(doc)}`}
+                            >
+                              {downloadingDocId === doc.id ? (
+                                <FiLoader className="animate-spin text-yellow-400" size={13} />
+                              ) : (
+                                <FiDownload size={13} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
         </div>
 
         {/* ── Right Sidebar ── */}
