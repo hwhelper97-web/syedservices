@@ -319,6 +319,18 @@ export default function PackageDetailPage() {
           {/* Left / Center 2 Columns: Package Details, Multi-Currency Pricing, Documents */}
           <div className="lg:col-span-2 space-y-10">
 
+            {/* Package Cover Image Banner (If Available) */}
+            {pkg.image && (
+              <div className="rounded-3xl overflow-hidden border border-slate-800 shadow-2xl relative max-h-[380px] w-full bg-slate-900 group">
+                <img
+                  src={pkg.image}
+                  alt={pkg.title}
+                  className="w-full h-full object-cover object-center max-h-[380px] group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-60 pointer-events-none" />
+              </div>
+            )}
+
             {/* Multi-Currency Price Cards */}
             <div className="bg-[#0f172a]/90 border border-slate-800 rounded-3xl p-6 md:p-8 relative overflow-hidden backdrop-blur-sm shadow-xl">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-6">

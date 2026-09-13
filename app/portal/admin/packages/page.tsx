@@ -7,7 +7,7 @@ import {
   FiPlus, FiEdit2, FiTrash2, FiShare2, FiCopy, FiCheck, 
   FiExternalLink, FiSearch, FiFilter, FiGlobe, FiPhone, 
   FiDollarSign, FiClock, FiFileText, FiStar, FiX, FiRefreshCw,
-  FiCheckCircle, FiAlertCircle, FiTag
+  FiCheckCircle, FiAlertCircle, FiTag, FiUploadCloud, FiImage, FiLoader
 } from "react-icons/fi";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 
@@ -67,6 +67,55 @@ export default function AdminPackagesPage() {
     featured: false,
     status: "ACTIVE",
   });
+
+  // Local Computer Image Upload State
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState<"upload" | "url">("upload");
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setFormError("Selected image file is too large. Maximum size is 10MB.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("Please select a valid image file (PNG, JPG, WEBP, etc.).");
+      return;
+    }
+
+    setUploadingImage(true);
+    setFormError("");
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.fileUrl) {
+        setFormData((prev) => ({ ...prev, image: data.fileUrl }));
+        showNotification("success", `Image "${file.name}" uploaded successfully!`);
+      } else {
+        setFormError(data.error || "Failed to upload image. You can also paste a direct image URL.");
+      }
+    } catch (err: any) {
+      console.error("Image upload error:", err);
+      setFormError("Network error while uploading image.");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   useEffect(() => {
     fetchPackages();
@@ -758,18 +807,129 @@ export default function AdminPackagesPage() {
                   <p className="text-[10px] text-slate-400 mt-1">Each line will automatically be formatted as a verified checklist item on the public page.</p>
                 </div>
 
-                {/* Image URL (Optional) */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Cover Image URL (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
-                  />
+                {/* Cover Image (Local Computer Upload or URL) */}
+                <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        Package Cover Image (Optional)
+                      </label>
+                      <span className="text-[10px] text-slate-400">
+                        Upload an image from your computer or paste a direct image URL
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setImageInputMode("upload")}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                          imageInputMode === "upload"
+                            ? "bg-yellow-400 text-black shadow-sm font-black"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <FiUploadCloud className="inline mr-1" /> From Computer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageInputMode("url")}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                          imageInputMode === "url"
+                            ? "bg-yellow-400 text-black shadow-sm font-black"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <FiImage className="inline mr-1" /> Paste URL
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Local Computer Upload Tab */}
+                  {imageInputMode === "upload" ? (
+                    <div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageFileChange}
+                        accept="image/png,image/jpeg,image/webp,image/jpg"
+                        className="hidden"
+                        id="package-image-upload"
+                      />
+                      <label
+                        htmlFor="package-image-upload"
+                        className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl transition-all cursor-pointer ${
+                          uploadingImage
+                            ? "border-yellow-400/60 bg-yellow-400/5 cursor-wait"
+                            : "border-slate-700 hover:border-yellow-400/60 bg-slate-800/40 hover:bg-slate-800/80"
+                        }`}
+                      >
+                        {uploadingImage ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <FiLoader className="animate-spin text-yellow-400 text-2xl" />
+                            <span className="text-xs text-yellow-400 font-bold">
+                              Uploading image from computer...
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-center">
+                            <div className="w-10 h-10 rounded-xl bg-yellow-400/10 text-yellow-400 flex items-center justify-center text-xl">
+                              <FiUploadCloud />
+                            </div>
+                            <div>
+                              <span className="text-xs font-extrabold text-white">
+                                Choose image file from your computer
+                              </span>
+                              <span className="block text-[10px] text-slate-400 mt-0.5">
+                                Supports PNG, JPG, JPEG, WEBP (Max 10MB)
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={formData.image}
+                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                      />
+                      <span className="block text-[10px] text-slate-400 mt-1">
+                        Paste any public image link (e.g. Unsplash, Cloudinary, or web URL)
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Active Image Preview Card */}
+                  {formData.image && (
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-800/80 border border-slate-700/80">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <img
+                          src={formData.image}
+                          alt="Cover Preview"
+                          className="w-14 h-14 object-cover rounded-lg border border-slate-700 shrink-0 bg-slate-900"
+                        />
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">
+                            ✓ Active Cover Image
+                          </span>
+                          <span className="text-xs text-white truncate block max-w-xs font-mono">
+                            {formData.image}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, image: "" })}
+                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-colors shrink-0 cursor-pointer border border-red-500/20"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Checkboxes & Status */}
