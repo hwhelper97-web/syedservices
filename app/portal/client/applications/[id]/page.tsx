@@ -5,7 +5,7 @@ import Link from "next/link";
 import { 
   FiArrowLeft, FiLoader, FiFileText, FiClock, 
   FiCheckCircle, FiAlertCircle, FiMapPin, FiCalendar, 
-  FiPaperclip, FiDownload, FiMessageSquare, FiShield 
+  FiPaperclip, FiDownload, FiMessageSquare, FiShield, FiArchive
 } from "react-icons/fi";
 import { VISA_PIPELINE, VISA_STATUS_COLORS } from "@/lib/visaPipeline";
 import PortalToast, { ToastMessage } from "@/components/PortalToast";
@@ -20,9 +20,102 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
   const [signSuccess, setSignSuccess] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
+  // Download states
+  const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
+  const [downloadingZip, setDownloadingZip] = useState(false);
+
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 4500);
+  };
+
+  // Helper to format safe sanitized filenames with Applicant Name and Visa Tracking Number
+  const getDocFileName = (doc: any) => {
+    const applicantName = (app?.client?.user?.name || "Applicant").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const trackingId = (app?.trackingId || `APP-${app?.id}`).trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const docType = (doc.documentType || "Document").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const ext = doc.fileName?.includes(".") 
+      ? doc.fileName.split(".").pop() 
+      : (doc.fileType || "pdf");
+    return `${applicantName}_${trackingId}_${docType}.${ext}`;
+  };
+
+  const handleDownloadSingle = async (doc: any, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setDownloadingDocId(doc.id);
+
+    const filename = getDocFileName(doc);
+
+    try {
+      const res = await fetch(doc.fileUrl);
+      if (!res.ok) throw new Error("Failed to retrieve file from storage");
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      showToast(`Downloaded ${filename}`, "success");
+    } catch (err: any) {
+      console.error("Direct download failed, falling back to external link:", err);
+      const a = document.createElement("a");
+      a.href = doc.fileUrl;
+      a.download = filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
+
+  const handleDownloadAllZip = async () => {
+    if (!app?.documents || app.documents.length === 0) return;
+    setDownloadingZip(true);
+
+    const applicantName = (app?.client?.user?.name || "Applicant").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const trackingId = (app?.trackingId || `APP-${app?.id}`).trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const zipFilename = `${applicantName}_${trackingId}_Documents.zip`;
+
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+
+      await Promise.all(
+        app.documents.map(async (doc: any) => {
+          try {
+            const res = await fetch(doc.fileUrl);
+            if (!res.ok) throw new Error(`Failed to fetch ${doc.documentType}`);
+            const blob = await res.blob();
+            const itemFilename = getDocFileName(doc);
+            zip.file(itemFilename, blob);
+          } catch (fileErr) {
+            console.error(`Error adding document ${doc.id} to zip:`, fileErr);
+          }
+        })
+      );
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const blobUrl = window.URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = zipFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+
+      showToast(`Successfully downloaded ${zipFilename}!`, "success");
+    } catch (err: any) {
+      console.error("Failed to generate zip file:", err);
+      showToast(err.message || "Failed to package documents into zip", "error");
+    } finally {
+      setDownloadingZip(false);
+    }
   };
 
   useEffect(() => {
@@ -283,12 +376,33 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
             <FiPaperclip className="text-yellow-400" />
             <h4 className="text-sm font-black text-white uppercase tracking-wider">Uploaded Documents ({app.documents?.length || 0})</h4>
           </div>
-          <Link
-            href="/portal/client/documents"
-            className="text-xs font-bold text-yellow-400 hover:underline"
-          >
-            Manage Documents →
-          </Link>
+          <div className="flex items-center gap-3">
+            {app.documents && app.documents.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDownloadAllZip}
+                disabled={downloadingZip}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-60"
+                title="Download all files in a single ZIP"
+              >
+                {downloadingZip ? (
+                  <>
+                    <FiLoader className="animate-spin" size={13} /> Packaging ZIP...
+                  </>
+                ) : (
+                  <>
+                    <FiArchive size={13} /> Download All (ZIP)
+                  </>
+                )}
+              </button>
+            )}
+            <Link
+              href="/portal/client/documents"
+              className="text-xs font-bold text-yellow-400 hover:underline"
+            >
+              Manage Documents →
+            </Link>
+          </div>
         </div>
 
         {(!app.documents || app.documents.length === 0) ? (
@@ -301,15 +415,30 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
                   <p className="text-xs font-bold text-white truncate">{doc.fileName || doc.documentType}</p>
                   <p className="text-[10px] text-slate-500 uppercase">{doc.documentType}</p>
                 </div>
-                <a
-                  href={doc.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400 hover:text-black rounded-xl transition-all"
-                  title="View / Download Document"
-                >
-                  <FiDownload size={16} />
-                </a>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <a
+                    href={doc.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-slate-900 border border-slate-800 hover:border-blue-400/30 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-xl transition-all"
+                    title="View Document"
+                  >
+                    <FiFileText size={15} />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={(e) => handleDownloadSingle(doc, e)}
+                    disabled={downloadingDocId === doc.id}
+                    className="p-2 bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 hover:bg-yellow-400 hover:text-black rounded-xl transition-all cursor-pointer disabled:opacity-60"
+                    title={`Download direct file: ${getDocFileName(doc)}`}
+                  >
+                    {downloadingDocId === doc.id ? (
+                      <FiLoader className="animate-spin text-yellow-400" size={15} />
+                    ) : (
+                      <FiDownload size={15} />
+                    )}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -19,13 +19,13 @@ export const VISA_PIPELINE = [
   },
   {
     key: "SENT_FOR_INVITATION",
-    label: "Sent for China Invitation Letter",
-    desc: "Your documents will be sent to our China office.",
+    label: "Sent for Invitation Letter",
+    desc: "Your documents have been submitted for official invitation processing.",
   },
   {
     key: "INVITATION_ARRIVED",
-    label: "China Invitation Letter Arrived",
-    desc: "Invitation letter received from China.",
+    label: "Invitation Letter Arrived",
+    desc: "Official visa invitation letter has been received.",
   },
   {
     key: "FILE_READY_EMBASSY",
@@ -67,8 +67,8 @@ export const VISA_STATUS_COLORS: Record<string, string> = {
 export const VISA_STATUS_OPTIONS = [
   { value: "WAITING_CONFIRMATION",  label: "Wait for Confirmation" },
   { value: "DEAL_CONFIRMED",        label: "Confirm Deal" },
-  { value: "SENT_FOR_INVITATION",   label: "Sent for China Invitation Letter" },
-  { value: "INVITATION_ARRIVED",    label: "China Invitation Letter Arrived" },
+  { value: "SENT_FOR_INVITATION",   label: "Sent for Invitation Letter" },
+  { value: "INVITATION_ARRIVED",    label: "Invitation Letter Arrived" },
   { value: "FILE_READY_EMBASSY",    label: "File Ready for Embassy Submission" },
   { value: "APPLICATION_SUBMITTED", label: "Application Submitted" },
   { value: "PASSPORT_TO_SUBMIT",    label: "Passport to be Submitted" },

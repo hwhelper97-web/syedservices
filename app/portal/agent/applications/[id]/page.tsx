@@ -44,9 +44,103 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [signatureName, setSignatureName] = useState("");
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
+  // Download states
+  const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
+  const [downloadingZip, setDownloadingZip] = useState(false);
+
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 4500);
+  };
+
+  // Helper to format safe sanitized filenames with Applicant Name and Visa Tracking Number
+  const getDocFileName = (doc: any) => {
+    const applicantName = (app?.client?.user?.name || "Applicant").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const trackingId = (app?.trackingId || `APP-${app?.id}`).trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const docType = (doc.documentType || "Document").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const ext = doc.fileName?.includes(".") 
+      ? doc.fileName.split(".").pop() 
+      : (doc.fileType || "pdf");
+    return `${applicantName}_${trackingId}_${docType}.${ext}`;
+  };
+
+  const handleDownloadSingle = async (doc: any, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setDownloadingDocId(doc.id);
+
+    const filename = getDocFileName(doc);
+
+    try {
+      const res = await fetch(doc.fileUrl);
+      if (!res.ok) throw new Error("Failed to retrieve file from storage");
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      showToast(`Downloaded ${filename}`, "success");
+    } catch (err: any) {
+      console.error("Direct download failed, falling back to external link:", err);
+      const a = document.createElement("a");
+      a.href = doc.fileUrl;
+      a.download = filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
+
+  const handleDownloadAllZip = async () => {
+    if (!app?.documents || app.documents.length === 0) return;
+    setDownloadingZip(true);
+
+    const applicantName = (app?.client?.user?.name || "Applicant").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const trackingId = (app?.trackingId || `APP-${app?.id}`).trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const zipFilename = `${applicantName}_${trackingId}_Documents.zip`;
+
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+
+      // Fetch all documents in parallel
+      await Promise.all(
+        app.documents.map(async (doc: any) => {
+          try {
+            const res = await fetch(doc.fileUrl);
+            if (!res.ok) throw new Error(`Failed to fetch ${doc.documentType}`);
+            const blob = await res.blob();
+            const itemFilename = getDocFileName(doc);
+            zip.file(itemFilename, blob);
+          } catch (fileErr) {
+            console.error(`Error adding document ${doc.id} to zip:`, fileErr);
+          }
+        })
+      );
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const blobUrl = window.URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = zipFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+
+      showToast(`Successfully downloaded ${zipFilename}!`, "success");
+    } catch (err: any) {
+      console.error("Failed to generate zip file:", err);
+      showToast(err.message || "Failed to package documents into zip", "error");
+    } finally {
+      setDownloadingZip(false);
+    }
   };
 
   useEffect(() => {
@@ -525,7 +619,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               <div class="clause">
                 <div class="clause-title">1. Subject of Agreement</div>
                 <p class="clause-text">
-                  This binding legal agreement is entered into for the facilitation and processing of a <strong>China Visa</strong> for the applicant <strong>${clientUser?.name || "the Client"}</strong>. Syed Services (Party A) agrees to secure the official China invitation letter and prepare the complete visa file dossier.
+                  This binding legal agreement is entered into for the facilitation and processing of a <strong>${app.country ? `${app.country} Visa` : "Visa"}</strong> for the applicant <strong>${clientUser?.name || "the Client"}</strong>. Syed Services (Party A) agrees to secure the official invitation letter and prepare the complete visa file dossier.
                 </p>
               </div>
               
@@ -564,7 +658,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               <div class="clause">
                 <div class="clause-title">۱. د تړون موضوع</div>
                 <p class="clause-text">
-                  دا رسمي او قانوني هوکړه لیک د غوښتونکي <strong>${clientUser?.name || "مشتري"}</strong> لپاره د <strong>چین د ویزې (China Visa)</strong> د پروسس او ترلاسه کولو په موخه لاسلیک کیږي. لومړی لوری (سید خدمات) ژمن دی چې د رسمي بلنې لیک او ټولو اړوندو اسنادو د چمتو کولو چارې په سمه توګه پر مخ یوسي.
+                  دا رسمي او قانوني هوکړه لیک د غوښتونکي <strong>${clientUser?.name || "مشتري"}</strong> لپاره د <strong>د ویزې (${app.country || "Visa"})</strong> د پروسس او ترلاسه کولو په موخه لاسلیک کیږي. لومړی لوری (سید خدمات) ژمن دی چې د رسمي بلنې لیک او ټولو اړوندو اسنادو د چمتو کولو چارې په سمه توګه پر مخ یوسي.
                 </p>
               </div>
               
@@ -578,7 +672,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               <div class="clause">
                 <div class="clause-title">۳. مالي ژمنه او کاري فیس</div>
                 <p class="clause-text">
-                  دوهم لوری موافقه کوي چې لومړي لوري ته د چین ویزې د خدماتو په بدل کې <strong>${app.contractPaymentAmount || "۱۰۰۰ ډالر"}</strong> تادیه کړي. دغه فیس به په بشپړ ډول د سفارت څخه د ویزې د بریالۍ صدور او د پاسپورټ د تسلیمۍ څخه وروسته په سمدستي توګه تادیه کیږي. د کار له پیل وړاندې هیڅ ډول پیشکي فیس نه اخیستل کیږي.
+                  دوهم لوری موافقه کوي چې لومړي لوري ته د ویزې د خدماتو په بدل کې <strong>${app.contractPaymentAmount || "۱۰۰۰ ډالر"}</strong> تادیه کړي. دغه فیس به په بشپړ ډول د سفارت څخه د ویزې د بریالۍ صدور او د پاسپورټ د تسلیمۍ څخه وروسته په سمدستي توګه تادیه کیږي. د کار له پیل وړاندې هیڅ ډول پیشکي فیس نه اخیستل کیږي.
                 </p>
               </div>
               
@@ -729,8 +823,8 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                 <div className="flex items-center gap-3">
                   <span className="text-yellow-400"><FiFileText size={24} /></span>
                   <div>
-                    <h3 className="text-lg font-black text-white tracking-tight uppercase">China Visa Service Contract</h3>
-                    <h4 className="text-xs text-slate-500 font-bold tracking-wider uppercase font-mono mt-0.5">د چین د ویزې خدماتو رسمي تړون پاڼه</h4>
+                    <h3 className="text-lg font-black text-white tracking-tight uppercase">{app.country ? `${app.country} Visa Service Contract` : "Visa Service Contract"}</h3>
+                    <h4 className="text-xs text-slate-500 font-bold tracking-wider uppercase font-mono mt-0.5">د ویزې خدماتو رسمي تړون پاڼه</h4>
                   </div>
                 </div>
                 {app.contractAccepted && (
@@ -752,13 +846,13 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-white uppercase tracking-wider">English Version</p>
                     <p className="text-slate-400 text-xs">
-                      This contract is made and executed on <span className="text-slate-200">{new Date(app.updatedAt).toLocaleDateString()}</span> between <strong>Syed Services (Party A)</strong> and <strong>{app.agent?.agencyName || "Agent Partner"} (Party B)</strong> regarding the visa application processing of <strong>{clientUser?.name}</strong> to <strong>China</strong>.
+                      This contract is made and executed on <span className="text-slate-200">{new Date(app.updatedAt).toLocaleDateString()}</span> between <strong>Syed Services (Party A)</strong> and <strong>{app.agent?.agencyName || "Agent Partner"} (Party B)</strong> regarding the visa application processing of <strong>{clientUser?.name}</strong> for <strong>{app.country ? `${app.country} Visa` : "Visa"}</strong>.
                     </p>
                   </div>
                   <div className="space-y-1 text-right" dir="rtl">
                     <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider font-mono">پښتو نسخه</p>
                     <p className="text-slate-400 text-xs leading-6">
-                      دا تړون د لومړي لوري <strong>سید ویزې خدمات (Syed Services)</strong> او دوهم لوري <strong>{app.agent?.agencyName || "شریک استازی"}</strong> ترمنځ د کاندید <strong>{clientUser?.name}</strong> لپاره <strong>چین (China)</strong> هیواد ته د ویزې پروسس په هکله لاسلیک شو.
+                      دا تړون د لومړي لوري <strong>سید ویزې خدمات (Syed Services)</strong> او دوهم لوري <strong>{app.agent?.agencyName || "شریک استازی"}</strong> ترمنځ د کاندید <strong>{clientUser?.name}</strong> لپاره <strong>د ویزې (${app.country || "Visa"})</strong> پروسس په هکله لاسلیک شو.
                     </p>
                   </div>
                 </div>
@@ -771,7 +865,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                       1. Visa Process Timeline
                     </h5>
                     <p className="text-slate-400 text-xs pl-3">
-                      Party A guarantees that the China visa process will be fully processed and decided within <strong className="text-yellow-400">{app.contractApprovedDays || "30 Days"}</strong> from the date of final document submission to the embassy/consulate.
+                      Party A guarantees that the visa process will be fully processed and decided within <strong className="text-yellow-400">{app.contractApprovedDays || "30 Days"}</strong> from the date of final document submission to the embassy/consulate.
                     </p>
                   </div>
                   <div className="space-y-1 text-right pl-3 pr-3" dir="rtl">
@@ -985,22 +1079,21 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                   </span>
                 </div>
                 <button
-                  onClick={() => {
-                    app.documents.forEach((doc: any, i: number) => {
-                      setTimeout(() => {
-                        const link = document.createElement("a");
-                        link.href = doc.fileUrl;
-                        link.download = doc.fileName || doc.documentType;
-                        link.target = "_blank";
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }, i * 400);
-                    });
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-yellow-400 text-black font-black text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer shadow-lg shadow-yellow-400/10"
+                  type="button"
+                  onClick={handleDownloadAllZip}
+                  disabled={downloadingZip}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-yellow-400 text-black font-black text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-60"
+                  title="Download all files in a single ZIP named with Applicant Name and Tracking ID"
                 >
-                  <FiArchive size={13} /> Download All
+                  {downloadingZip ? (
+                    <>
+                      <FiLoader className="animate-spin" size={13} /> Packaging ZIP...
+                    </>
+                  ) : (
+                    <>
+                      <FiArchive size={13} /> Download All (ZIP)
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -1051,11 +1144,19 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                           title="View">
                           <FiEye size={15} />
                         </a>
-                        <a href={doc.fileUrl} download={doc.fileName || doc.documentType}
-                          className="p-2.5 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 hover:bg-yellow-400/5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all"
-                          title="Download">
-                          <FiDownload size={15} />
-                        </a>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDownloadSingle(doc, e)}
+                          disabled={downloadingDocId === doc.id}
+                          className="p-2.5 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 hover:bg-yellow-400/5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all cursor-pointer disabled:opacity-60"
+                          title={`Download direct file: ${getDocFileName(doc)}`}
+                        >
+                          {downloadingDocId === doc.id ? (
+                            <FiLoader className="animate-spin text-yellow-400" size={15} />
+                          ) : (
+                            <FiDownload size={15} />
+                          )}
+                        </button>
                       </div>
                     </div>
                   );
