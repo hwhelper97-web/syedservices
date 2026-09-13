@@ -1281,7 +1281,18 @@ export default function AdminApplicationDetailPage() {
                 </label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    setStatus(newStatus);
+                    if (newStatus === "DEAL_CONFIRMED") {
+                      if (app?.package?.processingTime || app?.package?.duration) {
+                        setContractDays(app.package.processingTime || app.package.duration);
+                      }
+                      if (app?.package?.priceUSD || app?.packagePrice) {
+                        setContractAmount(`${app.package?.priceUSD || app.packagePrice} USD`);
+                      }
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-yellow-400 rounded-xl text-xs text-white focus:outline-none"
                 >
                   {VISA_STATUS_OPTIONS.map(opt => (

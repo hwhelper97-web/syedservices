@@ -7,7 +7,7 @@ import {
   FiBriefcase, FiLoader, FiCheckCircle, FiUpload, FiPlusCircle, FiX,
   FiBookOpen, FiCreditCard, FiImage, FiShield, FiCompass, FiPaperclip,
   FiAlertCircle, FiDollarSign, FiTag, FiCalendar, FiPhone, FiHome,
-  FiHeart, FiUsers, FiLayers, FiInfo, FiCheck, FiRefreshCw
+  FiHeart, FiUsers, FiLayers, FiInfo, FiCheck, FiRefreshCw, FiMail
 } from "react-icons/fi";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -79,7 +79,6 @@ function AgentNewApplicationContent() {
   const [passportExpiryDate, setPassportExpiryDate] = useState("");
   const [passportIssuePlace, setPassportIssuePlace] = useState("");
   const [currentAddress, setCurrentAddress] = useState("");
-  const [permanentAddress, setPermanentAddress] = useState("");
 
   // Step 4: Family & Official Dossier
   const [fatherName, setFatherName] = useState("");
@@ -99,6 +98,8 @@ function AgentNewApplicationContent() {
   const [picturePreview, setPicturePreview] = useState<string>("");
   const [nonCriminalFile, setNonCriminalFile] = useState<File | null>(null);
   const [nonCriminalPreview, setNonCriminalPreview] = useState<string>("");
+  const [invitationFile, setInvitationFile] = useState<File | null>(null);
+  const [invitationPreview, setInvitationPreview] = useState<string>("");
   const [prevVisaFile, setPrevVisaFile] = useState<File | null>(null);
   const [prevVisaPreview, setPrevVisaPreview] = useState<string>("");
   const [bankStatementFile, setBankStatementFile] = useState<File | null>(null);
@@ -253,7 +254,7 @@ function AgentNewApplicationContent() {
     setSuccess(false);
     setUploadStatus("Validating dossier fields...");
 
-    // Validate required fields
+    // Validate required fields (Passport, ID Card, Photo are mandatory; Non-Criminal and Invitation are optional)
     if (!clientName || !clientEmail || !phone || !passportNumber) {
       setError("Please complete all mandatory applicant fields (Name, Email, Phone, Passport Number).");
       setLoading(false);
@@ -261,8 +262,8 @@ function AgentNewApplicationContent() {
       return;
     }
 
-    if (!passportFile || !idCardFile || !pictureFile || !nonCriminalFile) {
-      setError("Please attach all 4 mandatory document scans (Passport, ID Card, Photo, Non-Criminal Certificate).");
+    if (!passportFile || !idCardFile || !pictureFile) {
+      setError("Please attach all 3 mandatory document scans (Passport, ID Card, Photo).");
       setLoading(false);
       setActiveStep(5);
       return;
@@ -283,7 +284,6 @@ function AgentNewApplicationContent() {
         profession,
         qualification,
         currentAddress,
-        permanentAddress,
         passportNumber,
         passportIssueDate,
         passportExpiryDate,
@@ -321,23 +321,31 @@ function AgentNewApplicationContent() {
 
       const appId = data.application.id;
 
-      // 2. Upload Passport
+      // 2. Upload Passport (Required)
       setUploadStatus("Uploading Passport scan...");
       await uploadDocumentResilient(appId, "passport", passportFile);
 
-      // 3. Upload ID Card
+      // 3. Upload ID Card (Required)
       setUploadStatus("Uploading Tazkira / National ID Card...");
       await uploadDocumentResilient(appId, "cnic", idCardFile);
 
-      // 4. Upload Photo
+      // 4. Upload Photo (Required)
       setUploadStatus("Uploading Passport Photograph...");
       await uploadDocumentResilient(appId, "photo", pictureFile);
 
-      // 5. Upload Non-Criminal
-      setUploadStatus("Uploading Police Non-Criminal Clearance...");
-      await uploadDocumentResilient(appId, "non_criminal_certificate", nonCriminalFile);
+      // 5. Upload Non-Criminal Certificate (Optional)
+      if (nonCriminalFile) {
+        setUploadStatus("Uploading Police Non-Criminal Clearance...");
+        await uploadDocumentResilient(appId, "non_criminal_certificate", nonCriminalFile);
+      }
 
-      // 6. Optional & Specialized Documents
+      // 6. Upload Official Invitation / Sponsorship Letter (Optional)
+      if (invitationFile) {
+        setUploadStatus("Uploading Official Invitation / Sponsor Letter...");
+        await uploadDocumentResilient(appId, "invitation_letter", invitationFile);
+      }
+
+      // 7. Optional & Specialized Documents
       if (prevVisaFile) {
         setUploadStatus("Uploading Previous Visa Proof...");
         await uploadDocumentResilient(appId, "previous_visa", prevVisaFile);
@@ -353,7 +361,7 @@ function AgentNewApplicationContent() {
         await uploadDocumentResilient(appId, "humanitarian_exit_permit_proof", humanitarianDocFile);
       }
 
-      // 7. Extra Custom Documents
+      // 8. Extra Custom Documents
       for (const extra of extraFiles) {
         if (extra.file) {
           setUploadStatus(`Uploading ${extra.label}...`);
@@ -854,33 +862,37 @@ function AgentNewApplicationContent() {
                 />
               </div>
 
-              {/* Phone & Country Code */}
+              {/* Phone & Country Code - IMPROVED MOBILE/DESKTOP LAYOUT */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Phone / WhatsApp Number *</label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
-                    className="w-32 px-3 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white focus:outline-none focus:border-yellow-400"
+                    className="w-28 shrink-0 px-2 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-[11px] text-white focus:outline-none focus:border-yellow-400 font-bold"
                   >
                     <optgroup label="Regional Codes">
                       {PRIORITY_COUNTRIES.map((c) => (
-                        <option key={`phone-prio-${c.name}`} value={c.phoneCode}>{c.flag} {c.phoneCode} ({c.name})</option>
+                        <option key={`phone-prio-${c.name}`} value={c.phoneCode}>
+                          {c.flag} {c.phoneCode}
+                        </option>
                       ))}
                     </optgroup>
                     <optgroup label="All World Codes">
                       {ALL_WORLD_COUNTRIES.map((c) => (
-                        <option key={`phone-all-${c.name}`} value={c.phoneCode}>{c.flag} {c.phoneCode} ({c.name})</option>
+                        <option key={`phone-all-${c.name}`} value={c.phoneCode}>
+                          {c.flag} {c.phoneCode}
+                        </option>
                       ))}
                     </optgroup>
                   </select>
                   <input
-                    type="text"
+                    type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="700123456"
-                    className="flex-1 px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white focus:outline-none focus:border-yellow-400"
+                    placeholder="e.g. 700123456"
+                    className="flex-1 min-w-[130px] px-3.5 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white focus:outline-none focus:border-yellow-400 placeholder:text-slate-600 font-medium"
                   />
                 </div>
               </div>
@@ -1005,26 +1017,16 @@ function AgentNewApplicationContent() {
               </div>
             </div>
 
-            {/* Address fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+            {/* Address field (Single Current Address) */}
+            <div className="pt-2">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Residential Address</label>
                 <input
                   type="text"
                   value={currentAddress}
                   onChange={(e) => setCurrentAddress(e.target.value)}
-                  placeholder="House #, Street, District, City"
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Permanent Address (Origin Country)</label>
-                <input
-                  type="text"
-                  value={permanentAddress}
-                  onChange={(e) => setPermanentAddress(e.target.value)}
-                  placeholder="Permanent village, district, province"
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white focus:outline-none focus:border-yellow-400"
+                  placeholder="House / Apartment #, Street, District, City, Country"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white focus:outline-none focus:border-yellow-400 placeholder:text-slate-600"
                 />
               </div>
             </div>
@@ -1193,14 +1195,14 @@ function AgentNewApplicationContent() {
                 </div>
                 <div>
                   <h4 className="text-base font-black text-white">5. Document Scans & Verified Proofs</h4>
-                  <p className="text-xs text-slate-400">Attach mandatory biometric scans, certifications, and extra proofs (Max 5MB each)</p>
+                  <p className="text-xs text-slate-400">Attach mandatory biometric scans and optional supporting proofs (Max 5MB each)</p>
                 </div>
               </div>
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Step 5 of 5</span>
             </div>
 
             {/* Upload Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* 1. Passport Scan (Mandatory) */}
               <div className={`p-4 bg-slate-900/80 border rounded-2xl flex flex-col justify-between space-y-3 relative group transition-all ${
                 passportFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-800 hover:border-yellow-400/50"
@@ -1221,7 +1223,7 @@ function AgentNewApplicationContent() {
                     <button
                       type="button"
                       onClick={() => { setPassportFile(null); setPassportPreview(""); }}
-                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg"
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer"
                     >
                       <FiX size={12} />
                     </button>
@@ -1267,7 +1269,7 @@ function AgentNewApplicationContent() {
                     <button
                       type="button"
                       onClick={() => { setIdCardFile(null); setIdCardPreview(""); }}
-                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg"
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer"
                     >
                       <FiX size={12} />
                     </button>
@@ -1313,7 +1315,7 @@ function AgentNewApplicationContent() {
                     <button
                       type="button"
                       onClick={() => { setPictureFile(null); setPicturePreview(""); }}
-                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg"
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer"
                     >
                       <FiX size={12} />
                     </button>
@@ -1339,7 +1341,7 @@ function AgentNewApplicationContent() {
                 )}
               </div>
 
-              {/* 4. Non-Criminal Certificate (Mandatory) */}
+              {/* 4. Non-Criminal Certificate (NOW OPTIONAL) */}
               <div className={`p-4 bg-slate-900/80 border rounded-2xl flex flex-col justify-between space-y-3 relative group transition-all ${
                 nonCriminalFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-800 hover:border-yellow-400/50"
               }`}>
@@ -1348,9 +1350,9 @@ function AgentNewApplicationContent() {
                     <span className="text-[11px] font-black text-white flex items-center gap-1.5">
                       <FiShield className="text-yellow-400" /> Non-Criminal Cert
                     </span>
-                    <span className="text-[9px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold uppercase">Required</span>
+                    <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold uppercase">Optional</span>
                   </div>
-                  <p className="text-[10px] text-slate-400">Police clearance or certificate of good standing.</p>
+                  <p className="text-[10px] text-slate-400">Police clearance or certificate of good standing (if available).</p>
                 </div>
 
                 {nonCriminalPreview ? (
@@ -1359,7 +1361,7 @@ function AgentNewApplicationContent() {
                     <button
                       type="button"
                       onClick={() => { setNonCriminalFile(null); setNonCriminalPreview(""); }}
-                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg"
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer"
                     >
                       <FiX size={12} />
                     </button>
@@ -1384,13 +1386,105 @@ function AgentNewApplicationContent() {
                   </label>
                 )}
               </div>
+
+              {/* 5. Official Invitation / Sponsor Letter (NEW - OPTIONAL) */}
+              <div className={`p-4 bg-slate-900/80 border rounded-2xl flex flex-col justify-between space-y-3 relative group transition-all ${
+                invitationFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-800 hover:border-yellow-400/50"
+              }`}>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-white flex items-center gap-1.5">
+                      <FiMail className="text-yellow-400" /> Invitation / Sponsor Letter
+                    </span>
+                    <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold uppercase">Optional</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Official invitation letter, host guarantee, or embassy sponsor proof.</p>
+                </div>
+
+                {invitationPreview ? (
+                  <div className="relative h-28 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                    <img src={invitationPreview} alt="Invitation Preview" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setInvitationFile(null); setInvitationPreview(""); }}
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer"
+                    >
+                      <FiX size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="h-28 w-full border-2 border-dashed border-slate-800 group-hover:border-yellow-400/40 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-850/50 transition-all p-2 text-center">
+                    <FiUpload className="text-slate-500 group-hover:text-yellow-400 transition-colors mb-1" size={20} />
+                    <span className="text-[10px] font-bold text-slate-300">Choose File</span>
+                    <span className="text-[9px] text-slate-500">PDF, JPG, PNG</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setInvitationFile(file);
+                          setInvitationPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : "");
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* 6. Previous Visa / Entry Stamp (Optional) */}
+              <div className={`p-4 bg-slate-900/80 border rounded-2xl flex flex-col justify-between space-y-3 relative group transition-all ${
+                prevVisaFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-800 hover:border-yellow-400/50"
+              }`}>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-white flex items-center gap-1.5">
+                      <FiCompass className="text-yellow-400" /> Previous Visa Stamp
+                    </span>
+                    <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold uppercase">Optional</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Prior visa or entry/exit stamps if previously traveled.</p>
+                </div>
+
+                {prevVisaPreview ? (
+                  <div className="relative h-28 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                    <img src={prevVisaPreview} alt="Previous Visa Preview" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setPrevVisaFile(null); setPrevVisaPreview(""); }}
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer"
+                    >
+                      <FiX size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="h-28 w-full border-2 border-dashed border-slate-800 group-hover:border-yellow-400/40 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-850/50 transition-all p-2 text-center">
+                    <FiUpload className="text-slate-500 group-hover:text-yellow-400 transition-colors mb-1" size={20} />
+                    <span className="text-[10px] font-bold text-slate-300">Choose File</span>
+                    <span className="text-[9px] text-slate-500">PDF, JPG, PNG</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPrevVisaFile(file);
+                          setPrevVisaPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : "");
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
 
-            {/* Specialized / Optional Documents Row */}
+            {/* Specialized Row: Bank Statement & Humanitarian Proof */}
             <div className="pt-4 border-t border-slate-800/80 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <FiPaperclip className="text-yellow-400" /> Additional / Category-Specific Proofs
+                  <FiPaperclip className="text-yellow-400" /> Additional Specialized Case Proofs
                 </span>
                 <button
                   type="button"
@@ -1401,25 +1495,11 @@ function AgentNewApplicationContent() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Previous Visa Stamp */}
-                <div className="p-4 bg-slate-900/50 border border-slate-800/80 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-300">Previous Visa / Entry Stamp</span>
-                    <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold">Optional</span>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => setPrevVisaFile(e.target.files?.[0] || null)}
-                    className="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-yellow-400 file:text-black cursor-pointer"
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Bank Statement */}
                 <div className="p-4 bg-slate-900/50 border border-slate-800/80 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-300">Bank Statement / Funds</span>
+                    <span className="text-xs font-black text-slate-300">Bank Statement / Funds Proof</span>
                     <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold">Optional</span>
                   </div>
                   <input

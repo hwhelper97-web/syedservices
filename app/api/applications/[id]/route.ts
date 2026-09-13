@@ -165,12 +165,60 @@ export async function PATCH(
         }
       };
       
-      // Auto-trigger contract status sent when admin confirms deal
+      // Auto-trigger contract status sent when admin confirms deal and sync latest package price/duration
       if (status === "DEAL_CONFIRMED") {
         updateData.contractStatus = "SENT";
         updateData.contractAccepted = false;
         updateData.contractAcceptedAt = null;
         updateData.contractSignatureName = null;
+
+        // Fetch latest package if attached
+        if (application.packageId) {
+          const pkg = await prisma.package.findUnique({ where: { id: application.packageId } });
+          if (pkg) {
+            if (pkg.priceUSD !== null && pkg.priceUSD !== undefined && pkg.priceUSD > 0) {
+              updateData.packagePrice = pkg.priceUSD;
+              if (!contractPaymentAmount) {
+                updateData.contractPaymentAmount = `${pkg.priceUSD} USD`;
+              }
+            }
+            if (pkg.processingTime || pkg.duration) {
+              updateData.duration = pkg.duration || updateData.duration || application.duration;
+              if (!contractApprovedDays) {
+                updateData.contractApprovedDays = pkg.processingTime || pkg.duration;
+              }
+            }
+          }
+        }
+
+        // Ensure digital invoice is synchronized
+        try {
+          const effectivePrice = updateData.packagePrice || application.packagePrice || 250;
+          const existingInv = await prisma.invoice.findFirst({
+            where: { applicationId: applicationId }
+          });
+
+          if (existingInv) {
+            await prisma.invoice.update({
+              where: { id: existingInv.id },
+              data: { totalAmount: effectivePrice }
+            });
+          } else {
+            const rawTracking = application.trackingId?.replace(/[^0-9]/g, "") || String(Date.now()).slice(-6);
+            const invNum = `INV-${rawTracking}`;
+            await prisma.invoice.create({
+              data: {
+                invoiceNumber: invNum,
+                applicationId,
+                totalAmount: effectivePrice,
+                status: "UNPAID",
+                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+              }
+            });
+          }
+        } catch (invErr) {
+          console.error("Failed to sync invoice on DEAL_CONFIRMED:", invErr);
+        }
       }
     }
 
