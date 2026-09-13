@@ -404,3 +404,24 @@ model ContactRequest {
   status    String   @default("NEW") // NEW, READ, ARCHIVED
   createdAt DateTime @default(now())
 }
+
+model Package {
+  id             Int      @id @default(autoincrement())
+  title          String
+  slug           String?  @unique
+  country        String
+  visaType       String?
+  agencyNumber   String
+  priceUSD       Float?
+  pricePKR       Float?
+  priceAFN       Float?
+  duration       String?
+  processingTime String?
+  description    String
+  documents      String
+  image          String?
+  featured       Boolean  @default(true)
+  status         String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+}

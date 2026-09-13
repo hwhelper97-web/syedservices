@@ -8,6 +8,7 @@ import FinalCTA from "../components/FinalCTA";
 import Footer from "../components/Footer";
 import WhatsApp from "../components/WhatsApp";
 import WorldMapPro from "../components/WorldMapPro";
+import PackagesSection from "../components/PackagesSection";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
       <Navbar />
       <Hero />
       <WorldMapPro />
+      <PackagesSection />
       <Services />
       <Stats />
       <WhyUs />

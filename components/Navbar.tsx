@@ -81,6 +81,7 @@ export default function Navbar() {
   const navLinks = [
     { name: t('home'), href: "/" },
     { name: t('visa_services'), href: "/visa/pakistan", dropdown: true },
+    { name: t('packages') || "Packages", href: "/#packages" },
     { name: t('consultancy'), href: "/consultancy" },
     { name: t('tickets'), href: "/ticketing" },
     { name: t('exit_permit'), href: "/visa/pakistan/exit" },
