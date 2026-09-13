@@ -10,7 +10,7 @@ export default async function PortalPage() {
 
   const { role } = session;
 
-  if (role === "SUPER_ADMIN" || role === "ADMIN") {
+  if (["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(role)) {
     redirect("/portal/admin");
   } else if (role === "AGENT") {
     redirect("/portal/agent");

@@ -6,7 +6,7 @@ import AdminDashboardClient from "./AdminDashboardClient";
 export default async function AdminDashboard() {
   const session = await getSession();
 
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  if (!session || !["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
     redirect("/portal/login");
   }
 

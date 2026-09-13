@@ -29,7 +29,14 @@ export async function getSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  return verifyToken(token) as { userId: number; email: string; role: string; name: string } | null;
+  const decoded = verifyToken(token) as any;
+  if (!decoded || typeof decoded !== "object" || !decoded.userId) return null;
+  return {
+    userId: Number(decoded.userId),
+    email: String(decoded.email || ""),
+    role: String(decoded.role || "CLIENT"),
+    name: String(decoded.name || decoded.email?.split("@")[0] || "User"),
+  };
 }
 
 export async function setSessionCookie(payload: { userId: number; email: string; role: string; name: string }) {

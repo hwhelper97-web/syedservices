@@ -1,7 +1,7 @@
 // Web Audio API synthesized chime for notifications
 // Zero external files, zero 404/CORS risk, instant and reliable across all modern browsers
 
-let audioCtx: AudioContext | null = null;
+let audioCtx: any = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;

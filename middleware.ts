@@ -90,21 +90,23 @@ export async function middleware(request: NextRequest) {
     const role = payload.role;
 
     // Check path-specific roles
-    if (pathname.startsWith("/portal/admin") && !["SUPER_ADMIN", "ADMIN"].includes(role)) {
+    const adminRoles = ["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"];
+
+    if (pathname.startsWith("/portal/admin") && !adminRoles.includes(role)) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
 
-    if (pathname.startsWith("/portal/agent") && !["SUPER_ADMIN", "ADMIN", "AGENT"].includes(role)) {
+    if (pathname.startsWith("/portal/agent") && ![...adminRoles, "AGENT"].includes(role)) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
 
-    if (pathname.startsWith("/portal/staff") && !["SUPER_ADMIN", "ADMIN", "STAFF"].includes(role)) {
+    if (pathname.startsWith("/portal/staff") && ![...adminRoles, "STAFF"].includes(role)) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
 
     if (pathname.startsWith("/portal/client") && role !== "CLIENT") {
       // If an admin/agent logs in, redirect them to dashboard directly instead of client view
-      if (["SUPER_ADMIN", "ADMIN"].includes(role)) {
+      if (adminRoles.includes(role)) {
         return NextResponse.redirect(new URL("/portal/admin", request.url));
       }
       if (role === "AGENT") {

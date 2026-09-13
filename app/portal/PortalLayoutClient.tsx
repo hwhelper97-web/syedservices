@@ -10,8 +10,19 @@ import {
   FiLogOut, FiBriefcase, FiCheckSquare, FiPlusCircle, FiUser 
 } from "react-icons/fi";
 import Logo from "@/components/Logo";
-import NotificationBell from "@/components/NotificationBell";
-import LiveNotificationListener from "@/components/LiveNotificationListener";
+import dynamic from "next/dynamic";
+
+const NotificationBell = dynamic(() => import("@/components/NotificationBell"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-9 h-9 rounded-2xl bg-slate-900 border border-slate-800 animate-pulse" />
+  ),
+});
+
+const LiveNotificationListener = dynamic(
+  () => import("@/components/LiveNotificationListener"),
+  { ssr: false }
+);
 
 interface PortalLayoutClientProps {
   children: React.ReactNode;
@@ -19,7 +30,7 @@ interface PortalLayoutClientProps {
     userId: number;
     email: string;
     role: string;
-    name: string;
+    name?: string;
   };
 }
 
@@ -42,9 +53,9 @@ export default function PortalLayoutClient({ children, user }: PortalLayoutClien
 
   // Define links based on user role
   const getSidebarLinks = () => {
-    const role = user.role;
+    const role = user?.role || "CLIENT";
     
-    if (role === "SUPER_ADMIN" || role === "ADMIN") {
+    if (["SUPER_ADMIN", "ADMIN", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"].includes(role)) {
       return [
         { name: "Dashboard", href: "/portal/admin", icon: <FiHome size={18} /> },
         { name: "Applications", href: "/portal/admin/applications", icon: <FiFileText size={18} /> },
@@ -116,11 +127,11 @@ export default function PortalLayoutClient({ children, user }: PortalLayoutClien
         <div className="p-6 border-t border-slate-800 space-y-4">
           <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 bg-yellow-400/10 text-yellow-400 rounded-full flex items-center justify-center font-bold border border-yellow-400/20">
-              {user.name[0].toUpperCase()}
+              {(user?.name || user?.email || "U")[0]?.toUpperCase() || "U"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-black text-white truncate">{user.name}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{user.role}</p>
+              <p className="text-xs font-black text-white truncate">{user?.name || user?.email || "User"}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{user?.role || "USER"}</p>
             </div>
           </div>
           <button 
@@ -175,11 +186,11 @@ export default function PortalLayoutClient({ children, user }: PortalLayoutClien
               <div className="p-6 border-t border-slate-800 space-y-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="w-10 h-10 bg-yellow-400/10 text-yellow-400 rounded-full flex items-center justify-center font-bold">
-                    {user.name[0].toUpperCase()}
+                    {(user?.name || user?.email || "U")[0]?.toUpperCase() || "U"}
                   </div>
                   <div>
-                    <p className="text-xs font-black text-white">{user.name}</p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{user.role}</p>
+                    <p className="text-xs font-black text-white">{user?.name || user?.email || "User"}</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{user?.role || "USER"}</p>
                   </div>
                 </div>
                 <button 
