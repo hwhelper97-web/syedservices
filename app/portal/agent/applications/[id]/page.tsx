@@ -130,7 +130,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [signatureName, setSignatureName] = useState("");
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [isContractExpanded, setIsContractExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "personal" | "visa" | "family" | "career" | "passport" | "documents">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "embassy" | "personal" | "visa" | "family" | "career" | "passport" | "documents">("overview");
 
   // Download states
   const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
@@ -860,6 +860,12 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const currentStatusIdx = STATUS_PIPELINE.findIndex(s => s.key === app.status);
   const isTerminal = ["APPROVED", "REJECTED", "COMPLETED", "ARCHIVED"].includes(app.status);
 
+  // Separate official embassy issuances (approved visa & submission slips) from normal applicant documents
+  const officialVisaDocs = app.documents?.filter((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType)) || [];
+  const submissionSlipDocs = app.documents?.filter((d: any) => ["submission_confirmation", "embassy_submission_proof"].includes(d.documentType)) || [];
+  const officialIssuanceDocs = [...officialVisaDocs, ...submissionSlipDocs];
+  const normalDocs = app.documents?.filter((d: any) => !["approved_visa", "issued_visa", "submission_confirmation", "embassy_submission_proof"].includes(d.documentType)) || [];
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Toast Notification */}
@@ -1168,12 +1174,13 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
           <div className="bg-[#0f172a] border border-slate-800/80 p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto scrollbar-thin shadow-lg">
             {[
               { id: "overview", label: "Complete Dossier", icon: <FiLayers size={13} /> },
+              { id: "embassy", label: `Embassy & Visa (${officialIssuanceDocs.length})`, icon: <FiAward size={13} />, highlight: officialIssuanceDocs.length > 0 },
               { id: "personal", label: "Personal & Contact", icon: <FiUser size={13} /> },
               { id: "visa", label: "Visa & Journey", icon: <FiGlobe size={13} /> },
               { id: "family", label: "Family Records", icon: <FiUsers size={13} /> },
               { id: "career", label: "Education & Career", icon: <FiBriefcase size={13} /> },
               { id: "passport", label: "Passport & Travel", icon: <FiBook size={13} /> },
-              { id: "documents", label: `Documents (${app.documents?.length || 0})`, icon: <FiPaperclip size={13} /> },
+              { id: "documents", label: `Applicant Documents (${normalDocs.length})`, icon: <FiPaperclip size={13} /> },
             ].map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -1184,6 +1191,8 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                     isActive
                       ? "bg-yellow-400 text-black shadow-md shadow-yellow-400/15"
+                      : tab.highlight
+                      ? "text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20"
                       : "text-slate-400 hover:text-white hover:bg-slate-900/60"
                   }`}
                 >
@@ -1196,6 +1205,137 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
 
           {/* 3. Redesigned Premium Application Layout Content */}
           <div className="space-y-6">
+
+            {/* SPECIAL DEDICATED SECTION: OFFICIAL EMBASSY CONFIRMATION & APPROVED VISA GRANTS */}
+            {(activeTab === "overview" || activeTab === "embassy") && (officialIssuanceDocs.length > 0 || activeTab === "embassy") && (
+              <div className="space-y-4">
+                {/* 1. Official Approved Visa Card */}
+                {officialVisaDocs.length > 0 && (
+                  <div className="bg-gradient-to-r from-emerald-950/60 via-[#0f172a] to-slate-900 border-2 border-emerald-500/40 rounded-3xl p-5 md:p-6 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-400/10 blur-[100px] pointer-events-none" />
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
+                          <FiAward size={24} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                              <FiCheckCircle size={12} /> OFFICIAL VISA ISSUED & APPROVED
+                            </span>
+                            <span className="text-[10px] text-emerald-400 font-mono font-bold">Consular Grant</span>
+                          </div>
+                          <h4 className="text-base font-black text-white">
+                            Official Approved Visa / eVisa Grant
+                          </h4>
+                          <p className="text-xs text-slate-300">
+                            The visa has been officially approved and issued by the consular authority. Download your official visa grant below.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 shrink-0 self-start sm:self-auto">
+                        {officialVisaDocs.map((visaDoc: any) => (
+                          <div key={visaDoc.id} className="flex gap-2">
+                            <a
+                              href={visaDoc.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2 bg-slate-900 border border-emerald-500/40 text-emerald-400 font-black text-xs rounded-xl hover:bg-slate-850 transition-all flex items-center gap-1.5"
+                            >
+                              <FiEye size={14} /> View eVisa
+                            </a>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDownloadSingle(visaDoc, e)}
+                              disabled={downloadingDocId === visaDoc.id}
+                              className="px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-black font-black text-xs rounded-xl hover:scale-105 transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 disabled:opacity-60"
+                            >
+                              {downloadingDocId === visaDoc.id ? (
+                                <FiLoader className="animate-spin" size={13} />
+                              ) : (
+                                <FiDownload size={13} />
+                              )}
+                              <span>Download Visa</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Official Embassy Submission Confirmation Slip Card */}
+                {submissionSlipDocs.length > 0 && (
+                  <div className="bg-gradient-to-r from-cyan-950/60 via-[#0f172a] to-slate-900 border border-cyan-500/40 rounded-3xl p-5 md:p-6 shadow-xl relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                          <FiSend size={20} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest block">
+                              Embassy / Consular Confirmation
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 text-[9px] font-bold">
+                              Registered
+                            </span>
+                          </div>
+                          <h4 className="text-sm md:text-base font-black text-white">
+                            Embassy Submission Slip & Email Confirmation
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Official proof that your dossier was submitted to the embassy desk for review.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 shrink-0 self-start sm:self-auto">
+                        {submissionSlipDocs.map((subDoc: any) => (
+                          <div key={subDoc.id} className="flex gap-2">
+                            <a
+                              href={subDoc.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2 bg-slate-900 border border-cyan-500/30 text-cyan-400 font-bold text-xs rounded-xl hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                            >
+                              <FiEye size={13} /> View Slip
+                            </a>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDownloadSingle(subDoc, e)}
+                              disabled={downloadingDocId === subDoc.id}
+                              className="px-4 py-2 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-500/10 disabled:opacity-60"
+                            >
+                              {downloadingDocId === subDoc.id ? (
+                                <FiLoader className="animate-spin" size={13} />
+                              ) : (
+                                <FiDownload size={13} />
+                              )}
+                              <span>Download Slip</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty state if in embassy tab and nothing uploaded yet */}
+                {activeTab === "embassy" && officialIssuanceDocs.length === 0 && (
+                  <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 text-center space-y-3 shadow-xl">
+                    <div className="w-12 h-12 rounded-2xl bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 flex items-center justify-center mx-auto">
+                      <FiAward size={24} />
+                    </div>
+                    <h4 className="text-sm font-black text-white">Embassy Outputs In Progress</h4>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Official embassy submission confirmations and approved visa certificates will be published in this dedicated section as the processing advances.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* TAB: OVERVIEW (ALL CATEGORIES GROUPED IN SLEEK BENTO GRIDS) */}
             {(activeTab === "overview" || activeTab === "personal") && (
@@ -1298,7 +1438,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               </SectionCard>
             )}
 
-            {/* Uploaded Documents Section */}
+            {/* Applicant Uploaded Documents Section (Excludes Embassy Confirmations & Approved Visas) */}
             {(activeTab === "overview" || activeTab === "documents") && (
               <div className="bg-[#0f172a] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden">
                 {/* Header */}
@@ -1309,15 +1449,15 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                     </span>
                     <div>
                       <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider">
-                        Verified Dossier Documents
+                        Applicant Submitted Dossier Documents
                       </h4>
                       <p className="text-[10px] text-slate-500 font-mono">
-                        {app.documents?.length || 0} attached files
+                        {normalDocs.length} applicant uploaded files
                       </p>
                     </div>
                   </div>
 
-                  {app.documents && app.documents.length > 0 && (
+                  {normalDocs.length > 0 && (
                     <button
                       type="button"
                       onClick={handleDownloadAllZip}
@@ -1339,13 +1479,13 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                 </div>
 
                 {/* Documents List */}
-                {(!app.documents || app.documents.length === 0) ? (
+                {normalDocs.length === 0 ? (
                   <div className="text-center py-10 text-xs text-slate-500">
-                    No documents uploaded for this application yet.
+                    No applicant dossier documents uploaded yet.
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-800/40">
-                    {app.documents.map((doc: any) => {
+                    {normalDocs.map((doc: any) => {
                       const ext = doc.fileName?.split(".").pop()?.toLowerCase() || doc.fileType || "";
                       const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
                       const sizeKB = doc.fileSize ? (doc.fileSize / 1024).toFixed(1) : null;

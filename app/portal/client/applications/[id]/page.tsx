@@ -351,6 +351,7 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
   // Check for specialized documents
   const approvedVisaDoc = app.documents?.find((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType));
   const submissionProofDoc = app.documents?.find((d: any) => ["submission_confirmation", "embassy_submission_proof"].includes(d.documentType));
+  const normalDocs = app.documents?.filter((d: any) => !["approved_visa", "issued_visa", "submission_confirmation", "embassy_submission_proof"].includes(d.documentType)) || [];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
@@ -672,11 +673,11 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
           <div className="flex items-center gap-2">
             <FiPaperclip className="text-yellow-400" size={15} />
             <h4 className="text-xs font-black text-white uppercase tracking-wider">
-              Uploaded Documents ({app.documents?.length || 0})
+              Applicant Uploaded Documents ({normalDocs.length})
             </h4>
           </div>
           <div className="flex items-center gap-2">
-            {app.documents && app.documents.length > 0 && (
+            {normalDocs.length > 0 && (
               <button
                 type="button"
                 onClick={handleDownloadAllZip}
@@ -696,11 +697,11 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
           </div>
         </div>
 
-        {(!app.documents || app.documents.length === 0) ? (
-          <p className="text-xs text-slate-500 italic text-center py-6">No documents attached to this file yet.</p>
+        {normalDocs.length === 0 ? (
+          <p className="text-xs text-slate-500 italic text-center py-6">No applicant dossier documents attached to this file yet.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {app.documents.map((doc: any) => (
+            {normalDocs.map((doc: any) => (
               <div key={doc.id} className="p-3 bg-[#020617] border border-slate-800 rounded-xl flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-white truncate">{doc.fileName || doc.documentType}</p>

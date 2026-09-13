@@ -1170,34 +1170,37 @@ export default function AdminApplicationDetailPage() {
           </div>
 
           {/* 5. Documents Vault */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/40">
-              <div className="flex items-center gap-2">
-                <FiPaperclip className="text-yellow-400" size={16} />
-                <h4 className="text-xs font-black text-white uppercase tracking-wider">
-                  Client Support Documents ({app.documents?.length || 0})
-                </h4>
-              </div>
-              {app.documents?.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleDownloadAllZip}
-                  disabled={downloadingZip}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer disabled:opacity-60 shadow-md shadow-yellow-400/10"
-                >
-                  {downloadingZip ? <FiLoader className="animate-spin" size={13} /> : <FiArchive size={13} />}
-                  <span>Download ZIP</span>
-                </button>
-              )}
-            </div>
+          {(() => {
+            const normalDocs = app.documents?.filter((d: any) => !["approved_visa", "issued_visa", "submission_confirmation", "embassy_submission_proof"].includes(d.documentType)) || [];
+            return (
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/40">
+                  <div className="flex items-center gap-2">
+                    <FiPaperclip className="text-yellow-400" size={16} />
+                    <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                      Client Support Documents ({normalDocs.length})
+                    </h4>
+                  </div>
+                  {normalDocs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadAllZip}
+                      disabled={downloadingZip}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer disabled:opacity-60 shadow-md shadow-yellow-400/10"
+                    >
+                      {downloadingZip ? <FiLoader className="animate-spin" size={13} /> : <FiArchive size={13} />}
+                      <span>Download ZIP</span>
+                    </button>
+                  )}
+                </div>
 
-            <div className="p-3">
-              {(!app.documents || app.documents.length === 0) ? (
-                <p className="text-xs text-slate-500 text-center py-6">No documents uploaded by client yet.</p>
-              ) : (
-                <div className="divide-y divide-slate-800/50">
-                  {app.documents.map((doc: any) => {
-                    const ext = doc.fileName?.split(".").pop()?.toLowerCase() || doc.fileType || "";
+                <div className="p-3">
+                  {normalDocs.length === 0 ? (
+                    <p className="text-xs text-slate-500 text-center py-6">No support documents uploaded by client yet.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-800/50">
+                      {normalDocs.map((doc: any) => {
+                        const ext = doc.fileName?.split(".").pop()?.toLowerCase() || doc.fileType || "";
                     const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
                     const sizeKB = doc.fileSize ? (doc.fileSize / 1024).toFixed(1) : null;
 
@@ -1260,7 +1263,9 @@ export default function AdminApplicationDetailPage() {
               )}
             </div>
           </div>
-        </div>
+        );
+      })()}
+    </div>
 
         {/* Right Column (5 cols): Pipeline Control, Embassy/Visa Dispatch, Billing & AI Assistant */}
         <div className="lg:col-span-5 space-y-6">
