@@ -320,18 +320,31 @@ export async function GET(req: Request) {
         }
       });
     } else if (["AGENT", "AGENCY_OWNER"].includes(session.role)) {
+      let agentProfile = await prisma.agentProfile.findUnique({
+        where: { userId: session.userId },
+      });
+      if (!agentProfile && session.email) {
+        agentProfile = await prisma.agentProfile.findFirst({
+          where: { user: { email: session.email } },
+        });
+      }
       applications = await prisma.application.findMany({
-        where: { agent: { userId: session.userId } },
+        where: agentProfile ? {
+          OR: [
+            { agentId: agentProfile.id },
+            { agent: { userId: session.userId } },
+          ],
+        } : { agent: { userId: session.userId } },
         orderBy: { createdAt: "desc" },
         include: {
           client: {
             include: {
-              user: true
-            }
+              user: true,
+            },
           },
           package: true,
           invoices: true,
-        }
+        },
       });
     } else {
       // Client

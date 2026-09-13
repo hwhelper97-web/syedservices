@@ -8,6 +8,9 @@ import {
   FiAlertCircle, FiArrowRight, FiShield, FiBriefcase, FiCopy
 } from "react-icons/fi";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AgentDashboard() {
   const session = await getSession();
 
@@ -23,51 +26,75 @@ export default async function AgentDashboard() {
     user = await prisma.user.findUnique({
       where: { id: session.userId },
       include: {
-        agentProfile: {
-          include: {
-            applications: {
-              orderBy: { createdAt: "desc" },
-              include: {
-                client: {
-                  include: {
-                    user: true,
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+        agentProfile: true,
+      },
     });
 
     profile = user?.agentProfile;
 
+    // Fallback: If not found directly on user relation, search by userId or email
+    if (!profile) {
+      profile = await prisma.agentProfile.findUnique({
+        where: { userId: session.userId },
+      });
+      if (!profile && session.email) {
+        profile = await prisma.agentProfile.findFirst({
+          where: { user: { email: session.email } },
+        });
+      }
+    }
+
     // Auto-create agent profile if missing
     if (!profile && user) {
       const agentCode = `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
-      profile = await prisma.agentProfile.create({
-        data: {
-          userId: session.userId,
-          agentCode,
-          agencyName: session.name ? `${session.name}'s Agency` : "Travel Agency Partner",
-          phone: "+92 300 0000000",
-        },
-        include: {
-          applications: {
-            orderBy: { createdAt: "desc" },
-            include: {
-              client: {
-                include: {
-                  user: true,
-                }
-              }
-            }
-          }
-        }
-      });
+      try {
+        profile = await prisma.agentProfile.create({
+          data: {
+            userId: session.userId,
+            agentCode,
+            agencyName: session.name ? `${session.name}'s Agency` : "Travel Agency Partner",
+            phone: "+92 300 0000000",
+          },
+        });
+      } catch (e) {
+        console.error("Error auto-creating agent profile:", e);
+      }
     }
 
-    applications = profile?.applications || [];
+    // If profile exists but has missing agentCode, update it
+    if (profile && !profile.agentCode) {
+      const generatedCode = `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
+      try {
+        profile = await prisma.agentProfile.update({
+          where: { id: profile.id },
+          data: { agentCode: generatedCode },
+        });
+      } catch (e) {
+        profile.agentCode = generatedCode;
+      }
+    }
+
+    // Query applications safely matching agentId or agent userId
+    if (profile) {
+      applications = await prisma.application.findMany({
+        where: {
+          OR: [
+            { agentId: profile.id },
+            { agent: { userId: session.userId } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          client: {
+            include: {
+              user: true,
+            },
+          },
+          package: true,
+          invoices: true,
+        },
+      });
+    }
   } catch (error) {
     console.error("AgentDashboard data fetch error:", error);
   }

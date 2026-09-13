@@ -7,6 +7,9 @@ import {
   FiClock, FiCheckCircle, FiAlertCircle, FiArrowRight 
 } from "react-icons/fi";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ClientDashboard() {
   const session = await getSession();
 
