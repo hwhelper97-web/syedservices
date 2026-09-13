@@ -202,9 +202,39 @@ export async function PATCH(
             updateNotes
           );
         }
+
+        // Create in-app notification for client and agent
+        const statusLabel = status ? status.replace(/_/g, " ") : "Application Details Updated";
+        const notifMsg = `Your application (${fullApp.trackingId || '#' + fullApp.id}) for ${fullApp.country} status is now: ${statusLabel}.${notes ? " Note: " + notes : ""}`;
+
+        if (fullApp.client?.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: fullApp.client.userId,
+              title: `Visa Status: ${statusLabel}`,
+              message: notifMsg,
+              actionUrl: "/portal/client",
+              category: "PIPELINE",
+              priority: "HIGH",
+            },
+          });
+        }
+
+        if (fullApp.agent?.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: fullApp.agent.userId,
+              title: `Client Visa Status: ${statusLabel}`,
+              message: `Application for client ${fullApp.client?.user?.name || "Client"} (${fullApp.trackingId || '#' + fullApp.id}) status is now: ${statusLabel}.`,
+              actionUrl: "/portal/agent/applications",
+              category: "PIPELINE",
+              priority: "HIGH",
+            },
+          });
+        }
       }
     } catch (emailErr) {
-      console.error("Failed to send status update email:", emailErr);
+      console.error("Failed to send status update notification/email:", emailErr);
     }
 
     // Notify admins if changes are made by Client or Agent

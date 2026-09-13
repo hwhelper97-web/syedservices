@@ -61,6 +61,9 @@ enum UserRole {
   AGENT
   STAFF
   CLIENT
+  AGENCY_OWNER
+  VISA_OFFICER
+  MANAGER
 }
 
 enum ApplicationStatus {
@@ -324,13 +327,17 @@ model Message {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  actionUrl String?
+  category  String?   @default("SYSTEM") // PIPELINE, MESSAGE, CONTRACT, DOCUMENT, SYSTEM
+  priority  String?   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model AuditLog {

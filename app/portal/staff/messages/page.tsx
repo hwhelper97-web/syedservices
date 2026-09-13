@@ -2,135 +2,335 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  FiMessageSquare, FiSend, FiLoader, FiSearch,
-  FiRefreshCw, FiUser
+  FiSend,
+  FiMessageSquare,
+  FiUser,
+  FiLoader,
+  FiRefreshCw,
+  FiSearch,
+  FiCheck,
+  FiPhone,
+  FiMail,
+  FiVolume2
 } from "react-icons/fi";
+import { playNotificationSound } from "@/utils/notificationSound";
+
+interface Conversation {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    phone: string | null;
+    details: string | null;
+  };
+  lastMessage: {
+    id: number;
+    messageText: string;
+    createdAt: string;
+    senderId: number;
+    isRead: boolean;
+  } | null;
+  unreadCount: number;
+  messageCount: number;
+  lastActivity: string;
+}
 
 export default function StaffMessagesPage() {
-  const [clients, setClients] = useState<any[]>([]);
-  const [selectedClient, setSelectedClient] = useState<any | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedUser, setSelectedUser] = useState<Conversation["user"] | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [loadingClients, setLoadingClients] = useState(true);
+  const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedUserRef = useRef<Conversation["user"] | null>(null);
+  const lastMessageCountRef = useRef<number>(0);
 
-  useEffect(() => { fetchClients(); }, []);
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
 
-  const fetchClients = async () => {
-    try {
-      const res = await fetch("/api/admin/users");
-      const data = await res.json();
-      if (res.ok) {
-        setClients(data.users.filter((u: any) => u.role === "CLIENT"));
+  useEffect(() => {
+    fetchConversations(true);
+
+    const interval = setInterval(() => {
+      fetchConversations(false);
+      if (selectedUserRef.current) {
+        pollActiveChat(selectedUserRef.current.id);
       }
-    } catch (e) { console.error(e); }
-    finally { setLoadingClients(false); }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const selectClient = async (client: any) => {
-    setSelectedClient(client);
+  const fetchConversations = async (isInitial = false) => {
+    try {
+      if (isInitial) setLoadingConversations(true);
+      const res = await fetch("/api/messages/conversations");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.conversations)) {
+          setConversations(data.conversations);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load conversations", e);
+    } finally {
+      if (isInitial) setLoadingConversations(false);
+    }
+  };
+
+  const pollActiveChat = async (partnerId: number) => {
+    try {
+      const res = await fetch(`/api/messages?partnerId=${partnerId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const incoming: any[] = data.messages || [];
+
+        if (incoming.length > lastMessageCountRef.current && lastMessageCountRef.current > 0) {
+          const latest = incoming[incoming.length - 1];
+          if (latest.senderId === partnerId) {
+            playNotificationSound();
+            markConversationRead(partnerId);
+          }
+        }
+        lastMessageCountRef.current = incoming.length;
+        setMessages(incoming);
+      }
+    } catch (e) {
+      console.error("Polling active chat error", e);
+    }
+  };
+
+  const selectPartner = async (partnerUser: Conversation["user"]) => {
+    setSelectedUser(partnerUser);
     setLoadingMessages(true);
     setMessages([]);
+    lastMessageCountRef.current = 0;
+
     try {
-      const res = await fetch(`/api/messages?partnerId=${client.id}`);
-      const data = await res.json();
-      if (res.ok) setMessages(data.messages || []);
-    } catch (e) { console.error(e); }
-    finally { setLoadingMessages(false); }
+      markConversationRead(partnerUser.id);
+      const res = await fetch(`/api/messages?partnerId=${partnerUser.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const loadedMsgs = data.messages || [];
+        setMessages(loadedMsgs);
+        lastMessageCountRef.current = loadedMsgs.length;
+      }
+    } catch (e) {
+      console.error("Failed to load messages", e);
+    } finally {
+      setLoadingMessages(false);
+    }
   };
 
-  const refreshMessages = async () => {
-    if (!selectedClient) return;
+  const markConversationRead = async (partnerId: number) => {
     try {
-      const res = await fetch(`/api/messages?partnerId=${selectedClient.id}`);
-      const data = await res.json();
-      if (res.ok) setMessages(data.messages || []);
-    } catch (e) { console.error(e); }
+      await fetch("/api/messages/conversations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partnerId }),
+      });
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.user.id === partnerId ? { ...c, unreadCount: 0 } : c
+        )
+      );
+    } catch (e) {
+      console.error("Mark read error", e);
+    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !selectedClient) return;
+    if (!inputText.trim() || !selectedUser) return;
+
+    const textToSend = inputText.trim();
+    setInputText("");
     setSending(true);
+
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiverId: selectedClient.id, messageText: inputText }),
+        body: JSON.stringify({
+          receiverId: selectedUser.id,
+          messageText: textToSend,
+        }),
       });
+
       if (res.ok) {
         const data = await res.json();
-        setMessages(prev => [...prev, data.message]);
-        setInputText("");
+        setMessages((prev) => [...prev, data.message]);
+        lastMessageCountRef.current += 1;
+
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.user.id === selectedUser.id
+              ? {
+                  ...c,
+                  lastMessage: data.message,
+                  lastActivity: new Date().toISOString(),
+                }
+              : c
+          )
+        );
       }
-    } catch (e) { console.error(e); }
-    finally { setSending(false); }
+    } catch (e) {
+      console.error("Failed to send message", e);
+    } finally {
+      setSending(false);
+    }
   };
 
-  const filteredClients = clients.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredConversations = conversations.filter(
+    (c) =>
+      c.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const initials = (name: string) =>
-    name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase();
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   return (
-    <div className="max-w-6xl mx-auto h-[calc(100vh-12rem)] flex bg-[#0f172a] border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl relative">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[120px] pointer-events-none" />
+    <div className="max-w-6xl mx-auto h-[calc(100vh-10rem)] flex bg-[#0f172a] border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+      <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-400/5 blur-[120px] pointer-events-none" />
 
-      {/* ── Sidebar: Client List ── */}
-      <div className="w-72 border-r border-slate-800 flex flex-col bg-slate-950/30 relative z-10 shrink-0">
-        <div className="p-5 border-b border-slate-800 space-y-3">
-          <h4 className="text-white font-black text-sm uppercase tracking-wider flex items-center gap-2">
-            <FiMessageSquare size={16} className="text-yellow-400" /> Client Messages
-          </h4>
+      {/* Left Sidebar: Conversations List */}
+      <div className="w-80 md:w-96 border-r border-slate-800 flex flex-col bg-slate-950/40 relative z-10 shrink-0">
+        <div className="p-4 border-b border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h4 className="text-white font-black text-sm uppercase tracking-wider">
+                Staff Client Chats
+              </h4>
+              <span className="text-[10px] font-bold bg-yellow-400/10 text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-400/20">
+                Live
+              </span>
+            </div>
+            <button
+              onClick={() => fetchConversations(true)}
+              className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <FiRefreshCw size={14} />
+            </button>
+          </div>
+
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 pointer-events-none">
-              <FiSearch size={13} />
+              <FiSearch size={14} />
             </span>
             <input
               type="text"
               placeholder="Search clients..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-slate-800 rounded-xl text-xs placeholder-slate-600 focus:outline-none text-white"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs placeholder-slate-500 focus:outline-none focus:border-yellow-400/50 text-white font-medium"
             />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {loadingClients ? (
-            <div className="flex justify-center items-center h-32 text-yellow-400">
-              <FiLoader className="animate-spin" size={20} />
+          {loadingConversations ? (
+            <div className="flex flex-col items-center justify-center h-48 text-yellow-400 space-y-2">
+              <FiLoader className="animate-spin" size={24} />
+              <span className="text-xs text-slate-400">Loading chats...</span>
             </div>
-          ) : filteredClients.length === 0 ? (
-            <div className="text-center py-10 text-xs text-slate-600">No clients found</div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="text-center py-12 text-xs text-slate-500 space-y-2">
+              <FiMessageSquare className="mx-auto text-2xl text-slate-600" />
+              <p>No chat partners found</p>
+            </div>
           ) : (
-            filteredClients.map(client => {
-              const isSelected = selectedClient?.id === client.id;
+            filteredConversations.map((conv) => {
+              const isSelected = selectedUser?.id === conv.user.id;
+              const hasUnread = conv.unreadCount > 0;
+
               return (
                 <button
-                  key={client.id}
-                  onClick={() => selectClient(client)}
-                  className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all text-left cursor-pointer ${
+                  key={conv.user.id}
+                  onClick={() => selectPartner(conv.user)}
+                  className={`w-full p-3 rounded-2xl flex items-start gap-3 transition-all text-left cursor-pointer relative ${
                     isSelected
-                      ? "bg-yellow-400 text-black shadow-lg shadow-yellow-400/10"
-                      : "hover:bg-slate-900 text-slate-400 hover:text-white"
+                      ? "bg-yellow-400 text-black shadow-lg shadow-yellow-400/10 font-medium"
+                      : hasUnread
+                      ? "bg-slate-900/90 border border-yellow-400/30 text-white"
+                      : "hover:bg-slate-900/60 text-slate-400 hover:text-white"
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border shrink-0 ${
-                    isSelected ? "bg-black/10 border-black/20 text-black" : "bg-yellow-400/10 border-yellow-400/20 text-yellow-400"
-                  }`}>
-                    {initials(client.name)}
+                  <div className="relative shrink-0">
+                    <div
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs border ${
+                        isSelected
+                          ? "bg-black/10 border-black/20 text-black"
+                          : hasUnread
+                          ? "bg-yellow-400/20 border-yellow-400/40 text-yellow-400 shadow-md"
+                          : "bg-slate-900 border-slate-800 text-slate-300"
+                      }`}
+                    >
+                      {getInitials(conv.user.name)}
+                    </div>
+                    {hasUnread && !isSelected && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 text-black font-black text-[9px] rounded-full flex items-center justify-center border-2 border-[#0f172a] animate-pulse">
+                        {conv.unreadCount}
+                      </span>
+                    )}
                   </div>
+
                   <div className="min-w-0 flex-1">
-                    <p className={`text-xs font-bold truncate ${isSelected ? "text-black" : "text-white"}`}>{client.name}</p>
-                    <p className={`text-[10px] truncate ${isSelected ? "text-black/60" : "text-slate-500"}`}>{client.email}</p>
+                    <div className="flex items-center justify-between gap-1">
+                      <p
+                        className={`text-xs font-bold truncate ${
+                          isSelected ? "text-black" : hasUnread ? "text-white font-extrabold" : "text-white"
+                        }`}
+                      >
+                        {conv.user.name}
+                      </p>
+                      <span
+                        className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md ${
+                          conv.user.role === "AGENT"
+                            ? isSelected
+                              ? "bg-black/20 text-black"
+                              : "bg-blue-500/20 text-blue-400"
+                            : isSelected
+                            ? "bg-black/10 text-black"
+                            : "bg-emerald-500/20 text-emerald-400"
+                        }`}
+                      >
+                        {conv.user.role === "AGENT" ? "Agent" : "Client"}
+                      </span>
+                    </div>
+
+                    <p
+                      className={`text-[11px] truncate mt-1 ${
+                        isSelected
+                          ? "text-black/70"
+                          : hasUnread
+                          ? "text-yellow-300 font-semibold"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {conv.lastMessage ? conv.lastMessage.messageText : "Start conversation..."}
+                    </p>
                   </div>
                 </button>
               );
@@ -139,70 +339,89 @@ export default function StaffMessagesPage() {
         </div>
       </div>
 
-      {/* ── Chat Panel ── */}
-      <div className="flex-1 flex flex-col relative z-10 min-w-0">
-        {selectedClient ? (
+      {/* Right Side: Active Chat Container */}
+      <div className="flex-1 flex flex-col relative z-10">
+        {selectedUser ? (
           <>
-            {/* Chat Header */}
-            <div className="p-5 border-b border-slate-800 bg-slate-900/30 flex items-center justify-between shrink-0">
+            <div className="p-4 md:p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-yellow-400/10 text-yellow-400 rounded-full flex items-center justify-center font-bold border border-yellow-400/20 text-sm">
-                  {initials(selectedClient.name)}
+                <div className="w-11 h-11 bg-yellow-400/10 text-yellow-400 rounded-2xl flex items-center justify-center font-black text-sm border border-yellow-400/20">
+                  {getInitials(selectedUser.name)}
                 </div>
                 <div>
-                  <h4 className="text-white font-bold text-sm">{selectedClient.name}</h4>
-                  <p className="text-[10px] text-slate-500">{selectedClient.email}</p>
+                  <h4 className="text-white font-extrabold text-sm">{selectedUser.name}</h4>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">{selectedUser.email}</p>
                 </div>
               </div>
-              <button
-                onClick={refreshMessages}
-                className="p-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
-                title="Refresh messages"
-              >
-                <FiRefreshCw size={14} />
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => playNotificationSound()}
+                  title="Test Sound"
+                  className="p-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-yellow-400 rounded-xl transition-all cursor-pointer"
+                >
+                  <FiVolume2 size={16} />
+                </button>
+                <button
+                  onClick={() => pollActiveChat(selectedUser.id)}
+                  className="p-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
+                >
+                  <FiRefreshCw size={16} />
+                </button>
+              </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 p-6 overflow-y-auto space-y-3 flex flex-col justify-end">
               {loadingMessages ? (
                 <div className="flex justify-center items-center h-full text-yellow-400">
                   <FiLoader className="animate-spin" size={28} />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
-                  <div className="w-14 h-14 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center mx-auto text-2xl mb-1">
-                    <FiMessageSquare />
-                  </div>
-                  <div>
-                    <h5 className="text-white font-bold text-sm">No messages yet</h5>
-                    <p className="text-xs text-slate-400 max-w-xs mt-1">
-                      Send a message to start chatting with {selectedClient.name}.
-                    </p>
-                  </div>
+                <div className="text-center py-12 space-y-2 my-auto text-slate-500">
+                  <FiMessageSquare size={24} className="mx-auto" />
+                  <p className="text-xs">No messages yet. Send a message to start.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {messages.map((msg, i) => {
-                    const isSelf = msg.senderId !== selectedClient.id;
+                <div className="space-y-3 overflow-y-auto max-h-full pr-1">
+                  {messages.map((msg) => {
+                    const isSelf = msg.senderId !== selectedUser.id;
                     return (
-                      <div key={msg.id || i} className={`flex gap-3 ${isSelf ? "flex-row-reverse" : ""} max-w-[80%] ${isSelf ? "ml-auto" : ""}`}>
-                        <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold mt-0.5 ${
-                          isSelf
-                            ? "bg-slate-800 text-slate-300 border border-slate-700"
-                            : "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
-                        }`}>
-                          {isSelf ? "ME" : initials(selectedClient.name)}
+                      <div
+                        key={msg.id}
+                        className={`flex gap-3 max-w-[82%] ${
+                          isSelf ? "ml-auto flex-row-reverse" : ""
+                        }`}
+                      >
+                        <div
+                          className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-black ${
+                            isSelf
+                              ? "bg-slate-800 text-yellow-400 border border-slate-700"
+                              : "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
+                          }`}
+                        >
+                          {isSelf ? "ST" : getInitials(selectedUser.name)}
                         </div>
-                        <div className={`px-4 py-3 rounded-3xl text-sm max-w-sm ${
-                          isSelf
-                            ? "bg-yellow-400 text-black font-semibold rounded-tr-none"
-                            : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none"
-                        }`}>
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.messageText}</p>
-                          <span className={`block text-[9px] mt-1 text-right ${isSelf ? "text-black/50" : "text-slate-600"}`}>
-                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
+                        <div
+                          className={`p-4 rounded-3xl text-sm ${
+                            isSelf
+                              ? "bg-yellow-400 text-black font-semibold rounded-tr-none shadow-lg shadow-yellow-400/5"
+                              : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none"
+                          }`}
+                        >
+                          <p className="leading-relaxed whitespace-pre-wrap">{msg.messageText || msg.content}</p>
+                          <div
+                            className={`flex items-center justify-end gap-1 text-[9px] mt-1.5 ${
+                              isSelf ? "text-black/60" : "text-slate-500"
+                            }`}
+                          >
+                            <span>
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            {isSelf && <FiCheck size={11} />}
+                          </div>
                         </div>
                       </div>
                     );
@@ -212,37 +431,32 @@ export default function StaffMessagesPage() {
               )}
             </div>
 
-            {/* Input */}
-            <form onSubmit={handleSend} className="p-5 border-t border-slate-800 bg-slate-900/10 shrink-0">
+            <form onSubmit={handleSend} className="p-4 md:p-6 border-t border-slate-800 bg-slate-900/30">
               <div className="flex gap-3">
                 <input
                   type="text"
                   value={inputText}
-                  onChange={e => setInputText(e.target.value)}
-                  placeholder={`Message ${selectedClient.name}...`}
-                  className="flex-1 px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm placeholder-slate-600 focus:outline-none text-white focus:border-yellow-400/40"
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder={`Write a message to ${selectedUser.name}... (Press Enter)`}
+                  className="flex-1 px-4 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-sm placeholder-slate-500 focus:outline-none focus:border-yellow-400/50 text-white font-medium"
                 />
                 <button
                   type="submit"
                   disabled={sending || !inputText.trim()}
-                  className="px-5 py-3 bg-yellow-400 text-black font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-50"
+                  className="px-6 py-3.5 bg-yellow-400 hover:bg-yellow-300 active:scale-95 transition-all text-black font-black rounded-2xl flex items-center justify-center cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-40"
                 >
-                  {sending ? <FiLoader className="animate-spin" size={16} /> : <FiSend size={16} />}
+                  {sending ? <FiLoader className="animate-spin" size={18} /> : <FiSend size={18} />}
                 </button>
               </div>
             </form>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-4">
-            <div className="w-16 h-16 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded-full flex items-center justify-center shadow-lg shadow-yellow-400/5">
-              <FiMessageSquare size={26} />
-            </div>
-            <div>
-              <h4 className="text-white font-bold">Select a Client</h4>
-              <p className="text-xs text-slate-400 max-w-xs mt-1">
-                Choose a client from the sidebar to view and send messages.
-              </p>
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-3 text-slate-400">
+            <FiMessageSquare size={32} className="text-yellow-400 mx-auto" />
+            <h4 className="text-white font-black text-lg">Select a conversation</h4>
+            <p className="text-xs text-slate-500 max-w-sm">
+              Pick a client from the left list to view and reply to their messages.
+            </p>
           </div>
         )}
       </div>

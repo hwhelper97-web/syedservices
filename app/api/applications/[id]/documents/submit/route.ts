@@ -214,6 +214,31 @@ export async function POST(
       console.error("Failed to send admin email notification for documents submission:", mailErr);
     }
 
+    // Create in-app live notifications for all Admins & Staff
+    try {
+      const staffAndAdmins = await prisma.user.findMany({
+        where: {
+          role: { in: ["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"] },
+        },
+        select: { id: true },
+      });
+
+      if (staffAndAdmins.length > 0) {
+        await prisma.notification.createMany({
+          data: staffAndAdmins.map((admin) => ({
+            userId: admin.id,
+            title: `Documents Submitted: ${clientName}`,
+            message: `${clientName} has submitted ${application.documents.length} verification documents for ${application.country} visa (${application.trackingId || '#' + application.id}).`,
+            actionUrl: `/portal/admin/applications`,
+            category: "DOCUMENT",
+            priority: "HIGH",
+          })),
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to create document submission notifications:", notifErr);
+    }
+
     return NextResponse.json({
       success: true,
       message: `All ${application.documents.length} documents submitted successfully! Admin has been notified in 1 consolidated email.`,

@@ -60,6 +60,42 @@ export async function POST(req: Request) {
       }
     });
 
+    // Create in-app notification in DB for real-time alerts
+    try {
+      if (session.role === "CLIENT" || session.role === "AGENT") {
+        // Create notification for admin receiver
+        await prisma.notification.create({
+          data: {
+            userId: targetReceiverId,
+            title: `Message from ${session.name}`,
+            message: text.length > 90 ? text.substring(0, 90) + "..." : text,
+            actionUrl: "/portal/admin/messages",
+            category: "MESSAGE",
+            priority: "NORMAL",
+          },
+        });
+      } else {
+        // Admin or staff sending to client/agent
+        const receiverUser = await prisma.user.findUnique({
+          where: { id: targetReceiverId },
+          select: { role: true },
+        });
+        const clientUrl = receiverUser?.role === "AGENT" ? "/portal/agent/messages" : "/portal/client/messages";
+        await prisma.notification.create({
+          data: {
+            userId: targetReceiverId,
+            title: `New Message from Syed Services Support`,
+            message: text.length > 90 ? text.substring(0, 90) + "..." : text,
+            actionUrl: clientUrl,
+            category: "MESSAGE",
+            priority: "HIGH",
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to insert chat notification:", notifErr);
+    }
+
     // Notify admins if this is a new message from a Client/Agent and no message was sent by them in the last 15 minutes
     if (session.role === "CLIENT" || session.role === "AGENT") {
       try {

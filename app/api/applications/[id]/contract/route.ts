@@ -131,6 +131,31 @@ export async function POST(
       console.error("Failed to send admin notification for contract signature:", mailErr);
     }
 
+    // Create in-app live notifications for Admins & Staff
+    try {
+      const staffAndAdmins = await prisma.user.findMany({
+        where: {
+          role: { in: ["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"] },
+        },
+        select: { id: true },
+      });
+
+      if (staffAndAdmins.length > 0) {
+        await prisma.notification.createMany({
+          data: staffAndAdmins.map((admin) => ({
+            userId: admin.id,
+            title: `Contract Signed: ${signatureName}`,
+            message: `Service contract for ${application.country} visa (${application.trackingId}) was signed by ${signatureName}.`,
+            actionUrl: `/portal/admin/applications`,
+            category: "CONTRACT",
+            priority: "HIGH",
+          })),
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to create contract signature notifications:", notifErr);
+    }
+
     return NextResponse.json({
       success: true,
       message: "Contract digitally signed successfully!",

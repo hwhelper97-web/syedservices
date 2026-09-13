@@ -10,6 +10,8 @@ import {
   FiLogOut, FiBriefcase, FiCheckSquare, FiPlusCircle, FiUser 
 } from "react-icons/fi";
 import Logo from "@/components/Logo";
+import NotificationBell from "@/components/NotificationBell";
+import LiveNotificationListener from "@/components/LiveNotificationListener";
 
 interface PortalLayoutClientProps {
   children: React.ReactNode;
@@ -207,7 +209,10 @@ export default function PortalLayoutClient({ children, user }: PortalLayoutClien
               {pathname.split("/").slice(2).join(" / ") || "Dashboard"}
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Live Notification Bell with Audio test & Dropdown */}
+            <NotificationBell />
+
             {/* Quick user badge */}
             <div className="bg-slate-900 border border-slate-800 px-4 py-1.5 rounded-2xl flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -223,6 +228,9 @@ export default function PortalLayoutClient({ children, user }: PortalLayoutClien
           {children}
         </main>
       </div>
+
+      {/* Real-time sound chime and animated toast listener */}
+      <LiveNotificationListener />
     </div>
   );
 }
