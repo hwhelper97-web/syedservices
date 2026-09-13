@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   FiFileText, FiUser, FiGlobe, FiAlertCircle, 
   FiCpu, FiCopy, FiLoader, FiCheckCircle, FiDownload, 
-  FiCornerDownRight, FiArrowLeft, FiEye, FiImage, FiArchive, FiPaperclip, FiPrinter
+  FiCornerDownRight, FiArrowLeft, FiEye, FiImage, FiArchive, FiPaperclip, FiPrinter, FiDollarSign
 } from "react-icons/fi";
 import Link from "next/link";
 import { VISA_STATUS_OPTIONS } from "@/lib/visaPipeline";
@@ -811,30 +811,249 @@ export default function AdminApplicationDetailPage() {
         
         {/* Left Column: Details & Document Logs */}
         <div className="lg:col-span-7 space-y-8">
-          {/* Main profile */}
-          <div className="bg-[#0f172a] border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
-            <h3 className="text-xl font-black text-white tracking-tight border-b border-slate-800 pb-3 mb-6">
-              Client Dossier: {app.client?.user?.name || "Client"}
-            </h3>
-
-            <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs text-slate-300">
+          {/* Main Comprehensive Dossier */}
+          <div className="bg-[#0f172a] border border-slate-800 p-8 rounded-[2.5rem] shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px]">Passport Number</span>
-                <p className="font-bold text-white mt-0.5">{app.client.passportNumber || "N/A"}</p>
+                <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest block mb-1">
+                  Official Client Review Dossier
+                </span>
+                <h3 className="text-2xl font-black text-white tracking-tight">
+                  {app.client?.user?.name || "Applicant"}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Email: {app.client?.user?.email || "N/A"} · Phone: {app.client?.phone || "N/A"}
+                </p>
               </div>
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px]">Destination & Visa</span>
-                <p className="font-bold text-white mt-0.5">{app.country} — {app.visaCategory}</p>
-              </div>
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px]">Profession / Job</span>
-                <p className="font-bold text-white mt-0.5">{app.client.profession || "N/A"}</p>
-              </div>
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px]">Salary (USD)</span>
-                <p className="font-bold text-white mt-0.5">${app.client.salary || "0"}/month</p>
+              <div className="text-right flex sm:flex-col items-center sm:items-end justify-between gap-1">
+                <span className="text-[10px] text-slate-500 uppercase font-bold">Registration Date</span>
+                <span className="text-xs font-mono text-slate-300 font-bold">
+                  {new Date(app.createdAt).toLocaleDateString()}
+                </span>
               </div>
             </div>
+
+            {/* Package & Pricing Block */}
+            <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-400/10 via-slate-900 to-emerald-500/10 border border-yellow-400/20 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-yellow-400 text-black text-[10px] font-black uppercase tracking-wider">
+                      {app.package ? "Landing Package Deal" : "Custom Application"}
+                    </span>
+                    <span className="text-xs font-bold text-slate-300">{app.country} · {app.visaCategory}</span>
+                  </div>
+                  <h4 className="text-base font-black text-white">
+                    {app.package ? app.package.title : `${app.country} ${app.visaCategory}`}
+                  </h4>
+                </div>
+                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 text-left sm:text-right shrink-0">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Official Visa Fee</span>
+                  <span className="text-xl font-black font-mono text-emerald-400">
+                    ${app.packagePrice || app.package?.priceUSD || 250} USD
+                  </span>
+                  {app.package?.pricePKR && (
+                    <span className="text-[10px] text-slate-400 block font-mono">
+                      (₨ {app.package.pricePKR.toLocaleString()} PKR)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2 border-t border-slate-800/80">
+                <div>
+                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Entry Type</span>
+                  <strong className="text-white">{app.entryType || "Single"}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Stay Duration</span>
+                  <strong className="text-white">{app.duration || app.package?.duration || "30 Days"}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Processing Time</span>
+                  <strong className="text-white">{app.package?.processingTime || "3 - 5 Working Days"}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Travel Planned</span>
+                  <strong className="text-white">{app.travelDate || "Flexible"}</strong>
+                </div>
+              </div>
+
+              {/* Package Required Documents */}
+              {app.package?.documents && (
+                <div className="pt-2 border-t border-slate-800/80">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                    <FiPaperclip className="text-yellow-400" /> Package Mandatory Documents Checklist:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {app.package.documents.split("\n").filter(Boolean).map((d: string, idx: number) => (
+                      <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                        {d.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Official Parents & Civil Family Details */}
+            <div className="p-6 rounded-3xl bg-slate-950/60 border border-slate-800 space-y-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
+                <FiUser size={15} /> Official Parents & Civil Family Details
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs">
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Father Full Name</span>
+                  <p className="font-bold text-white mt-0.5 text-sm">{app.client?.fatherName || "Not provided"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Mother Full Name</span>
+                  <p className="font-bold text-white mt-0.5 text-sm">{app.client?.motherName || "Not provided"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Marital Status</span>
+                  <p className="mt-0.5">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-md font-bold text-xs ${
+                      app.client?.maritalStatus === "Married"
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                        : "bg-slate-900 text-slate-300 border border-slate-800"
+                    }`}>
+                      {app.client?.maritalStatus || "Single"}
+                    </span>
+                  </p>
+                </div>
+
+                {/* If Married details */}
+                {app.client?.maritalStatus === "Married" && (
+                  <>
+                    <div className="sm:col-span-1">
+                      <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Wife / Spouse Name</span>
+                      <p className="font-black text-yellow-400 mt-0.5 text-sm">{app.client?.spouseName || "Not provided"}</p>
+                    </div>
+                    <div className="sm:col-span-1">
+                      <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Children Count</span>
+                      <p className="font-bold text-white mt-0.5 font-mono text-sm">{app.client?.childrenCount ?? 0}</p>
+                    </div>
+                    <div className="sm:col-span-1">
+                      <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Children Details</span>
+                      <p className="font-medium text-slate-300 mt-0.5 text-xs">{app.client?.childrenDetails || "None provided"}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Identity & Passport Information */}
+            <div className="p-6 rounded-3xl bg-slate-950/60 border border-slate-800 space-y-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
+                <FiFileText size={15} /> Official Passport & Identification
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-4 gap-x-6 text-xs">
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Passport Number</span>
+                  <p className="font-mono font-black text-white mt-0.5 text-sm">{app.client?.passportNumber || "N/A"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Passport Expiry</span>
+                  <p className="font-bold text-white mt-0.5">{app.client?.passportExpiryDate || "N/A"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Issue Date & Place</span>
+                  <p className="font-semibold text-slate-300 mt-0.5">
+                    {app.client?.passportIssueDate || "N/A"} ({app.client?.passportIssuePlace || "N/A"})
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Date of Birth & Gender</span>
+                  <p className="font-semibold text-slate-300 mt-0.5">
+                    {app.client?.dob || "N/A"} ({app.client?.gender || "N/A"})
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Official Addresses */}
+            <div className="p-6 rounded-3xl bg-slate-950/60 border border-slate-800 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
+                <FiGlobe size={15} /> Official Residence & Origin Addresses
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850">
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block mb-1">
+                    Current Residence Address (حالیه استوګنځی)
+                  </span>
+                  <p className="font-bold text-white text-sm leading-snug">
+                    {app.client?.currentAddress || "Not provided"}
+                  </p>
+                </div>
+                <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850">
+                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block mb-1">
+                    Permanent Origin Address (اصلي استوګنځی)
+                  </span>
+                  <p className="font-bold text-slate-300 text-sm leading-snug">
+                    {app.client?.permanentAddress || "Not provided"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Employment & Financials */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs p-5 bg-slate-950/40 rounded-2xl border border-slate-850">
+              <div>
+                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Profession / Job</span>
+                <p className="font-bold text-white mt-0.5">{app.client?.profession || "N/A"}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Company Name</span>
+                <p className="font-bold text-white mt-0.5">{app.client?.companyName || "N/A"}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Monthly Income</span>
+                <p className="font-bold text-emerald-400 font-mono mt-0.5">${app.client?.salary || "0"}/month</p>
+              </div>
+              <div>
+                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Qualification</span>
+                <p className="font-bold text-white mt-0.5">{app.client?.bachelor || app.client?.qualification || "N/A"}</p>
+              </div>
+            </div>
+
+            {/* Associated Invoices & Strict Package Accounting */}
+            {app.invoices && app.invoices.length > 0 && (
+              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <FiDollarSign /> Associated Application Invoice(s)
+                  </span>
+                  <span className="text-[10px] text-slate-400">{app.invoices.length} Invoice(s) Generated</span>
+                </div>
+                <div className="divide-y divide-slate-800/60">
+                  {app.invoices.map((inv: any) => (
+                    <div key={inv.id} className="pt-2.5 pb-2.5 first:pt-0 last:pb-0 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-mono font-bold text-white text-sm">{inv.invoiceNumber}</span>
+                        <span className="text-[11px] text-slate-500 block">
+                          Due: {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "7 Days"}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-black text-emerald-400 text-sm">
+                          ${inv.totalAmount} USD
+                        </span>
+                        <span className={`block text-[10px] font-bold uppercase tracking-wider ${
+                          inv.status === "PAID" ? "text-emerald-400" : "text-amber-400"
+                        }`}>
+                          {inv.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Uploaded Documents */}

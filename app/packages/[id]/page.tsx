@@ -580,7 +580,7 @@ export default function PackageDetailPage() {
                 </a>
 
                 <Link
-                  href="/portal/client/apply"
+                  href={`/portal/client/apply?packageId=${pkg.id}`}
                   className="w-full flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black py-3.5 px-4 rounded-xl font-black text-sm transition-all shadow-lg shadow-yellow-400/10"
                 >
                   <FiSend size={16} /> Apply Online in Client Portal

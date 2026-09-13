@@ -89,9 +89,10 @@ export async function POST(req: Request) {
       currentAddress, permanentAddress,
       // Passport Info
       passportNumber, passportIssueDate, passportExpiryDate, passportIssuePlace,
-      // Step 2: Family Info
-      fatherName, motherName, spouseName, childrenCount, emergencyContact,
-      // Visa Info
+      // Step 2: Family Info & Official Details
+      fatherName, motherName, maritalStatus, spouseName, childrenCount, childrenDetails, emergencyContact,
+      // Visa & Package Info
+      packageId, packagePrice,
       country, visaCategory, duration, entryType, travelDate, returnDate, purpose, sponsor, reference,
       // Step 3: Education & Employment
       highSchool, college, bachelor, master, graduationYear, cgpa,
@@ -110,11 +111,35 @@ export async function POST(req: Request) {
       );
     }
 
+    // Resolve package and strict invoice fee
+    let finalPackageId: number | null = null;
+    let finalPackagePrice: number = 250.0; // fallback standard fee
+
+    if (packageId) {
+      const parsedPkgId = parseInt(String(packageId), 10);
+      if (!isNaN(parsedPkgId)) {
+        const pkg = await prisma.package.findUnique({
+          where: { id: parsedPkgId },
+        });
+        if (pkg) {
+          finalPackageId = pkg.id;
+          if (pkg.priceUSD !== null && pkg.priceUSD !== undefined && pkg.priceUSD > 0) {
+            finalPackagePrice = pkg.priceUSD;
+          }
+        }
+      }
+    } else if (packagePrice) {
+      const parsedPrice = parseFloat(String(packagePrice));
+      if (!isNaN(parsedPrice) && parsedPrice > 0) {
+        finalPackagePrice = parsedPrice;
+      }
+    }
+
     // Generate unique tracking ID
     const randomNum = Math.floor(100000 + Math.random() * 900000);
     const trackingId = `SYED-VISA-${randomNum}`;
 
-    // Update Client Profile info on the fly
+    // Update Client Profile info on the fly with complete official details
     await prisma.clientProfile.update({
       where: { id: clientProfileId },
       data: {
@@ -134,8 +159,10 @@ export async function POST(req: Request) {
         passportIssuePlace,
         fatherName,
         motherName,
-        spouseName,
+        maritalStatus: maritalStatus || "Single",
+        spouseName: spouseName || null,
         childrenCount: parseInt(childrenCount || "0", 10),
+        childrenDetails: childrenDetails || null,
         emergencyContact,
         highSchool,
         college,
@@ -158,6 +185,8 @@ export async function POST(req: Request) {
         trackingId,
         clientId: clientProfileId,
         agentId: agentProfileId,
+        packageId: finalPackageId,
+        packagePrice: finalPackagePrice,
         country,
         visaCategory,
         duration,
@@ -180,6 +209,9 @@ export async function POST(req: Request) {
           },
         },
       },
+      include: {
+        package: true,
+      },
     });
 
     // Write audit log
@@ -187,35 +219,39 @@ export async function POST(req: Request) {
       data: {
         userId: session.userId,
         action: isDraft ? "SAVE_DRAFT" : "SUBMIT_APPLICATION",
-        details: `Application ${trackingId} created. Status: ${status}`,
+        details: `Application ${trackingId} created. Status: ${status}. Package: ${finalPackageId ? `ID ${finalPackageId}` : "None"} ($${finalPackagePrice})`,
       },
     });
 
-    // Create a mock invoice for visa fees
+    // Create an official invoice strictly matching the package pricing
     const invoiceNumber = `INV-${randomNum}`;
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber,
         applicationId: application.id,
-        totalAmount: 250.0, // Default fee
+        totalAmount: finalPackagePrice, // Strictly based on package price!
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         status: "UNPAID",
-      }
+      },
     });
 
     if (!isDraft) {
       sendSystemNotificationToAdmins({
         subject: `New Application Received: ${trackingId}`,
         htmlContent: `
-          <p>A new visa/ticket application has been submitted by <strong>${session.name}</strong> (${session.role}):</p>
+          <p>A new visa application has been submitted by <strong>${session.name}</strong> (${session.role}):</p>
           <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
             <p style="margin: 5px 0; font-size: 13px;"><strong>Tracking ID:</strong> ${trackingId}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Country:</strong> ${country}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Visa Category:</strong> ${visaCategory}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Package Fee:</strong> $${finalPackagePrice} USD</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Father Name:</strong> ${fatherName || "N/A"}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Mother Name:</strong> ${motherName || "N/A"}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Marital Status:</strong> ${maritalStatus || "Single"}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Travel Date:</strong> ${travelDate || "N/A"}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Entry Type:</strong> ${entryType}</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Entry Type:</strong> ${entryType || "Single"}</p>
           </div>
-          <p style="font-size: 13px; color: #94a3b8;">You can manage this application file in the applications section of the portal.</p>
+          <p style="font-size: 13px; color: #94a3b8;">You can view the complete official dossier in the Superadmin portal.</p>
         `
       }).catch((err) => {
         console.error("Admin application alert async send error:", err);
@@ -254,7 +290,9 @@ export async function GET(req: Request) {
             include: {
               user: true
             }
-          }
+          },
+          package: true,
+          invoices: true,
         }
       });
     } else if (session.role === "AGENT") {
@@ -266,7 +304,9 @@ export async function GET(req: Request) {
             include: {
               user: true
             }
-          }
+          },
+          package: true,
+          invoices: true,
         }
       });
     } else {
@@ -279,6 +319,10 @@ export async function GET(req: Request) {
         applications = await prisma.application.findMany({
           where: { clientId: profile.id },
           orderBy: { createdAt: "desc" },
+          include: {
+            package: true,
+            invoices: true,
+          }
         });
       }
     }

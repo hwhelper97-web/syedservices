@@ -560,10 +560,22 @@ export default function AdminApplicationsListPage() {
                         <div className="flex items-center gap-1.5 font-bold text-slate-200 text-xs">
                           <FiGlobe className="text-yellow-400 shrink-0" size={13} />
                           <span>{app.country || "Unspecified"}</span>
+                          {(app.packagePrice || app.package?.priceUSD) && (
+                            <span className="font-mono text-emerald-400 font-bold text-[11px] ml-auto">
+                              ${app.packagePrice || app.package?.priceUSD} USD
+                            </span>
+                          )}
                         </div>
-                        <span className="inline-block px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-semibold text-slate-400">
-                          {app.visaCategory || "General Visa"}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-semibold text-slate-400">
+                            {app.visaCategory || "General Visa"}
+                          </span>
+                          {app.package && (
+                            <span className="inline-block px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20 text-[9px] font-black text-yellow-400 uppercase tracking-wider">
+                              Package Deal
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
 

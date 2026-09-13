@@ -162,8 +162,10 @@ model ClientProfile {
   // Family Info
   fatherName     String?
   motherName     String?
+  maritalStatus  String?
   spouseName     String?
   childrenCount  Int           @default(0)
+  childrenDetails String?
   emergencyContact String?
   
   // Education
@@ -225,6 +227,11 @@ model Application {
   purpose            String?
   sponsor            String?
   reference          String?
+  
+  // Package relation
+  packageId          Int?
+  package            Package?                  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packagePrice       Float?
   
   // Travel History
   visitedCountries   String?
@@ -431,4 +438,5 @@ model Package {
   status         String   @default("ACTIVE") // ACTIVE, INACTIVE
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
+  applications   Application[]
 }

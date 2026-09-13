@@ -33,6 +33,7 @@ export async function GET(
             user: true
           }
         },
+        package: true,
         documents: true,
         invoices: {
           include: {
@@ -109,13 +110,28 @@ export async function PATCH(
       purpose,
       sponsor,
       reference,
+      packageId,
+      packagePrice,
       assignedStaffId,
       contractApprovedDays,
       contractPaymentAmount,
       contractFirstPartyName,
       contractStatus,
       contractAccepted,
-      contractSignatureName
+      contractSignatureName,
+      // Official Client Details
+      fatherName,
+      motherName,
+      maritalStatus,
+      spouseName,
+      childrenCount,
+      childrenDetails,
+      currentAddress,
+      permanentAddress,
+      passportNumber,
+      phone,
+      profession,
+      salary,
     } = body;
 
     const updateData: any = {};
@@ -129,6 +145,12 @@ export async function PATCH(
     if (purpose !== undefined) updateData.purpose = purpose;
     if (sponsor !== undefined) updateData.sponsor = sponsor;
     if (reference !== undefined) updateData.reference = reference;
+    if (packageId !== undefined) {
+      updateData.packageId = packageId ? parseInt(String(packageId), 10) : null;
+    }
+    if (packagePrice !== undefined) {
+      updateData.packagePrice = packagePrice ? parseFloat(String(packagePrice)) : null;
+    }
     if (assignedStaffId !== undefined) {
       updateData.assignedStaffId = assignedStaffId ? parseInt(String(assignedStaffId), 10) : null;
     }
@@ -168,9 +190,34 @@ export async function PATCH(
     }
     if (contractSignatureName !== undefined) updateData.contractSignatureName = contractSignatureName;
 
+    // Update Client Profile official details if present
+    const clientUpdateData: any = {};
+    if (fatherName !== undefined) clientUpdateData.fatherName = fatherName;
+    if (motherName !== undefined) clientUpdateData.motherName = motherName;
+    if (maritalStatus !== undefined) clientUpdateData.maritalStatus = maritalStatus;
+    if (spouseName !== undefined) clientUpdateData.spouseName = spouseName;
+    if (childrenCount !== undefined) clientUpdateData.childrenCount = parseInt(childrenCount || "0", 10);
+    if (childrenDetails !== undefined) clientUpdateData.childrenDetails = childrenDetails;
+    if (currentAddress !== undefined) clientUpdateData.currentAddress = currentAddress;
+    if (permanentAddress !== undefined) clientUpdateData.permanentAddress = permanentAddress;
+    if (passportNumber !== undefined) clientUpdateData.passportNumber = passportNumber;
+    if (phone !== undefined) clientUpdateData.phone = phone;
+    if (profession !== undefined) clientUpdateData.profession = profession;
+    if (salary !== undefined) clientUpdateData.salary = salary;
+
+    if (Object.keys(clientUpdateData).length > 0 && application.clientId) {
+      await prisma.clientProfile.update({
+        where: { id: application.clientId },
+        data: clientUpdateData,
+      });
+    }
+
     const updatedApp = await prisma.application.update({
       where: { id: applicationId },
-      data: updateData
+      data: updateData,
+      include: {
+        package: true,
+      }
     });
 
     // Write audit log

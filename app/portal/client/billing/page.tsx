@@ -179,8 +179,22 @@ export default function ClientBillingPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{inv.invoiceNumber}</span>
-                      <h4 className="font-bold text-white text-base mt-0.5">{inv.application.visaCategory}</h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{inv.invoiceNumber}</span>
+                        {inv.application?.package && (
+                          <span className="px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 text-[9px] font-black uppercase">
+                            Package Deal
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-white text-base mt-0.5">
+                        {inv.application?.package ? inv.application.package.title : `${inv.application?.country || ""} ${inv.application?.visaCategory || "Visa Processing"}`}
+                      </h4>
+                      {inv.application?.package && (
+                        <p className="text-[11px] text-slate-400">
+                          {inv.application.country} · {inv.application.visaCategory} · {inv.application.entryType || "Single Entry"}
+                        </p>
+                      )}
                     </div>
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
                       inv.status === "PAID" ? "bg-green-500/10 text-green-400" :

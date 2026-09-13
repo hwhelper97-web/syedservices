@@ -182,6 +182,7 @@ export async function GET() {
                   user: true,
                 },
               },
+              package: true,
             },
           },
           payments: true,
@@ -202,7 +203,11 @@ export async function GET() {
           },
           orderBy: { createdAt: "desc" },
           include: {
-            application: true,
+            application: {
+              include: {
+                package: true,
+              },
+            },
             payments: true,
           },
         });
