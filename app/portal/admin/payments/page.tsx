@@ -33,6 +33,11 @@ export default function AdminPaymentsPage() {
   const [deletingInvoice, setDeletingInvoice] = useState<any | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Batch Selection & Deletion State
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<number[]>([]);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
   // Create Invoice Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -262,6 +267,62 @@ export default function AdminPaymentsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Batch Selection Helpers
+  const isAllSelected = filteredInvoices.length > 0 && filteredInvoices.every((inv) => selectedInvoiceIds.includes(inv.id));
+  const isSomeSelected = selectedInvoiceIds.length > 0 && !isAllSelected;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedInvoiceIds([]);
+    } else {
+      setSelectedInvoiceIds(filteredInvoices.map((inv) => inv.id));
+    }
+  };
+
+  const handleToggleSelectOne = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedInvoiceIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedInvoiceIds([]);
+  };
+
+  // Selected Invoices Total Sum
+  const selectedTotalAmount = invoices
+    .filter((inv) => selectedInvoiceIds.includes(inv.id))
+    .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+
+  // Batch Delete Invoices Execution
+  const handleConfirmBatchDelete = async () => {
+    if (selectedInvoiceIds.length === 0) return;
+    setBatchDeleting(true);
+
+    try {
+      const res = await fetch("/api/payments", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceIds: selectedInvoiceIds }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(data.message || `Successfully deleted ${selectedInvoiceIds.length} invoices!`);
+        setInvoices((prev) => prev.filter((inv) => !selectedInvoiceIds.includes(inv.id)));
+        setSelectedInvoiceIds([]);
+        setBatchDeleteOpen(false);
+      } else {
+        showToast(data.error || "Failed to delete selected invoices", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Network error", "error");
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-80 space-y-4 text-yellow-400">
@@ -460,6 +521,31 @@ export default function AdminPaymentsPage() {
             </button>
           )}
         </div>
+
+        {/* Quick Select All Button */}
+        {filteredInvoices.length > 0 && (
+          <button
+            type="button"
+            onClick={handleToggleSelectAll}
+            className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-md ${
+              isAllSelected
+                ? "bg-yellow-400 text-black border-yellow-400 shadow-yellow-400/20 font-black"
+                : "bg-slate-950/80 text-slate-300 border-slate-800 hover:bg-slate-900 hover:text-white"
+            }`}
+            title={isAllSelected ? "Deselect All" : `Select all ${filteredInvoices.length} invoices`}
+          >
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = isSomeSelected;
+              }}
+              readOnly
+              className="pointer-events-none w-3.5 h-3.5 rounded accent-yellow-400 cursor-pointer"
+            />
+            <span>{isAllSelected ? "Deselect All" : `Select All (${filteredInvoices.length})`}</span>
+          </button>
+        )}
       </div>
 
       {/* Main Table */}
@@ -484,6 +570,21 @@ export default function AdminPaymentsPage() {
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-900/60 text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800">
               <tr>
+                {/* Select All Table Header Checkbox */}
+                <th className="p-5 w-12 text-center">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeSelected;
+                      }}
+                      onChange={handleToggleSelectAll}
+                      className="w-4 h-4 rounded text-yellow-400 focus:ring-yellow-400 bg-slate-950 border-slate-700 cursor-pointer accent-yellow-400"
+                      title={isAllSelected ? "Deselect All Invoices" : `Select all ${filteredInvoices.length} invoices`}
+                    />
+                  </div>
+                </th>
                 <th className="p-5">Invoice Reference</th>
                 <th className="p-5">Client & Dossier</th>
                 <th className="p-5">Billing Amount</th>
@@ -501,9 +602,27 @@ export default function AdminPaymentsPage() {
                 const manualPayment = (inv.payments || []).find((p: any) => p.paymentMethod === "BANK_TRANSFER");
                 const isPendingSlip = manualPayment && manualPayment.status === "PENDING";
                 const isVerifiedSlip = manualPayment && manualPayment.status === "VERIFIED";
+                const isSelected = selectedInvoiceIds.includes(inv.id);
 
                 return (
-                  <tr key={inv.id} className="hover:bg-slate-900/40 transition-colors group">
+                  <tr 
+                    key={inv.id} 
+                    className={`hover:bg-slate-900/40 transition-colors group ${
+                      isSelected ? "bg-yellow-500/[0.08] border-l-2 border-l-yellow-400" : ""
+                    }`}
+                  >
+                    {/* Row Checkbox */}
+                    <td className="p-5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleToggleSelectOne(inv.id, e as any)}
+                          className="w-4 h-4 rounded text-yellow-400 focus:ring-yellow-400 bg-slate-950 border-slate-700 cursor-pointer accent-yellow-400"
+                        />
+                      </div>
+                    </td>
+
                     {/* Invoice Code */}
                     <td className="p-5">
                       <button
@@ -960,6 +1079,144 @@ export default function AdminPaymentsPage() {
                     className="max-h-[60vh] object-contain rounded-xl shadow-lg"
                   />
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING BATCH ACTIONS TOOLBAR */}
+      <AnimatePresence>
+        {selectedInvoiceIds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-[#0f172a]/95 backdrop-blur-xl border border-yellow-400/40 rounded-3xl p-4 md:px-7 shadow-2xl flex flex-wrap items-center justify-between gap-4 max-w-2xl w-[92%]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-black text-sm border border-yellow-400/30 shadow-inner">
+                {selectedInvoiceIds.length}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-extrabold text-sm block leading-tight">
+                    {selectedInvoiceIds.length} Invoice{selectedInvoiceIds.length > 1 ? "s" : ""} Selected
+                  </span>
+                  <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/20">
+                    ${selectedTotalAmount.toLocaleString()}
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  {isAllSelected ? "All filtered invoices selected" : `out of ${filteredInvoices.length} filtered results`}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!isAllSelected && (
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Select All ({filteredInvoices.length})
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                Clear
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBatchDeleteOpen(true)}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black transition-all shadow-lg shadow-red-600/30 cursor-pointer"
+              >
+                <FiTrash2 size={15} />
+                <span>Delete Selected ({selectedInvoiceIds.length})</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* BATCH DELETE MULTIPLE INVOICES CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {batchDeleteOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0f172a] border border-red-500/30 w-full max-w-lg rounded-[2.5rem] p-6 md:p-8 shadow-2xl space-y-6"
+            >
+              <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto text-2xl">
+                <FiTrash2 />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-black text-white">
+                  Permanently Delete {selectedInvoiceIds.length} Invoices?
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You are about to delete <strong className="text-white font-bold">{selectedInvoiceIds.length}</strong> selected invoices totaling <strong className="text-yellow-400 font-bold font-mono">${selectedTotalAmount.toLocaleString()}</strong> in a single batch operation.
+                </p>
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-400 text-left space-y-1">
+                  <div className="font-bold flex items-center gap-1.5 text-red-300">
+                    <FiAlertTriangle /> Irreversible Financial Action
+                  </div>
+                  <div>
+                    This will permanently remove these invoices, all attached wire transfer / deposit receipts, and associated transaction logs. This cannot be undone.
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview of selected invoices */}
+              <div className="max-h-40 overflow-y-auto bg-slate-950/90 border border-slate-800 rounded-2xl p-3 text-xs divide-y divide-slate-800/60 font-mono">
+                {invoices
+                  .filter((inv) => selectedInvoiceIds.includes(inv.id))
+                  .slice(0, 6)
+                  .map((inv) => (
+                    <div key={inv.id} className="py-1.5 flex items-center justify-between text-slate-300">
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-400 font-bold">{inv.invoiceNumber}</span>
+                        <span className="text-slate-400 truncate max-w-[140px]">
+                          {inv.application?.client?.user?.name || "Direct Client"}
+                        </span>
+                      </div>
+                      <span className="text-white font-bold">${inv.totalAmount}</span>
+                    </div>
+                  ))}
+                {selectedInvoiceIds.length > 6 && (
+                  <div className="py-1.5 text-center text-slate-500 italic text-[11px]">
+                    ...and {selectedInvoiceIds.length - 6} more invoices
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setBatchDeleteOpen(false)}
+                  disabled={batchDeleting}
+                  className="w-1/2 py-3.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-2xl text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmBatchDelete}
+                  disabled={batchDeleting}
+                  className="w-1/2 flex items-center justify-center gap-2 py-3.5 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl text-xs cursor-pointer shadow-lg shadow-red-600/30 disabled:opacity-50"
+                >
+                  {batchDeleting ? <FiLoader className="animate-spin" size={15} /> : <FiTrash2 size={15} />}
+                  {batchDeleting ? "Deleting Invoices..." : `Confirm Delete (${selectedInvoiceIds.length})`}
+                </button>
               </div>
             </motion.div>
           </div>

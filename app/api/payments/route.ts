@@ -309,15 +309,51 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     let invoiceIdStr = searchParams.get("invoiceId");
     let paymentIdStr = searchParams.get("paymentId");
+    let batchInvoiceIds: number[] = [];
 
-    if (!invoiceIdStr && !paymentIdStr) {
-      try {
-        const body = await req.json();
-        if (body.invoiceId) invoiceIdStr = String(body.invoiceId);
-        if (body.paymentId) paymentIdStr = String(body.paymentId);
-      } catch (e) {
-        // empty body is fine
+    try {
+      const body = await req.json();
+      if (body.invoiceIds && Array.isArray(body.invoiceIds)) {
+        batchInvoiceIds = body.invoiceIds.map((id: any) => parseInt(String(id), 10)).filter((id: number) => !isNaN(id));
+      } else if (body.ids && Array.isArray(body.ids)) {
+        batchInvoiceIds = body.ids.map((id: any) => parseInt(String(id), 10)).filter((id: number) => !isNaN(id));
       }
+      if (body.invoiceId) invoiceIdStr = String(body.invoiceId);
+      if (body.paymentId) paymentIdStr = String(body.paymentId);
+    } catch (e) {
+      // empty body is fine
+    }
+
+    // Handle batch deletion of invoices
+    if (batchInvoiceIds.length > 0) {
+      // Delete any payment receipts / records linked to these invoices
+      await prisma.payment.deleteMany({
+        where: { invoiceId: { in: batchInvoiceIds } },
+      });
+
+      // Delete the invoices
+      const deleteResult = await prisma.invoice.deleteMany({
+        where: { id: { in: batchInvoiceIds } },
+      });
+
+      // Audit log
+      try {
+        await prisma.auditLog.create({
+          data: {
+            userId: session.userId,
+            action: "BATCH_DELETE_INVOICES",
+            details: `Batch deleted ${deleteResult.count} invoices (IDs: ${batchInvoiceIds.join(", ")}) by ${session.name}`,
+          },
+        });
+      } catch (e) {
+        // ignore
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully deleted ${deleteResult.count} invoices.`,
+        count: deleteResult.count,
+      });
     }
 
     if (invoiceIdStr) {
