@@ -167,44 +167,70 @@ export async function DELETE(req: Request) {
   try {
     const session = await getSession();
 
-    if (!session || session.role !== "SUPER_ADMIN") {
+    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json(
-        { error: "Only Super Admin can delete users" },
+        { error: "Unauthorized. Super Admin or Admin access required." },
         { status: 403 }
       );
     }
 
-    const { id } = await req.json();
+    const body = await req.json();
+    let targetIds: number[] = [];
 
-    if (!id) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    if (body.ids && Array.isArray(body.ids)) {
+      targetIds = body.ids.map((i: any) => Number(i)).filter((i: number) => !isNaN(i));
+    } else if (body.id) {
+      targetIds = [Number(body.id)].filter((i: number) => !isNaN(i));
     }
 
-    // Prevent self-deletion
-    if (id === session.userId) {
+    if (targetIds.length === 0) {
+      return NextResponse.json({ error: "User ID(s) required" }, { status: 400 });
+    }
+
+    // Filter out current logged in user to prevent self-deletion
+    targetIds = targetIds.filter((id) => id !== session.userId);
+
+    // Fetch target users to verify permissions
+    const usersToDelete = await prisma.user.findMany({
+      where: { id: { in: targetIds } },
+      select: { id: true, email: true, role: true, name: true }
+    });
+
+    // Only SUPER_ADMIN can delete other SUPER_ADMIN accounts
+    const safeUsersToDelete = usersToDelete.filter(
+      (u) => u.role !== "SUPER_ADMIN" || session.role === "SUPER_ADMIN"
+    );
+
+    const safeIdsToDelete = safeUsersToDelete.map((u) => u.id);
+
+    if (safeIdsToDelete.length === 0) {
       return NextResponse.json(
-        { error: "You cannot delete your own account" },
+        { error: "No eligible user accounts selected for deletion" },
         { status: 400 }
       );
     }
 
-    await prisma.user.delete({
-      where: { id },
+    const deleteResult = await prisma.user.deleteMany({
+      where: { id: { in: safeIdsToDelete } },
     });
 
     await prisma.auditLog.create({
       data: {
         userId: session.userId,
-        action: "DELETE_USER",
-        details: `User ID ${id} deleted by ${session.email}`,
+        action: "DELETE_USERS",
+        details: `Deleted ${deleteResult.count} user(s) (IDs: ${safeIdsToDelete.join(", ")}) by ${session.email}`,
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      count: deleteResult.count, 
+      deletedIds: safeIdsToDelete 
+    });
   } catch (error: any) {
     console.error("User deletion error:", error);
     return NextResponse.json(
-      { error: "Internal server error during user deletion" },
+      { error: error.message || "Internal server error during user deletion" },
       { status: 500 }
     );
   }
