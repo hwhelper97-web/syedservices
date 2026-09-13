@@ -353,79 +353,86 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
   const submissionProofDoc = app.documents?.find((d: any) => ["submission_confirmation", "embassy_submission_proof"].includes(d.documentType));
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
       {/* Reusable Toast Notification */}
       <PortalToast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Top bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Top Breadcrumb & Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 px-5 py-3 rounded-2xl shadow-lg">
         <Link
           href="/portal/client"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-yellow-400 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl self-start sm:self-auto"
         >
-          <FiArrowLeft /> Back to Applications
+          <FiArrowLeft size={14} /> Back to Applications
         </Link>
-        <Link
-          href="/portal/client/messages"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-bold rounded-xl hover:bg-yellow-400 hover:text-black transition-all self-start sm:self-auto"
-        >
-          <FiMessageSquare size={14} /> Message Advisor
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handlePrintContract}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-yellow-400 text-xs font-bold rounded-xl transition-all cursor-pointer"
+          >
+            <FiPrinter size={13} /> Print Service Agreement
+          </button>
+          <Link
+            href="/portal/client/messages"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-400 text-black text-xs font-black rounded-xl hover:bg-yellow-300 transition-all shadow-md shadow-yellow-400/10"
+          >
+            <FiMessageSquare size={13} /> Message Advisor
+          </Link>
+        </div>
       </div>
 
       {/* 1. CELEBRATORY APPROVED VISA BANNER (IF APPROVED OR VISA DOCUMENT AVAILABLE) */}
       {(app.status === "APPROVED" || approvedVisaDoc) && (
-        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900/60 border-2 border-emerald-500/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden animate-pulse-subtle">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 blur-[120px] pointer-events-none" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-            <div className="space-y-2">
+        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900/60 border-2 border-emerald-500/50 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-400/10 blur-[100px] pointer-events-none" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
-                  <FiAward size={14} /> OFFICIAL VISA ISSUED & APPROVED
+                <span className="px-3 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-emerald-500/20">
+                  <FiAward size={13} /> OFFICIAL VISA ISSUED & APPROVED
                 </span>
-                <span className="text-xs text-emerald-400 font-mono font-bold">
-                  Grant Verified
-                </span>
+                <span className="text-xs text-emerald-400 font-mono font-bold">Grant Verified</span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-black text-white">
+              <h2 className="text-xl md:text-2xl font-black text-white">
                 🎉 Congratulations, {app.client?.user?.name || "Client"}!
               </h2>
               <p className="text-slate-300 text-xs max-w-xl leading-relaxed">
-                Your official visa application for <strong>{app.country} ({app.visaCategory})</strong> has been successfully APPROVED and issued by immigration authorities. Download your official document below.
+                Your official visa application for <strong>{app.country} ({app.visaCategory})</strong> has been successfully APPROVED. You can view or download your official visa document below.
               </p>
             </div>
 
             {approvedVisaDoc ? (
-              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <div className="flex flex-wrap gap-2.5 shrink-0">
                 <a
                   href={approvedVisaDoc.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-3.5 bg-slate-900 border border-emerald-500/40 text-emerald-400 font-black text-xs rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                  className="px-4 py-2.5 bg-slate-900 border border-emerald-500/40 text-emerald-400 font-black text-xs rounded-xl hover:bg-slate-850 transition-all flex items-center gap-1.5"
                 >
-                  <FiEye size={15} /> View eVisa
+                  <FiEye size={14} /> View eVisa
                 </a>
                 <button
                   type="button"
                   onClick={(e) => handleDownloadSingle(approvedVisaDoc, e)}
                   disabled={downloadingDocId === approvedVisaDoc.id}
-                  className="px-6 py-3.5 bg-gradient-to-r from-emerald-400 to-teal-400 text-black font-black text-xs rounded-xl hover:scale-105 transition-all cursor-pointer shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 text-black font-black text-xs rounded-xl hover:scale-105 transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
                 >
                   {downloadingDocId === approvedVisaDoc.id ? (
                     <>
-                      <FiLoader className="animate-spin" /> Downloading...
+                      <FiLoader className="animate-spin" size={13} /> Downloading...
                     </>
                   ) : (
                     <>
-                      <FiDownload size={15} /> Download Approved Visa
+                      <FiDownload size={13} /> Download Approved Visa
                     </>
                   )}
                 </button>
               </div>
             ) : (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 px-5 py-3 rounded-2xl text-center">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-xl text-center">
                 <span className="text-xs font-bold text-emerald-400">Status: Approved</span>
-                <p className="text-[10px] text-slate-400 mt-0.5">Official visa file is being synced by desk officers.</p>
+                <p className="text-[10px] text-slate-400">Official visa file is being synced by desk officers.</p>
               </div>
             )}
           </div>
@@ -434,17 +441,17 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
 
       {/* 2. OFFICIAL EMBASSY SUBMISSION CONFIRMATION CARD (IF AVAILABLE) */}
       {submissionProofDoc && (
-        <div className="bg-gradient-to-r from-cyan-950/60 via-[#0f172a] to-slate-900 border border-cyan-500/40 rounded-[2.5rem] p-6 md:p-8 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-cyan-950/60 via-[#0f172a] to-slate-900 border border-cyan-500/40 rounded-3xl p-5 md:p-6 shadow-xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                <FiSend size={22} />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                <FiSend size={18} />
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">
-                  Embassy / Consular Confirmation Slip
+                <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest block">
+                  Embassy / Consular Confirmation
                 </span>
-                <h4 className="text-base font-black text-white">
+                <h4 className="text-sm font-black text-white">
                   Official Visa Submission Email & Acknowledgment Slip
                 </h4>
                 <p className="text-xs text-slate-400">
@@ -453,22 +460,22 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
               </div>
             </div>
 
-            <div className="flex gap-2.5 shrink-0 self-start sm:self-auto">
+            <div className="flex gap-2 shrink-0 self-start sm:self-auto">
               <a
                 href={submissionProofDoc.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 bg-slate-900 border border-cyan-500/30 text-cyan-400 font-bold text-xs rounded-xl hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-slate-900 border border-cyan-500/30 text-cyan-400 font-bold text-xs rounded-xl hover:bg-slate-800 transition-all flex items-center gap-1.5"
               >
-                <FiEye /> View Slip
+                <FiEye size={13} /> View Slip
               </a>
               <button
                 type="button"
                 onClick={(e) => handleDownloadSingle(submissionProofDoc, e)}
                 disabled={downloadingDocId === submissionProofDoc.id}
-                className="px-5 py-2.5 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-cyan-500/10"
+                className="px-4 py-2 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-500/10"
               >
-                <FiDownload /> Download Slip
+                <FiDownload size={13} /> Download Slip
               </button>
             </div>
           </div>
@@ -476,19 +483,19 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
       )}
 
       {/* Header Banner */}
-      <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-400/5 blur-[120px] pointer-events-none" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono font-bold text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-full border border-yellow-400/20">
+      <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 blur-[100px] pointer-events-none" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-yellow-400 bg-yellow-400/10 px-2.5 py-0.5 rounded-lg border border-yellow-400/20">
                 {app.trackingId}
               </span>
-              <span className="text-xs text-slate-500 font-bold">
-                Created on {new Date(app.createdAt).toLocaleDateString()}
+              <span className="text-[11px] text-slate-500 font-bold">
+                Created: {new Date(app.createdAt).toLocaleDateString()}
               </span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white">
+            <h2 className="text-2xl font-black text-white">
               {app.visaCategory} — <span className="text-yellow-400">{app.country}</span>
             </h2>
             <p className="text-slate-400 text-xs">
@@ -497,10 +504,10 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
           </div>
 
           <div>
-            <span className={`px-4 py-2 rounded-2xl text-xs font-bold uppercase tracking-wider border ${
-              app.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-              app.status === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
-              "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+            <span className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border ${
+              app.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+              app.status === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/30" :
+              "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
             }`}>
               {app.status.replace(/_/g, " ")}
             </span>
@@ -509,9 +516,9 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
       </div>
 
       {/* Status Pipeline Progress */}
-      <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 shadow-xl">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-6">Application Processing Stages</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+      <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+        <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">Application Processing Stages</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
           {VISA_PIPELINE.map((stage, idx) => {
             const isCompleted = currentStepIndex > idx;
             const isCurrent = currentStepIndex === idx;
@@ -519,16 +526,16 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
             return (
               <div
                 key={stage.key}
-                className={`p-4 rounded-2xl border transition-all text-center space-y-2 ${
-                  isCurrent ? "bg-yellow-400/10 border-yellow-400/40 text-yellow-400 shadow-lg shadow-yellow-400/5" :
+                className={`p-3 rounded-xl border transition-all text-center space-y-1.5 ${
+                  isCurrent ? "bg-yellow-400/10 border-yellow-400/40 text-yellow-400 shadow-md shadow-yellow-400/5" :
                   isCompleted ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400" :
                   "bg-slate-900/40 border-slate-800/60 text-slate-600"
                 }`}
               >
-                <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto text-xs font-bold border border-current">
-                  {isCompleted ? <FiCheckCircle size={16} /> : idx + 1}
+                <div className="w-6 h-6 rounded-full flex items-center justify-center mx-auto text-[11px] font-bold border border-current">
+                  {isCompleted ? <FiCheckCircle size={14} /> : idx + 1}
                 </div>
-                <p className="text-[11px] font-bold leading-tight line-clamp-2">{stage.label}</p>
+                <p className="text-[10px] font-bold leading-tight line-clamp-2">{stage.label}</p>
               </div>
             );
           })}
@@ -536,69 +543,67 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
       </div>
 
       {/* Main Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Visa & Travel Details */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-8 space-y-6 shadow-xl">
-          <div className="flex items-center gap-2 pb-4 border-b border-slate-800">
-            <FiFileText className="text-yellow-400" />
-            <h4 className="text-sm font-black text-white uppercase tracking-wider">Visa Information</h4>
+        <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-5 md:p-6 space-y-4 shadow-xl">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+            <FiFileText className="text-yellow-400" size={15} />
+            <h4 className="text-xs font-black text-white uppercase tracking-wider">Visa Information</h4>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <p className="text-slate-500 font-bold uppercase">Destination</p>
-              <p className="text-white font-semibold mt-1">{app.country}</p>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
+              <p className="text-slate-500 text-[9px] font-bold uppercase">Destination</p>
+              <p className="text-white font-bold mt-0.5">{app.country}</p>
             </div>
-            <div>
-              <p className="text-slate-500 font-bold uppercase">Category</p>
-              <p className="text-white font-semibold mt-1">{app.visaCategory}</p>
+            <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
+              <p className="text-slate-500 text-[9px] font-bold uppercase">Category</p>
+              <p className="text-white font-bold mt-0.5">{app.visaCategory}</p>
             </div>
-            <div>
-              <p className="text-slate-500 font-bold uppercase">Duration</p>
-              <p className="text-white font-semibold mt-1">{app.duration || "Standard"}</p>
+            <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
+              <p className="text-slate-500 text-[9px] font-bold uppercase">Duration</p>
+              <p className="text-white font-bold mt-0.5">{app.duration || "Standard"}</p>
             </div>
-            <div>
-              <p className="text-slate-500 font-bold uppercase">Entry Type</p>
-              <p className="text-white font-semibold mt-1">{app.entryType || "Single Entry"}</p>
+            <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
+              <p className="text-slate-500 text-[9px] font-bold uppercase">Entry Type</p>
+              <p className="text-white font-bold mt-0.5">{app.entryType || "Single Entry"}</p>
             </div>
-            <div>
-              <p className="text-slate-500 font-bold uppercase">Travel Date</p>
-              <p className="text-white font-semibold mt-1">{app.travelDate || "Flexible"}</p>
+            <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
+              <p className="text-slate-500 text-[9px] font-bold uppercase">Travel Date</p>
+              <p className="text-white font-bold mt-0.5">{app.travelDate || "Flexible"}</p>
             </div>
-            <div>
-              <p className="text-slate-500 font-bold uppercase">Sponsor</p>
-              <p className="text-white font-semibold mt-1">{app.sponsor || "Self"}</p>
+            <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
+              <p className="text-slate-500 text-[9px] font-bold uppercase">Sponsor</p>
+              <p className="text-white font-bold mt-0.5">{app.sponsor || "Self"}</p>
             </div>
           </div>
         </div>
 
         {/* Contract & Agreement */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-8 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-5 md:p-6 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2">
-              <FiShield className="text-yellow-400" />
-              <h4 className="text-sm font-black text-white uppercase tracking-wider">Service Agreement / Contract</h4>
+              <FiShield className="text-yellow-400" size={15} />
+              <h4 className="text-xs font-black text-white uppercase tracking-wider">Service Agreement / Contract</h4>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handlePrintContract}
-                className="px-2.5 py-1 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-yellow-400 text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer"
-                title="Print official legal contract PDF"
-              >
-                <FiPrinter size={11} /> Print PDF
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handlePrintContract}
+              className="px-2.5 py-1 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-yellow-400 text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer"
+              title="Print official legal contract PDF"
+            >
+              <FiPrinter size={11} /> Print PDF
+            </button>
           </div>
 
           {/* Legal summary box */}
-          <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 text-xs space-y-2.5">
+          <div className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-850 text-xs space-y-2">
             <div className="flex justify-between items-center text-[11px]">
               <span className="text-slate-400">First Party (Provider):</span>
-              <strong className="text-white">{app.contractFirstPartyName || "Eng Syed Saif Ur Rehman (Syed Services)"}</strong>
+              <strong className="text-white text-right">{app.contractFirstPartyName || "Eng Syed Saif Ur Rehman"}</strong>
             </div>
             <div className="flex justify-between items-center text-[11px]">
               <span className="text-slate-400">Second Party (Client):</span>
-              <strong className="text-white">{app.client?.user?.name || "Client"}</strong>
+              <strong className="text-white text-right">{app.client?.user?.name || "Client"}</strong>
             </div>
             <div className="flex justify-between items-center text-[11px]">
               <span className="text-slate-400">Approved Timeline:</span>
@@ -611,16 +616,16 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
           </div>
 
           {app.contractStatus === "SENT" && !app.contractAccepted ? (
-            <div className="space-y-4">
-              <div className="p-4 bg-yellow-400/10 border border-yellow-400/20 rounded-2xl">
-                <p className="text-xs text-yellow-400 font-bold mb-1">Contract Awaiting Signature</p>
-                <p className="text-xs text-slate-300">
+            <div className="space-y-3">
+              <div className="p-3 bg-yellow-400/10 border border-yellow-400/20 rounded-xl">
+                <p className="text-xs text-yellow-400 font-bold mb-0.5">Contract Awaiting Signature</p>
+                <p className="text-[11px] text-slate-300">
                   Approved Days: <strong>{app.contractApprovedDays || "30"} days</strong> | Payment: <strong>${app.contractPaymentAmount || "0"}</strong>
                 </p>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                   Type Full Legal Name to Sign
                 </label>
                 <input
@@ -628,21 +633,21 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
                   placeholder="Your Full Legal Name"
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
-                  className="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-yellow-400 outline-none"
+                  className="w-full bg-[#020617] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-yellow-400 outline-none"
                 />
               </div>
 
               <button
                 onClick={handleSignContract}
                 disabled={signing}
-                className="w-full py-3 bg-yellow-400 text-black font-extrabold text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer shadow-lg shadow-yellow-400/10"
+                className="w-full py-2.5 bg-yellow-400 text-black font-extrabold text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer shadow-md shadow-yellow-400/10"
               >
                 {signing ? "Digitally Signing Legal Contract..." : "Sign Legal Agreement"}
               </button>
             </div>
           ) : app.contractAccepted ? (
-            <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-2 text-center">
-              <FiCheckCircle className="text-emerald-400 mx-auto" size={24} />
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1.5 text-center">
+              <FiCheckCircle className="text-emerald-400 mx-auto" size={20} />
               <p className="text-xs font-bold text-emerald-400">Agreement Digitally Signed & Legally Enforceable</p>
               <p className="text-[11px] text-slate-300">
                 Signed by: <strong>{app.contractSignatureName}</strong>
@@ -650,63 +655,43 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
               <p className="text-[10px] text-slate-400 font-mono">
                 {app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : ""}
               </p>
-              <button
-                type="button"
-                onClick={handlePrintContract}
-                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold hover:bg-slate-850"
-              >
-                <FiPrinter size={13} /> View & Download Full Signed Contract
-              </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <p className="text-xs text-slate-400 leading-relaxed">
-                Official bilateral service contract details and legal representation clauses are registered under file <strong>{app.trackingId}</strong>.
+                Official bilateral service contract details and legal clauses are registered under file <strong>{app.trackingId}</strong>.
               </p>
-              <button
-                type="button"
-                onClick={handlePrintContract}
-                className="w-full py-2.5 bg-slate-900 border border-slate-800 text-yellow-400 text-xs font-bold rounded-xl hover:bg-slate-850 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <FiEye /> View & Print Contract Document
-              </button>
             </div>
           )}
         </div>
       </div>
 
       {/* Uploaded Documents */}
-      <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+      <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-5 md:p-6 shadow-xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2">
-            <FiPaperclip className="text-yellow-400" />
-            <h4 className="text-sm font-black text-white uppercase tracking-wider">Uploaded Documents ({app.documents?.length || 0})</h4>
+            <FiPaperclip className="text-yellow-400" size={15} />
+            <h4 className="text-xs font-black text-white uppercase tracking-wider">
+              Uploaded Documents ({app.documents?.length || 0})
+            </h4>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {app.documents && app.documents.length > 0 && (
               <button
                 type="button"
                 onClick={handleDownloadAllZip}
                 disabled={downloadingZip}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-60"
-                title="Download all files in a single ZIP"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer shadow-md shadow-yellow-400/10 disabled:opacity-60"
               >
-                {downloadingZip ? (
-                  <>
-                    <FiLoader className="animate-spin" size={13} /> Packaging ZIP...
-                  </>
-                ) : (
-                  <>
-                    <FiArchive size={13} /> Download All (ZIP)
-                  </>
-                )}
+                {downloadingZip ? <FiLoader className="animate-spin" size={13} /> : <FiArchive size={13} />}
+                <span>Download All (ZIP)</span>
               </button>
             )}
             <Link
               href="/portal/client/documents"
               className="text-xs font-bold text-yellow-400 hover:underline"
             >
-              Manage Documents →
+              Manage →
             </Link>
           </div>
         </div>
@@ -714,34 +699,34 @@ export default function ClientApplicationDetailPage({ params }: { params: Promis
         {(!app.documents || app.documents.length === 0) ? (
           <p className="text-xs text-slate-500 italic text-center py-6">No documents attached to this file yet.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {app.documents.map((doc: any) => (
-              <div key={doc.id} className="p-4 bg-[#020617] border border-slate-800 rounded-2xl flex items-center justify-between gap-3">
+              <div key={doc.id} className="p-3 bg-[#020617] border border-slate-800 rounded-xl flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-white truncate">{doc.fileName || doc.documentType}</p>
-                  <p className="text-[10px] text-slate-500 uppercase">{doc.documentType}</p>
+                  <p className="text-[10px] text-slate-500 uppercase">{doc.documentType.replace(/_/g, " ")}</p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <a
                     href={doc.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 bg-slate-900 border border-slate-800 hover:border-blue-400/30 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-xl transition-all"
+                    className="p-2 bg-slate-900 border border-slate-800 hover:border-blue-400/30 text-slate-400 hover:text-blue-400 rounded-lg transition-all"
                     title="View Document"
                   >
-                    <FiFileText size={15} />
+                    <FiEye size={13} />
                   </a>
                   <button
                     type="button"
                     onClick={(e) => handleDownloadSingle(doc, e)}
                     disabled={downloadingDocId === doc.id}
-                    className="p-2 bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 hover:bg-yellow-400 hover:text-black rounded-xl transition-all cursor-pointer disabled:opacity-60"
-                    title={`Download direct file: ${getDocFileName(doc)}`}
+                    className="p-2 bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 hover:bg-yellow-400 hover:text-black rounded-lg transition-all cursor-pointer disabled:opacity-60"
+                    title={`Download file: ${getDocFileName(doc)}`}
                   >
                     {downloadingDocId === doc.id ? (
-                      <FiLoader className="animate-spin text-yellow-400" size={15} />
+                      <FiLoader className="animate-spin text-yellow-400" size={13} />
                     ) : (
-                      <FiDownload size={15} />
+                      <FiDownload size={13} />
                     )}
                   </button>
                 </div>

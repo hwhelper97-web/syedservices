@@ -6,7 +6,7 @@ import {
   FiFileText, FiUser, FiGlobe, FiAlertCircle, 
   FiCpu, FiCopy, FiLoader, FiCheckCircle, FiDownload, 
   FiCornerDownRight, FiArrowLeft, FiEye, FiImage, FiArchive, FiPaperclip, FiPrinter, FiDollarSign,
-  FiUploadCloud, FiAward, FiSend, FiShield
+  FiUploadCloud, FiAward, FiSend, FiShield, FiMessageSquare, FiSliders
 } from "react-icons/fi";
 import Link from "next/link";
 import { VISA_STATUS_OPTIONS } from "@/lib/visaPipeline";
@@ -870,348 +870,356 @@ export default function AdminApplicationDetailPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Toast Notification */}
       <PortalToast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link 
-          href="/portal/admin" 
-          className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
-        >
-          <FiArrowLeft size={16} /> Back to Dashboard
-        </Link>
-        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest font-mono">
-          TRACK: {app.trackingId}
-        </span>
+      {/* Top Breadcrumb & Quick Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 px-5 py-3.5 rounded-2xl shadow-lg">
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/portal/admin/applications" 
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl"
+          >
+            <FiArrowLeft size={14} /> Back to Applications
+          </Link>
+          <div className="h-4 w-[1px] bg-slate-800 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">File:</span>
+            <span className="text-xs font-mono font-bold text-yellow-400 bg-yellow-400/10 px-2.5 py-0.5 rounded-lg border border-yellow-400/20 flex items-center gap-1.5">
+              {app.trackingId || `APP-${app.id}`}
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(app.trackingId || `APP-${app.id}`);
+                  showToast("Tracking code copied to clipboard", "info");
+                }}
+                className="hover:text-white cursor-pointer"
+                title="Copy Tracking ID"
+              >
+                <FiCopy size={11} />
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {app.client?.phone && (
+            <a
+              href={`https://wa.me/${app.client.phone.replace(/[^0-9]/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black rounded-xl text-xs font-bold transition-all"
+            >
+              <FiMessageSquare size={13} /> WhatsApp
+            </a>
+          )}
+          <button
+            onClick={handlePrintContract}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-slate-300 hover:text-yellow-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            <FiPrinter size={13} /> Print Contract
+          </button>
+          {app.documents?.length > 0 && (
+            <button
+              onClick={handleDownloadAllZip}
+              disabled={downloadingZip}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-400 text-black rounded-xl text-xs font-black hover:bg-yellow-300 transition-all cursor-pointer disabled:opacity-60 shadow-md shadow-yellow-400/10"
+            >
+              {downloadingZip ? <FiLoader className="animate-spin" size={13} /> : <FiArchive size={13} />}
+              <span>Download Files (ZIP)</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* Left Column: Details & Document Logs */}
-        <div className="lg:col-span-7 space-y-8">
-          {/* Main Comprehensive Dossier */}
-          <div className="bg-[#0f172a] border border-slate-800 p-8 rounded-[2.5rem] shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest block mb-1">
-                  Official Client Review Dossier
-                </span>
-                <h3 className="text-2xl font-black text-white tracking-tight">
-                  {app.client?.user?.name || "Applicant"}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Email: {app.client?.user?.email || "N/A"} · Phone: {app.client?.phone || "N/A"}
-                </p>
-              </div>
-              <div className="text-right flex sm:flex-col items-center sm:items-end justify-between gap-1">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Registration Date</span>
-                <span className="text-xs font-mono text-slate-300 font-bold">
-                  {new Date(app.createdAt).toLocaleDateString()}
-                </span>
-              </div>
+      {/* Executive Hero Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#0f172a] via-[#131e3a] to-[#0f172a] border border-slate-800 p-6 md:p-8 rounded-3xl shadow-xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-400/5 blur-[100px] pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-xl font-black text-yellow-400 shrink-0 shadow-inner">
+              {(app.client?.user?.name || "A")[0]?.toUpperCase()}
             </div>
-
-            {/* Package & Pricing Block */}
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-400/10 via-slate-900 to-emerald-500/10 border border-yellow-400/20 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-yellow-400 text-black text-[10px] font-black uppercase tracking-wider">
-                      {app.package ? "Landing Package Deal" : "Custom Application"}
-                    </span>
-                    <span className="text-xs font-bold text-slate-300">{app.country} · {app.visaCategory}</span>
-                  </div>
-                  <h4 className="text-base font-black text-white">
-                    {app.package ? app.package.title : `${app.country} ${app.visaCategory}`}
-                  </h4>
-                </div>
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 text-left sm:text-right shrink-0">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Official Visa Fee</span>
-                  <span className="text-xl font-black font-mono text-emerald-400">
-                    ${app.packagePrice || app.package?.priceUSD || 250} USD
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-[10px] font-black uppercase tracking-wider">
+                  {app.country} · {app.visaCategory}
+                </span>
+                {app.package && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold">
+                    Tier: {app.package.title}
                   </span>
-                  {app.package?.pricePKR && (
-                    <span className="text-[10px] text-slate-400 block font-mono">
-                      (₨ {app.package.pricePKR.toLocaleString()} PKR)
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2 border-t border-slate-800/80">
-                <div>
-                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Entry Type</span>
-                  <strong className="text-white">{app.entryType || "Single"}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Stay Duration</span>
-                  <strong className="text-white">{app.duration || app.package?.duration || "30 Days"}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Processing Time</span>
-                  <strong className="text-white">{app.package?.processingTime || "3 - 5 Working Days"}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[9px] uppercase font-bold block">Travel Planned</span>
-                  <strong className="text-white">{app.travelDate || "Flexible"}</strong>
-                </div>
-              </div>
-
-              {/* Package Required Documents */}
-              {app.package?.documents && (
-                <div className="pt-2 border-t border-slate-800/80">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
-                    <FiPaperclip className="text-yellow-400" /> Package Mandatory Documents Checklist:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {app.package.documents.split("\n").filter(Boolean).map((d: string, idx: number) => (
-                      <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
-                        {d.trim()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Official Parents & Civil Family Details */}
-            <div className="p-6 rounded-3xl bg-slate-950/60 border border-slate-800 space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
-                <FiUser size={15} /> Official Parents & Civil Family Details
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs">
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Father Full Name</span>
-                  <p className="font-bold text-white mt-0.5 text-sm">{app.client?.fatherName || "Not provided"}</p>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Mother Full Name</span>
-                  <p className="font-bold text-white mt-0.5 text-sm">{app.client?.motherName || "Not provided"}</p>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Marital Status</span>
-                  <p className="mt-0.5">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-md font-bold text-xs ${
-                      app.client?.maritalStatus === "Married"
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                        : "bg-slate-900 text-slate-300 border border-slate-800"
-                    }`}>
-                      {app.client?.maritalStatus || "Single"}
-                    </span>
-                  </p>
-                </div>
-
-                {/* If Married details */}
-                {app.client?.maritalStatus === "Married" && (
-                  <>
-                    <div className="sm:col-span-1">
-                      <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Wife / Spouse Name</span>
-                      <p className="font-black text-yellow-400 mt-0.5 text-sm">{app.client?.spouseName || "Not provided"}</p>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Children Count</span>
-                      <p className="font-bold text-white mt-0.5 font-mono text-sm">{app.client?.childrenCount ?? 0}</p>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Children Details</span>
-                      <p className="font-medium text-slate-300 mt-0.5 text-xs">{app.client?.childrenDetails || "None provided"}</p>
-                    </div>
-                  </>
                 )}
               </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                {app.client?.user?.name || "Applicant"}
+              </h2>
+              <p className="text-xs text-slate-400 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span>Email: <strong className="text-slate-200">{app.client?.user?.email || "N/A"}</strong></span>
+                <span>Phone: <strong className="text-slate-200">{app.client?.phone || "N/A"}</strong></span>
+                <span>Applied: <strong className="text-slate-300 font-mono">{new Date(app.createdAt).toLocaleDateString()}</strong></span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0">
+            <div className="text-left md:text-right">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Current Dossier Status</span>
+              <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border ${
+                app.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                app.status === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/30" :
+                "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+              }`}>
+                <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                {app.status?.replace(/_/g, " ")}
+              </span>
+            </div>
+            <div className="text-left md:text-right">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Official Visa Pricing</span>
+              <span className="text-lg font-black font-mono text-emerald-400">
+                ${app.packagePrice || app.package?.priceUSD || 250} USD
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Balanced 2-Column Responsive Workspace Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Column (7 cols): Full Comprehensive Dossier & Verified Documents */}
+        <div className="lg:col-span-7 space-y-6">
+          
+          {/* 1. Visa Parameters & Package Breakdown Card */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiGlobe className="text-yellow-400" size={15} /> Visa & Journey Specifications
+              </h3>
+              <span className="text-[10px] text-slate-400 font-bold uppercase">
+                {app.entryType || "Single Entry"} · {app.duration || "30 Days"}
+              </span>
             </div>
 
-            {/* Identity & Passport Information */}
-            <div className="p-6 rounded-3xl bg-slate-950/60 border border-slate-800 space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
-                <FiFileText size={15} /> Official Passport & Identification
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Destination</span>
+                <strong className="text-white font-bold">{app.country}</strong>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-4 gap-x-6 text-xs">
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Passport Number</span>
-                  <p className="font-mono font-black text-white mt-0.5 text-sm">{app.client?.passportNumber || "N/A"}</p>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Passport Expiry</span>
-                  <p className="font-bold text-white mt-0.5">{app.client?.passportExpiryDate || "N/A"}</p>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Issue Date & Place</span>
-                  <p className="font-semibold text-slate-300 mt-0.5">
-                    {app.client?.passportIssueDate || "N/A"} ({app.client?.passportIssuePlace || "N/A"})
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Date of Birth & Gender</span>
-                  <p className="font-semibold text-slate-300 mt-0.5">
-                    {app.client?.dob || "N/A"} ({app.client?.gender || "N/A"})
-                  </p>
-                </div>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Visa Category</span>
+                <strong className="text-white font-bold">{app.visaCategory}</strong>
               </div>
-            </div>
-
-            {/* Official Addresses */}
-            <div className="p-6 rounded-3xl bg-slate-950/60 border border-slate-800 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
-                <FiGlobe size={15} /> Official Residence & Origin Addresses
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Duration</span>
+                <strong className="text-white font-bold">{app.duration || app.package?.duration || "30 Days"}</strong>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850">
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block mb-1">
-                    Current Residence Address (حالیه استوګنځی)
-                  </span>
-                  <p className="font-bold text-white text-sm leading-snug">
-                    {app.client?.currentAddress || "Not provided"}
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850">
-                  <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block mb-1">
-                    Permanent Origin Address (اصلي استوګنځی)
-                  </span>
-                  <p className="font-bold text-slate-300 text-sm leading-snug">
-                    {app.client?.permanentAddress || "Not provided"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Employment & Financials */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs p-5 bg-slate-950/40 rounded-2xl border border-slate-850">
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Profession / Job</span>
-                <p className="font-bold text-white mt-0.5">{app.client?.profession || "N/A"}</p>
-              </div>
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Company Name</span>
-                <p className="font-bold text-white mt-0.5">{app.client?.companyName || "N/A"}</p>
-              </div>
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Monthly Income</span>
-                <p className="font-bold text-emerald-400 font-mono mt-0.5">${app.client?.salary || "0"}/month</p>
-              </div>
-              <div>
-                <span className="text-slate-500 font-bold uppercase tracking-wide text-[9px] block">Qualification</span>
-                <p className="font-bold text-white mt-0.5">{app.client?.bachelor || app.client?.qualification || "N/A"}</p>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Planned Travel</span>
+                <strong className="text-white font-bold">{app.travelDate || "Flexible"}</strong>
               </div>
             </div>
 
-            {/* Associated Invoices & Strict Package Accounting */}
-            {app.invoices && app.invoices.length > 0 && (
-              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <FiDollarSign /> Associated Application Invoice(s)
-                  </span>
-                  <span className="text-[10px] text-slate-400">{app.invoices.length} Invoice(s) Generated</span>
-                </div>
-                <div className="divide-y divide-slate-800/60">
-                  {app.invoices.map((inv: any) => (
-                    <div key={inv.id} className="pt-2.5 pb-2.5 first:pt-0 last:pb-0 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-mono font-bold text-white text-sm">{inv.invoiceNumber}</span>
-                        <span className="text-[11px] text-slate-500 block">
-                          Due: {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "7 Days"}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-mono font-black text-emerald-400 text-sm">
-                          ${inv.totalAmount} USD
-                        </span>
-                        <span className={`block text-[10px] font-bold uppercase tracking-wider ${
-                          inv.status === "PAID" ? "text-emerald-400" : "text-amber-400"
-                        }`}>
-                          {inv.status}
-                        </span>
-                      </div>
-                    </div>
+            {/* Package Checklist if available */}
+            {app.package?.documents && (
+              <div className="p-3.5 bg-slate-950/40 rounded-xl border border-slate-850 space-y-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <FiPaperclip className="text-yellow-400" /> Package Mandatory Checklist:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {app.package.documents.split("\n").filter(Boolean).map((d: string, idx: number) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                      {d.trim()}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Uploaded Documents */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-xl">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900/30">
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-400"><FiPaperclip size={16} /></span>
-                <h4 className="text-sm font-black text-white uppercase tracking-wider">Submitted Support Scans</h4>
-                {app.documents.length > 0 && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 rounded-full">
-                    {app.documents.length} file{app.documents.length !== 1 ? "s" : ""}
-                  </span>
-                )}
+          {/* 2. Official Parents & Family Civil Records */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiUser className="text-yellow-400" size={15} /> Official Parents & Family Details
+              </h3>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                app.client?.maritalStatus === "Married"
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-slate-900 text-slate-400 border-slate-800"
+              }`}>
+                {app.client?.maritalStatus || "Single"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Father's Full Name</span>
+                <strong className="text-white text-xs block mt-0.5">{app.client?.fatherName || "Not provided"}</strong>
               </div>
-              {/* Download All */}
-              {app.documents.length > 0 && (
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Mother's Full Name</span>
+                <strong className="text-white text-xs block mt-0.5">{app.client?.motherName || "Not provided"}</strong>
+              </div>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Marital Status</span>
+                <strong className="text-white text-xs block mt-0.5">{app.client?.maritalStatus || "Single"}</strong>
+              </div>
+
+              {app.client?.maritalStatus === "Married" && (
+                <>
+                  <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                    <span className="text-slate-500 text-[9px] uppercase font-bold block">Spouse / Wife Name</span>
+                    <strong className="text-yellow-400 text-xs block mt-0.5">{app.client?.spouseName || "Not provided"}</strong>
+                  </div>
+                  <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                    <span className="text-slate-500 text-[9px] uppercase font-bold block">Children Count</span>
+                    <strong className="text-white text-xs font-mono block mt-0.5">{app.client?.childrenCount ?? 0} Children</strong>
+                  </div>
+                  <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                    <span className="text-slate-500 text-[9px] uppercase font-bold block">Children Details</span>
+                    <span className="text-slate-300 text-[11px] block mt-0.5">{app.client?.childrenDetails || "None specified"}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 3. Official Passport & Identification */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiFileText className="text-yellow-400" size={15} /> Official Passport & Identification
+              </h3>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {app.client?.nationality || "Afghan / Pakistani"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Passport Number</span>
+                <strong className="text-white font-mono text-xs block mt-0.5">{app.client?.passportNumber || "N/A"}</strong>
+              </div>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Passport Expiry</span>
+                <strong className="text-white font-mono text-xs block mt-0.5">{app.client?.passportExpiryDate || "N/A"}</strong>
+              </div>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Issue Date / Place</span>
+                <span className="text-slate-300 text-xs block mt-0.5">
+                  {app.client?.passportIssueDate || "N/A"} ({app.client?.passportIssuePlace || "N/A"})
+                </span>
+              </div>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">DOB & Gender</span>
+                <span className="text-slate-300 text-xs block mt-0.5">
+                  {app.client?.dob || "N/A"} ({app.client?.gender || "N/A"})
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Official Addresses & Employment */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiGlobe className="text-yellow-400" size={15} /> Residential Addresses & Professional Profile
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block mb-1">
+                  Current Residence Address (حالیه استوګنځی)
+                </span>
+                <p className="font-bold text-white text-xs leading-snug">
+                  {app.client?.currentAddress || "Not provided"}
+                </p>
+              </div>
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block mb-1">
+                  Permanent Origin Address (اصلي استوګنځی)
+                </span>
+                <p className="font-bold text-slate-300 text-xs leading-snug">
+                  {app.client?.permanentAddress || "Not provided"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+              <div className="p-2.5 bg-slate-950/40 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Profession</span>
+                <strong className="text-white text-xs block mt-0.5">{app.client?.profession || "N/A"}</strong>
+              </div>
+              <div className="p-2.5 bg-slate-950/40 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Company</span>
+                <strong className="text-white text-xs block mt-0.5">{app.client?.companyName || "N/A"}</strong>
+              </div>
+              <div className="p-2.5 bg-slate-950/40 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Monthly Salary</span>
+                <strong className="text-emerald-400 font-mono text-xs block mt-0.5">${app.client?.salary || "0"}/mo</strong>
+              </div>
+              <div className="p-2.5 bg-slate-950/40 rounded-xl border border-slate-850">
+                <span className="text-slate-500 text-[9px] uppercase font-bold block">Qualification</span>
+                <strong className="text-white text-xs block mt-0.5">{app.client?.bachelor || app.client?.qualification || "N/A"}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Documents Vault */}
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/40">
+              <div className="flex items-center gap-2">
+                <FiPaperclip className="text-yellow-400" size={16} />
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                  Client Support Documents ({app.documents?.length || 0})
+                </h4>
+              </div>
+              {app.documents?.length > 0 && (
                 <button
                   type="button"
                   onClick={handleDownloadAllZip}
                   disabled={downloadingZip}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-yellow-400 text-black font-black text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer shadow-lg shadow-yellow-400/10 disabled:opacity-60"
-                  title="Download all files in a single ZIP named with Applicant Name and Tracking ID"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer disabled:opacity-60 shadow-md shadow-yellow-400/10"
                 >
-                  {downloadingZip ? (
-                    <>
-                      <FiLoader className="animate-spin" size={13} /> Packaging ZIP...
-                    </>
-                  ) : (
-                    <>
-                      <FiArchive size={13} /> Download All (ZIP)
-                    </>
-                  )}
+                  {downloadingZip ? <FiLoader className="animate-spin" size={13} /> : <FiArchive size={13} />}
+                  <span>Download ZIP</span>
                 </button>
               )}
             </div>
 
-            {/* Body */}
-            <div className="p-2">
-              {app.documents.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-8">No documents uploaded by client yet.</p>
+            <div className="p-3">
+              {(!app.documents || app.documents.length === 0) ? (
+                <p className="text-xs text-slate-500 text-center py-6">No documents uploaded by client yet.</p>
               ) : (
-                <div className="divide-y divide-slate-800/40">
+                <div className="divide-y divide-slate-800/50">
                   {app.documents.map((doc: any) => {
                     const ext = doc.fileName?.split(".").pop()?.toLowerCase() || doc.fileType || "";
                     const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
                     const sizeKB = doc.fileSize ? (doc.fileSize / 1024).toFixed(1) : null;
 
                     return (
-                      <div key={doc.id} className="flex items-center gap-4 px-4 py-4 hover:bg-slate-900/20 transition-colors rounded-2xl group">
-                        {/* File Icon */}
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
-                          isImage
-                            ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                            : "bg-yellow-400/10 border-yellow-400/20 text-yellow-400"
+                      <div key={doc.id} className="flex items-center gap-3 p-3 hover:bg-slate-900/40 transition-colors rounded-xl group">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                          isImage ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-yellow-400/10 border-yellow-400/20 text-yellow-400"
                         }`}>
-                          {isImage ? <FiImage size={20} /> : <FiFileText size={20} />}
+                          {isImage ? <FiImage size={18} /> : <FiFileText size={18} />}
                         </div>
 
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-white capitalize">
+                          <p className="text-xs font-bold text-white capitalize truncate">
                             {doc.documentType.replace(/_/g, " ")}
                           </p>
-                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                            <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{doc.fileName}</span>
-                            {sizeKB && <span className="text-[10px] text-slate-600">· {sizeKB} KB</span>}
-                            <span className="text-[9px] uppercase font-bold text-slate-600">.{ext}</span>
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <FiCheckCircle size={10} className="text-green-400" />
-                            <span className="text-[9px] text-green-400 font-bold">Verified Upload</span>
-                          </div>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {doc.fileName} {sizeKB && `· ${sizeKB} KB`} · <span className="uppercase text-slate-500">.{ext}</span>
+                          </p>
                         </div>
 
-                        {/* Image Thumbnail */}
                         {isImage && (
-                          <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shrink-0 hidden md:block">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-800 bg-slate-900 shrink-0 hidden sm:block">
                             <img
                               src={doc.fileUrl}
                               alt={doc.documentType}
@@ -1221,32 +1229,27 @@ export default function AdminApplicationDetailPage() {
                           </div>
                         )}
 
-                        {/* Buttons */}
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <a
                             href={doc.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 hover:border-blue-400/30 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-xl transition-all text-xs font-semibold"
-                            title="Open in browser"
+                            className="p-2 bg-slate-900 border border-slate-800 hover:border-blue-400/30 text-slate-400 hover:text-blue-400 rounded-xl text-xs transition-all"
+                            title="View in Tab"
                           >
-                            <FiEye size={13} /> View
+                            <FiEye size={13} />
                           </a>
                           <button
                             type="button"
                             onClick={(e) => handleDownloadSingle(doc, e)}
                             disabled={downloadingDocId === doc.id}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 hover:bg-yellow-400/5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all text-xs font-semibold cursor-pointer disabled:opacity-60"
-                            title={`Download direct file: ${getDocFileName(doc)}`}
+                            className="p-2 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-slate-400 hover:text-yellow-400 rounded-xl text-xs transition-all cursor-pointer disabled:opacity-60"
+                            title="Download File"
                           >
                             {downloadingDocId === doc.id ? (
-                              <>
-                                <FiLoader className="animate-spin text-yellow-400" size={13} /> Saving...
-                              </>
+                              <FiLoader className="animate-spin text-yellow-400" size={13} />
                             ) : (
-                              <>
-                                <FiDownload size={13} /> Download
-                              </>
+                              <FiDownload size={13} />
                             )}
                           </button>
                         </div>
@@ -1257,138 +1260,123 @@ export default function AdminApplicationDetailPage() {
               )}
             </div>
           </div>
+        </div>
 
-          {/* Status Update Portal */}
-          <div className="bg-[#0f172a] border border-slate-800 p-8 rounded-[2.5rem] shadow-xl space-y-6">
-            <h3 className="text-base font-black text-white uppercase tracking-wider">Update File Status</h3>
-            
-            {app.status === "DEAL_CONFIRMED" && !app.contractAccepted && (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-400">
-                ⚠️ <strong>Awaiting Agent Signature:</strong> The visa contract terms have been sent to the agent. Further pipeline steps are disabled until the agent reviews and accepts the contract.
-              </div>
-            )}
+        {/* Right Column (5 cols): Pipeline Control, Embassy/Visa Dispatch, Billing & AI Assistant */}
+        <div className="lg:col-span-5 space-y-6">
+          
+          {/* 1. Status & Pipeline Lifecycle Stepper */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiSliders className="text-yellow-400" size={15} /> Application Status Controller
+              </h3>
+              <span className="text-[10px] text-slate-400 font-mono">Live Sync</span>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               <div>
-                <label className="block text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Application State</label>
+                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+                  Advance Processing Stage
+                </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 focus:border-yellow-400/50 rounded-2xl text-xs focus:outline-none"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-yellow-400 rounded-xl text-xs text-white focus:outline-none"
                 >
-                {VISA_STATUS_OPTIONS.map(opt => {
-                  const isLocked = app.status === "DEAL_CONFIRMED" && 
-                                   !app.contractAccepted && 
-                                   ["SENT_FOR_INVITATION", "INVITATION_ARRIVED", "FILE_READY_EMBASSY", "APPLICATION_SUBMITTED", "PASSPORT_TO_SUBMIT", "FINISHED"].includes(opt.value);
-                  return (
-                    <option key={opt.value} value={opt.value} disabled={isLocked}>
-                      {opt.label} {isLocked ? "(Locked - Awaiting Signature)" : ""}
+                  {VISA_STATUS_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
                     </option>
-                  );
-                })}
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Update Notes</label>
+                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+                  Update Log Note / Internal Remarks
+                </label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Verified passport validity"
-                  className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 focus:border-yellow-400/50 rounded-2xl text-xs focus:outline-none placeholder-slate-650"
+                  placeholder="e.g. File verified with embassy desk"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-yellow-400 rounded-xl text-xs text-white focus:outline-none placeholder-slate-600"
                 />
               </div>
-            </div>
-            {status === "DEAL_CONFIRMED" && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-slate-950/40 border border-slate-800 rounded-2xl">
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Timeline for Approval</label>
-                  <input
-                    type="text"
-                    value={contractDays}
-                    onChange={e => setContractDays(e.target.value)}
-                    placeholder="e.g. 30 Days"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-850 rounded-xl text-xs text-white focus:outline-none focus:border-yellow-400/40"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Fees After Visa Given</label>
-                  <input
-                    type="text"
-                    value={contractAmount}
-                    onChange={e => setContractAmount(e.target.value)}
-                    placeholder="e.g. 1000 USD"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-850 rounded-xl text-xs text-white focus:outline-none focus:border-yellow-400/40"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">First Party (Party A) Name</label>
-                  <input
-                    type="text"
-                    value={contractFirstParty}
-                    onChange={e => setContractFirstParty(e.target.value)}
-                    placeholder="e.g. Eng Syed Saif Ur Rehman"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-850 rounded-xl text-xs text-white focus:outline-none focus:border-yellow-400/40"
-                  />
-                </div>
-              </div>
-            )}
 
-            <button
-              onClick={handleUpdateStatus}
-              disabled={updating || (status === app.status && status !== "DEAL_CONFIRMED")}
-              className="px-6 py-3 bg-yellow-400 text-black font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
-            >
-              {updating ? "Updating..." : "Save Status Logs"}
-            </button>
+              {status === "DEAL_CONFIRMED" && (
+                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
+                  <div>
+                    <label className="block text-[9px] text-slate-500 font-bold uppercase mb-1">Approval Days</label>
+                    <input
+                      type="text"
+                      value={contractDays}
+                      onChange={e => setContractDays(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] text-slate-500 font-bold uppercase mb-1">Fee after Visa</label>
+                    <input
+                      type="text"
+                      value={contractAmount}
+                      onChange={e => setContractAmount(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={handleUpdateStatus}
+                disabled={updating || (status === app.status && status !== "DEAL_CONFIRMED")}
+                className="w-full py-2.5 bg-yellow-400 text-black font-black text-xs rounded-xl hover:bg-yellow-300 transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-yellow-400/10 flex items-center justify-center gap-1.5"
+              >
+                {updating ? <FiLoader className="animate-spin" /> : <FiCheckCircle />}
+                <span>{updating ? "Saving Update..." : "Update Pipeline Status"}</span>
+              </button>
+            </div>
           </div>
 
-          {/* 1. Official Embassy Submission Confirmation Dispatcher */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          {/* 2. Official Embassy Submission Confirmation Dispatcher */}
+          <div className="bg-[#0f172a] border border-cyan-500/30 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="text-cyan-400"><FiSend size={16} /></span>
-                <h4 className="text-sm font-black text-white uppercase tracking-wider">
-                  Official Embassy Submission Proof / Email Confirmation
+                <FiSend className="text-cyan-400" size={15} />
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                  Embassy Submission Slip Dispatcher
                 </h4>
               </div>
-              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold uppercase">
-                Client Dispatch
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase">
+                Client View
               </span>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Upload the official submission confirmation email, appointment slip, or embassy acknowledgment receipt. The client will be able to view and download it directly in their portal.
-            </p>
-
             {/* Check if already uploaded */}
             {app.documents?.some((d: any) => d.documentType === "submission_confirmation") && (
-              <div className="p-4 bg-cyan-950/40 border border-cyan-500/30 rounded-2xl space-y-2">
+              <div className="p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
-                    <FiCheckCircle /> Active Submission Confirmation Attached
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    Ready for Client
+                  <span className="text-[11px] font-bold text-cyan-400 flex items-center gap-1">
+                    <FiCheckCircle size={12} /> Active Submission Proof Attached
                   </span>
                 </div>
                 {app.documents.filter((d: any) => d.documentType === "submission_confirmation").map((subDoc: any) => (
-                  <div key={subDoc.id} className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-slate-200 font-mono truncate max-w-xs">{subDoc.fileName}</span>
-                    <div className="flex gap-2">
+                  <div key={subDoc.id} className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-200 font-mono text-[11px] truncate max-w-[150px]">{subDoc.fileName}</span>
+                    <div className="flex gap-1.5">
                       <a
                         href={subDoc.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 bg-slate-900 border border-slate-800 text-cyan-400 rounded-lg text-xs font-bold hover:bg-slate-850"
+                        className="px-2.5 py-1 bg-slate-900 text-cyan-400 rounded-lg text-[11px] font-bold"
                       >
                         View
                       </a>
                       <button
                         type="button"
                         onClick={(e) => handleDownloadSingle(subDoc, e)}
-                        className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-lg text-xs font-bold hover:bg-cyan-500/30 cursor-pointer"
+                        className="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 rounded-lg text-[11px] font-bold cursor-pointer"
                       >
                         Download
                       </button>
@@ -1398,94 +1386,68 @@ export default function AdminApplicationDetailPage() {
               </div>
             )}
 
-            {/* Upload Form */}
-            <form onSubmit={handleUploadSubmissionProof} className="space-y-4 pt-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">
-                  Select Submission Confirmation File (PDF / Image / Screenshot)
-                </label>
-                <label className="w-full py-5 border border-dashed border-slate-800 hover:border-cyan-400/40 rounded-2xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors bg-slate-950/50">
-                  <FiUploadCloud className="text-cyan-400" size={22} />
-                  <span className="text-xs font-semibold text-slate-300">
-                    {submissionFile ? submissionFile.name : "Choose Embassy Email / Submission Slip"}
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    PDF, JPG, PNG up to 15MB
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    className="hidden"
-                    onChange={(e) => e.target.files?.[0] && setSubmissionFile(e.target.files[0])}
-                  />
-                </label>
-              </div>
+            <form onSubmit={handleUploadSubmissionProof} className="space-y-3">
+              <label className="w-full py-4 border border-dashed border-slate-800 hover:border-cyan-400/40 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors bg-slate-950/60">
+                <FiUploadCloud className="text-cyan-400" size={20} />
+                <span className="text-xs font-semibold text-slate-300 truncate max-w-[220px]">
+                  {submissionFile ? submissionFile.name : "Choose Embassy Email / Slip"}
+                </span>
+                <span className="text-[9px] text-slate-500">PDF, JPG, PNG up to 15MB</span>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && setSubmissionFile(e.target.files[0])}
+                />
+              </label>
 
               <button
                 type="submit"
                 disabled={uploadingSubmission || !submissionFile}
-                className="w-full py-3.5 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-cyan-500 text-black font-black text-xs rounded-xl hover:bg-cyan-400 transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-cyan-500/10 flex items-center justify-center gap-1.5"
               >
-                {uploadingSubmission ? (
-                  <>
-                    <FiLoader className="animate-spin" /> Dispatching Submission Confirmation...
-                  </>
-                ) : (
-                  <>
-                    <FiSend /> Upload & Send Submission Confirmation to Client
-                  </>
-                )}
+                {uploadingSubmission ? <FiLoader className="animate-spin" /> : <FiSend />}
+                <span>{uploadingSubmission ? "Dispatching..." : "Upload & Send Proof to Client"}</span>
               </button>
             </form>
           </div>
 
-          {/* 2. Official Approved Visa / eVisa Dispatcher */}
-          <div className="bg-gradient-to-br from-emerald-950/40 via-[#0f172a] to-slate-900 border border-emerald-500/30 rounded-[2.5rem] p-8 shadow-2xl space-y-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] pointer-events-none" />
-
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          {/* 3. Official Approved Visa / eVisa Grant Dispatcher */}
+          <div className="bg-[#0f172a] border border-emerald-500/40 p-5 md:p-6 rounded-3xl shadow-xl space-y-4 relative overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="text-emerald-400"><FiAward size={18} /></span>
-                <h4 className="text-sm font-black text-white uppercase tracking-wider">
-                  Upload & Issue Approved Visa / eVisa Grant
+                <FiAward className="text-emerald-400" size={16} />
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                  Approved Visa / eVisa Dispatcher
                 </h4>
               </div>
-              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
                 Final Issuance
               </span>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              When the client's visa is granted, upload the official electronic visa (eVisa), visa sticker scan, or grant notice here. Uploading will automatically mark the status as <strong>APPROVED</strong> and notify the client with a celebratory alert.
-            </p>
-
-            {/* Check if already approved visa exists */}
+            {/* Check if approved visa is attached */}
             {app.documents?.some((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType)) && (
-              <div className="p-4 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-                    <FiCheckCircle /> Official Approved Visa Issued
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-mono font-bold">
-                    ACTIVE GRANT
-                  </span>
-                </div>
-                {app.documents.filter((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType)).map((vDoc: any) => (
-                  <div key={vDoc.id} className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-slate-200 font-mono truncate max-w-xs">{vDoc.fileName}</span>
-                    <div className="flex gap-2">
+              <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl space-y-2">
+                <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                  <FiCheckCircle size={12} /> Official Visa Document Attached
+                </span>
+                {app.documents.filter((d: any) => ["approved_visa", "issued_visa"].includes(d.documentType)).map((visaDoc: any) => (
+                  <div key={visaDoc.id} className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-200 font-mono text-[11px] truncate max-w-[150px]">{visaDoc.fileName}</span>
+                    <div className="flex gap-1.5">
                       <a
-                        href={vDoc.fileUrl}
+                        href={visaDoc.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 bg-slate-900 border border-slate-800 text-emerald-400 rounded-lg text-xs font-bold hover:bg-slate-850"
+                        className="px-2.5 py-1 bg-slate-900 text-emerald-400 rounded-lg text-[11px] font-bold"
                       >
-                        View Visa
+                        View
                       </a>
                       <button
                         type="button"
-                        onClick={(e) => handleDownloadSingle(vDoc, e)}
-                        className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-xs font-bold hover:bg-emerald-500/30 cursor-pointer"
+                        onClick={(e) => handleDownloadSingle(visaDoc, e)}
+                        className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-[11px] font-bold cursor-pointer"
                       >
                         Download
                       </button>
@@ -1495,142 +1457,108 @@ export default function AdminApplicationDetailPage() {
               </div>
             )}
 
-            {/* Upload Approved Visa Form */}
-            <form onSubmit={handleUploadApprovedVisa} className="space-y-4 pt-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">
-                  Select Approved Visa Document / eVisa Grant (PDF / JPG / PNG)
-                </label>
-                <label className="w-full py-6 border border-dashed border-emerald-500/40 hover:border-emerald-400 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-slate-950/60">
-                  <FiAward className="text-emerald-400" size={26} />
-                  <span className="text-xs font-semibold text-slate-200">
-                    {approvedVisaFile ? approvedVisaFile.name : "Choose Official Approved Visa File"}
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    Official eVisa PDF or high-resolution sticker scan
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    className="hidden"
-                    onChange={(e) => e.target.files?.[0] && setApprovedVisaFile(e.target.files[0])}
-                  />
-                </label>
-              </div>
+            <form onSubmit={handleUploadApprovedVisa} className="space-y-3">
+              <label className="w-full py-4 border border-dashed border-emerald-500/40 hover:border-emerald-400 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors bg-slate-950/60">
+                <FiAward className="text-emerald-400" size={22} />
+                <span className="text-xs font-semibold text-slate-200 truncate max-w-[220px]">
+                  {approvedVisaFile ? approvedVisaFile.name : "Choose Official Approved Visa File"}
+                </span>
+                <span className="text-[9px] text-slate-500">eVisa PDF or High-Res Sticker Scan</span>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && setApprovedVisaFile(e.target.files[0])}
+                />
+              </label>
 
               <button
                 type="submit"
                 disabled={uploadingVisa || !approvedVisaFile}
-                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-xs rounded-xl hover:from-emerald-400 hover:to-teal-300 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-xs rounded-xl hover:from-emerald-400 hover:to-teal-300 transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5"
               >
-                {uploadingVisa ? (
-                  <>
-                    <FiLoader className="animate-spin" /> Uploading & Delivering Approved Visa...
-                  </>
-                ) : (
-                  <>
-                    <FiAward size={16} /> Issue Approved Visa & Send to Client
-                  </>
-                )}
+                {uploadingVisa ? <FiLoader className="animate-spin" /> : <FiAward />}
+                <span>{uploadingVisa ? "Uploading & Delivering..." : "Issue Approved Visa to Client"}</span>
               </button>
             </form>
           </div>
 
-          {/* Contract Status Card */}
-          {app.contractStatus && app.contractStatus !== "PENDING" && (
-            <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-400"><FiFileText size={16} /></span>
-                  <h4 className="text-sm font-black text-white uppercase tracking-wider">{app.country ? `${app.country} Visa Service Contract` : "Visa Service Contract"}</h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  {app.contractAccepted && (
-                    <button
-                      onClick={handlePrintContract}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 hover:bg-yellow-400/5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all text-[10px] font-semibold cursor-pointer"
-                    >
-                      <FiPrinter size={10} /> Print Contract
-                    </button>
-                  )}
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    app.contractAccepted 
-                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" 
-                      : "text-amber-400 bg-amber-500/10 border-amber-500/20"
-                  }`}>
-                    {app.contractAccepted ? "SIGNED & ACCEPTED" : "AWAITING SIGNATURE"}
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <span className="text-slate-500 block mb-0.5">Timeline Days:</span>
-                  <span className="font-semibold text-white">{app.contractApprovedDays || "Not specified"}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block mb-0.5">Fees after Visa Issue:</span>
-                  <span className="font-semibold text-white">{app.contractPaymentAmount || "Not specified"}</span>
-                </div>
-                {app.contractAccepted && (
-                  <>
+          {/* 4. Billing Ledger & Invoices */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiDollarSign className="text-yellow-400" size={15} /> Billing & Invoices
+              </h3>
+              <Link href="/portal/admin/payments" className="text-[10px] text-yellow-400 font-bold hover:underline">
+                View Ledger →
+              </Link>
+            </div>
+
+            {(!app.invoices || app.invoices.length === 0) ? (
+              <p className="text-xs text-slate-500 py-3 text-center">No invoices linked to this file.</p>
+            ) : (
+              <div className="divide-y divide-slate-800/60">
+                {app.invoices.map((inv: any) => (
+                  <div key={inv.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between text-xs">
                     <div>
-                      <span className="text-slate-500 block mb-0.5">Signed By:</span>
-                      <span className="font-mono text-yellow-400 font-bold">{app.contractSignatureName}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-0.5">Signed At:</span>
-                      <span className="text-slate-300 font-semibold">
-                        {app.contractAcceptedAt ? new Date(app.contractAcceptedAt).toLocaleString() : ""}
+                      <span className="font-mono font-bold text-white text-xs">{inv.invoiceNumber}</span>
+                      <span className="text-[10px] text-slate-500 block">
+                        Due: {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "7 Days"}
                       </span>
                     </div>
-                  </>
-                )}
+                    <div className="text-right">
+                      <span className="font-mono font-black text-emerald-400 text-xs">${inv.totalAmount} USD</span>
+                      <span className={`block text-[9px] font-bold uppercase ${inv.status === "PAID" ? "text-emerald-400" : "text-amber-400"}`}>
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
+
+          {/* 5. AI Assistant & File Audit Console */}
+          <div className="bg-[#0f172a] border border-slate-800 p-5 md:p-6 rounded-3xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <FiCpu className="text-yellow-400" size={15} /> AI Dossier Analyst
+              </h3>
+              <span className="text-[10px] text-yellow-400 font-bold">Automated</span>
             </div>
-          )}
-        </div>
 
-        {/* Right Column: AI Assistant Console */}
-        <div className="lg:col-span-5 space-y-6">
-          <h3 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-            <FiCpu className="text-yellow-400" /> AI Assistant Console
-          </h3>
-
-          <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-6 shadow-xl space-y-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-400/5 blur-[100px] pointer-events-none" />
-            
-            {/* Control buttons */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Fast Trigger Buttons */}
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => triggerAI("summarize")}
-                className="py-3 px-4 bg-slate-900 border border-slate-800 hover:border-yellow-400/20 text-xs font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-3 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-[11px] font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer text-center"
               >
-                Summarize File
+                Summarize Dossier
               </button>
               <button
                 onClick={() => triggerAI("check_documents")}
-                className="py-3 px-4 bg-slate-900 border border-slate-800 hover:border-yellow-400/20 text-xs font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-3 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-[11px] font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer text-center"
               >
                 Audit Uploads
               </button>
               <button
                 onClick={() => triggerAI("generate_cover_letter")}
-                className="py-3 px-4 bg-slate-900 border border-slate-800 hover:border-yellow-400/20 text-xs font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-3 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-[11px] font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer text-center"
               >
                 Embassy Letter
               </button>
               <button
                 onClick={() => triggerAI("generate_email")}
-                className="py-3 px-4 bg-slate-900 border border-slate-800 hover:border-yellow-400/20 text-xs font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-3 bg-slate-900 border border-slate-800 hover:border-yellow-400/30 text-[11px] font-bold rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer text-center"
               >
-                Draft Client Email
+                Draft Email
               </button>
             </div>
 
-            {/* Markdown output area */}
-            <div className="space-y-2">
+            {/* AI Console Output */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                <span>Response Output</span>
+                <span>Output Console</span>
                 {aiOutput && (
                   <button 
                     onClick={handleCopy} 
@@ -1641,25 +1569,26 @@ export default function AdminApplicationDetailPage() {
                 )}
               </div>
 
-              <div className="w-full min-h-[16rem] p-5 bg-slate-950/80 border border-slate-850 rounded-2xl text-xs text-slate-300 font-medium leading-relaxed overflow-y-auto max-h-[22rem]">
+              <div className="w-full min-h-[10rem] p-3.5 bg-slate-950 border border-slate-850 rounded-xl text-xs text-slate-300 font-medium leading-relaxed overflow-y-auto max-h-[15rem]">
                 {aiLoading ? (
-                  <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400">
-                    <FiLoader className="animate-spin text-yellow-400" size={24} />
-                    <span>Processing dossier files...</span>
+                  <div className="flex flex-col items-center justify-center h-32 gap-2 text-slate-400">
+                    <FiLoader className="animate-spin text-yellow-400" size={20} />
+                    <span className="text-[11px]">Analyzing file records...</span>
                   </div>
                 ) : aiOutput ? (
-                  <div className="whitespace-pre-line space-y-3">
+                  <div className="whitespace-pre-line text-[11px] space-y-2">
                     {aiOutput}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-48 text-slate-600 text-center px-4">
-                    <FiCpu size={32} className="mb-2" />
-                    <span>Click any AI action above to analyze the client's folder details.</span>
+                  <div className="flex flex-col items-center justify-center h-32 text-slate-600 text-center px-2">
+                    <FiCpu size={24} className="mb-1 text-slate-700" />
+                    <span className="text-[10px]">Click any trigger button above to generate letters or dossier summary.</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
+
         </div>
 
       </div>
