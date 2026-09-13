@@ -496,6 +496,265 @@ function VisaApplyForm() {
             </motion.div>
           )}
 
+          {/* STEP 2: Package & Visa Selection */}
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-white tracking-tight">Select Package & Visa Details</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Choose from our official package deals or enter custom visa parameters.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-[10px] font-bold uppercase tracking-wider">
+                  Step 2 of 4
+                </span>
+              </div>
+
+              {/* 1. Landing Packages Showcase */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <FiPackage /> Available Visa Packages ({packages.length})
+                  </label>
+                  {selectedPackage && (
+                    <button
+                      type="button"
+                      onClick={clearPackageSelection}
+                      className="text-[10px] text-slate-400 hover:text-yellow-400 underline cursor-pointer"
+                    >
+                      Clear Selection (Custom Application)
+                    </button>
+                  )}
+                </div>
+
+                {packagesLoading ? (
+                  <div className="p-8 bg-slate-950/40 rounded-2xl border border-slate-800 text-center flex flex-col items-center justify-center gap-2">
+                    <FiLoader className="animate-spin text-yellow-400" size={24} />
+                    <span className="text-xs text-slate-400">Loading landing packages...</span>
+                  </div>
+                ) : packages.length === 0 ? (
+                  <div className="p-6 bg-slate-950/40 rounded-2xl border border-slate-800 text-center">
+                    <p className="text-xs text-slate-400">No pre-configured package deals active right now. Please specify your custom visa details below.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackage?.id === pkg.id || formData.packageId === pkg.id;
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          onClick={() => applyPackage(pkg)}
+                          className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden space-y-3 flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-yellow-400/10 border-yellow-400 shadow-lg shadow-yellow-400/5 ring-1 ring-yellow-400/30"
+                              : "bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="absolute top-0 right-0 bg-yellow-400 text-black text-[9px] font-black uppercase tracking-widest px-3 py-0.5 rounded-bl-xl flex items-center gap-1">
+                              <FiCheck size={10} /> Selected
+                            </div>
+                          )}
+
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-900 text-yellow-400 border border-slate-800 text-[10px] font-mono font-bold">
+                                {pkg.country}
+                              </span>
+                              <span className="text-[10px] text-slate-400 uppercase font-bold">
+                                {pkg.visaType || "Visa Deal"}
+                              </span>
+                            </div>
+
+                            <h4 className="text-sm font-black text-white leading-tight">
+                              {pkg.title}
+                            </h4>
+
+                            <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 pt-1">
+                              <div>
+                                <span className="text-[9px] text-slate-500 uppercase block">Processing:</span>
+                                <span className="font-semibold text-slate-300">{pkg.processingTime || "3-5 Days"}</span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-slate-500 uppercase block">Stay Duration:</span>
+                                <span className="font-semibold text-slate-300">{pkg.duration || "30 Days"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between">
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase block">Official Fee:</span>
+                              <span className="text-base font-black text-emerald-400 font-mono">
+                                ${pkg.priceUSD || 0} USD
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-yellow-400 text-black"
+                                  : "bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+                              }`}
+                            >
+                              {isSelected ? "Active Deal" : "Select Deal"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Package Document Requirements Checklist */}
+              {selectedPackage && selectedPackage.documents && (
+                <div className="p-5 bg-gradient-to-br from-yellow-400/10 via-slate-950 to-slate-900 border border-yellow-400/30 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
+                    <FiTag /> Mandatory Requirements for {selectedPackage.title}
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {selectedPackage.documents}
+                  </p>
+                </div>
+              )}
+
+              {/* 2. Destination & Visa Details Parameters */}
+              <div className="p-5 bg-slate-950/40 border border-slate-800 rounded-2xl space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-yellow-400 uppercase tracking-wider">
+                  <FiGlobe /> Specific Destination & Processing Parameters
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Destination Country *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.country}
+                      onChange={(e) => updateField("country", e.target.value)}
+                      placeholder="e.g. Pakistan, China, UAE, Iran"
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Visa Category / Type *
+                    </label>
+                    <select
+                      value={formData.visaCategory}
+                      onChange={(e) => updateField("visaCategory", e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-white"
+                    >
+                      <option value="Tourist Visa">Tourist Visa (توریستي ویزه)</option>
+                      <option value="Business Visa">Business / Commercial Visa (تجارتي ویزه)</option>
+                      <option value="Student Visa">Student / Education Visa (تحصیلي ویزه)</option>
+                      <option value="Medical Visa">Medical / Treatment Visa (د درملنې ویزه)</option>
+                      <option value="Work Visa">Work / Employment Permit</option>
+                      <option value="Family Visa">Family Visit Visa</option>
+                      <option value="Transit Visa">Transit Visa</option>
+                      <option value="Exit Permit">Exit / Entry Permit</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Entry Type
+                    </label>
+                    <select
+                      value={formData.entryType}
+                      onChange={(e) => updateField("entryType", e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-white"
+                    >
+                      <option value="Single">Single Entry (یو ځل ننوتل)</option>
+                      <option value="Double">Double Entry</option>
+                      <option value="Multiple">Multiple Entry (څو ځله ننوتل)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Stay Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.duration}
+                      onChange={(e) => updateField("duration", e.target.value)}
+                      placeholder="e.g. 30 Days / 3 Months"
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Processing Time
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.processingTime}
+                      onChange={(e) => updateField("processingTime", e.target.value)}
+                      placeholder="e.g. 3 - 5 Working Days"
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Official Visa Fee ($ USD)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.packagePrice}
+                      onChange={(e) => updateField("packagePrice", parseFloat(e.target.value) || 0)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-emerald-400 font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-800/60">
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Intended Travel Date
+                    </label>
+                    <CustomDatePicker
+                      value={formData.travelDate}
+                      onChange={(val) => updateField("travelDate", val)}
+                      placeholder="Select Travel Date"
+                      minYear={new Date().getFullYear()}
+                      maxYear={new Date().getFullYear() + 2}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-2">
+                      Host Sponsor / Reference Person in Destination
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sponsor}
+                      onChange={(e) => updateField("sponsor", e.target.value)}
+                      placeholder="Name / Company / Hotel in destination country"
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm focus:border-yellow-400/50 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* STEP 3: Education & Job */}
           {step === 3 && (
             <motion.div
