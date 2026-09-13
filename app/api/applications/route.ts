@@ -101,6 +101,7 @@ export async function POST(req: Request) {
       fatherName, motherName, maritalStatus, spouseName, childrenCount, childrenDetails, emergencyContact,
       // Visa & Package Info
       packageId, packagePrice,
+      bargainingPrice, bargainingNotes,
       country, visaCategory, duration, entryType, travelDate, returnDate, purpose, sponsor, reference,
       // Step 3: Education & Employment
       highSchool, college, bachelor, master, graduationYear, cgpa,
@@ -140,6 +141,17 @@ export async function POST(req: Request) {
       const parsedPrice = parseFloat(String(packagePrice));
       if (!isNaN(parsedPrice) && parsedPrice > 0) {
         finalPackagePrice = parsedPrice;
+      }
+    }
+
+    // Bargaining / Negotiated price between Superadmin and Agent
+    let effectivePrice = finalPackagePrice;
+    let parsedBargaining: number | null = null;
+    if (bargainingPrice) {
+      const bPrice = parseFloat(String(bargainingPrice));
+      if (!isNaN(bPrice) && bPrice > 0) {
+        parsedBargaining = bPrice;
+        effectivePrice = bPrice;
       }
     }
 
@@ -187,6 +199,9 @@ export async function POST(req: Request) {
     });
 
     const status = isDraft ? "DRAFT" : "WAITING_CONFIRMATION";
+    const statusNote = parsedBargaining
+      ? `Application submitted with negotiated bargaining price: $${parsedBargaining} USD (Standard package: $${finalPackagePrice} USD). ${bargainingNotes ? `Agent Remarks: ${bargainingNotes}` : ""}`
+      : (isDraft ? "Application saved as draft." : "Application submitted successfully.");
 
     const application = await prisma.application.create({
       data: {
@@ -194,14 +209,14 @@ export async function POST(req: Request) {
         clientId: clientProfileId,
         agentId: agentProfileId,
         packageId: finalPackageId,
-        packagePrice: finalPackagePrice,
+        packagePrice: effectivePrice,
         country,
         visaCategory,
         duration,
         entryType,
         travelDate,
         returnDate,
-        purpose,
+        purpose: bargainingNotes ? `${purpose || ""} | Bargaining Notes: ${bargainingNotes}` : purpose,
         sponsor,
         reference,
         visitedCountries,
@@ -212,7 +227,7 @@ export async function POST(req: Request) {
         statusHistory: {
           create: {
             status,
-            notes: isDraft ? "Application saved as draft." : "Application submitted successfully.",
+            notes: statusNote,
             updatedById: session.userId,
           },
         },
@@ -227,17 +242,17 @@ export async function POST(req: Request) {
       data: {
         userId: session.userId,
         action: isDraft ? "SAVE_DRAFT" : "SUBMIT_APPLICATION",
-        details: `Application ${trackingId} created. Status: ${status}. Package: ${finalPackageId ? `ID ${finalPackageId}` : "None"} ($${finalPackagePrice})`,
+        details: `Application ${trackingId} created. Status: ${status}. Package: ${finalPackageId ? `ID ${finalPackageId}` : "None"} ($${effectivePrice}${parsedBargaining ? ` - Bargained from $${finalPackagePrice}` : ""})`,
       },
     });
 
-    // Create an official invoice strictly matching the package pricing
+    // Create an official invoice strictly matching the effective package/bargained pricing
     const invoiceNumber = `INV-${randomNum}`;
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber,
         applicationId: application.id,
-        totalAmount: finalPackagePrice, // Strictly based on package price!
+        totalAmount: effectivePrice, // Strictly based on package / agreed price!
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         status: "UNPAID",
       },
@@ -245,14 +260,15 @@ export async function POST(req: Request) {
 
     if (!isDraft) {
       sendSystemNotificationToAdmins({
-        subject: `New Application Received: ${trackingId}`,
+        subject: `New Application Received: ${trackingId}${parsedBargaining ? " [Bargaining Price Requested]" : ""}`,
         htmlContent: `
           <p>A new visa application has been submitted by <strong>${session.name}</strong> (${session.role}):</p>
           <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
             <p style="margin: 5px 0; font-size: 13px;"><strong>Tracking ID:</strong> ${trackingId}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Country:</strong> ${country}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Visa Category:</strong> ${visaCategory}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Package Fee:</strong> $${finalPackagePrice} USD</p>
+            <p style="margin: 5px 0; font-size: 13px;"><strong>Effective Invoice Fee:</strong> $${effectivePrice} USD</p>
+            ${parsedBargaining ? `<p style="margin: 5px 0; font-size: 13px; color: #facc15;"><strong>Agreed Bargaining Rate:</strong> $${parsedBargaining} USD (Original Package: $${finalPackagePrice} USD)</p><p style="margin: 5px 0; font-size: 13px; color: #94a3b8;"><strong>Bargaining Note:</strong> ${bargainingNotes || "None"}</p>` : ""}
             <p style="margin: 5px 0; font-size: 13px;"><strong>Father Name:</strong> ${fatherName || "N/A"}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Mother Name:</strong> ${motherName || "N/A"}</p>
             <p style="margin: 5px 0; font-size: 13px;"><strong>Marital Status:</strong> ${maritalStatus || "Single"}</p>
