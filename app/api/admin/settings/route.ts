@@ -37,6 +37,14 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   announcement_text: "Welcome to Syed Services Portal. Direct visa processing & agency deals are operational.",
   announcement_active: "true",
   session_timeout_minutes: "120",
+
+  // Social Media Channels
+  social_instagram: "https://www.instagram.com/syed_servicesndconsultant?stkn=NmQ0dnJ3NnBienQz",
+  social_facebook: "https://www.facebook.com/share/g/14nEsAPNEmD/?mibextid=wwXIfr",
+  social_twitter: "https://twitter.com/syedservices",
+  social_linkedin: "https://linkedin.com/company/syedservices",
+  social_whatsapp: "https://wa.me/923099797771",
+  social_youtube: "",
 };
 
 export async function GET() {

@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   FiSettings, FiSave, FiLoader, FiCheckCircle, 
   FiBriefcase, FiGlobe, FiMail, FiShield, 
-  FiRefreshCw, FiAlertTriangle, FiCheck, FiSliders, FiInfo
+  FiRefreshCw, FiAlertTriangle, FiCheck, FiSliders, FiInfo,
+  FiShare2, FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiYoutube, FiExternalLink, FiMessageCircle
 } from "react-icons/fi";
 
 const TABS = [
   { id: "agency", label: "Agency & Profile", icon: FiBriefcase, desc: "Legal identity, branch offices, and official contact channels" },
+  { id: "social", label: "Social Media", icon: FiShare2, desc: "Instagram, Facebook, LinkedIn, Twitter/X, and WhatsApp channels" },
   { id: "visa", label: "Visa Policies & Fees", icon: FiGlobe, desc: "Default pricing, document upload quotas, and application rules" },
   { id: "email", label: "Email & Notifications", icon: FiMail, desc: "Automated alerts, SMTP outgoing server, and greetings" },
   { id: "security", label: "Security & Controls", icon: FiShield, desc: "Maintenance mode, public registration gate, and announcements" },
@@ -172,7 +174,7 @@ export default function AdminSettingsPage() {
       </AnimatePresence>
 
       {/* Tab Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-[#0f172a] border border-slate-800 p-2 rounded-[2rem] shadow-xl">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 bg-[#0f172a] border border-slate-800 p-2 rounded-[2rem] shadow-xl">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -333,6 +335,208 @@ export default function AdminSettingsPage() {
                     className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-white focus:border-yellow-400/60 focus:outline-none"
                     placeholder="e.g. Jalalabad Main Commercial Center, Nangarhar, Afghanistan"
                   />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: SOCIAL MEDIA ACCOUNTS */}
+          {activeTab === "social" && (
+            <div className="space-y-6">
+              <div className="border-b border-slate-800 pb-4">
+                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                  <FiShare2 className="text-yellow-400" /> Official Social Media & Broadcast Channels
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Configure your company's social media accounts. Links updated here will automatically reflect in the website footer, contact pages, and client portals.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Instagram */}
+                <div className="space-y-2 p-5 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20">
+                        <FiInstagram size={14} />
+                      </div>
+                      Instagram Profile / Page
+                    </label>
+                    {settings.social_instagram && (
+                      <a
+                        href={settings.social_instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-pink-400 hover:text-pink-300 font-bold transition-colors"
+                      >
+                        <span>Test Link</span>
+                        <FiExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.social_instagram || ""}
+                    onChange={(e) => handleChange("social_instagram", e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:border-pink-500/60 focus:outline-none"
+                    placeholder="https://www.instagram.com/your_handle"
+                  />
+                  <p className="text-[10px] text-slate-500">Official Instagram profile URL</p>
+                </div>
+
+                {/* Facebook */}
+                <div className="space-y-2 p-5 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                        <FiFacebook size={14} />
+                      </div>
+                      Facebook Page / Group
+                    </label>
+                    {settings.social_facebook && (
+                      <a
+                        href={settings.social_facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 font-bold transition-colors"
+                      >
+                        <span>Test Link</span>
+                        <FiExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.social_facebook || ""}
+                    onChange={(e) => handleChange("social_facebook", e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:border-blue-500/60 focus:outline-none"
+                    placeholder="https://www.facebook.com/your_page_or_group"
+                  />
+                  <p className="text-[10px] text-slate-500">Official Facebook page, group, or community share link</p>
+                </div>
+
+                {/* WhatsApp */}
+                <div className="space-y-2 p-5 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                        <FiMessageCircle size={14} />
+                      </div>
+                      WhatsApp Direct Helpline URL
+                    </label>
+                    {settings.social_whatsapp && (
+                      <a
+                        href={settings.social_whatsapp}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+                      >
+                        <span>Test Link</span>
+                        <FiExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.social_whatsapp || ""}
+                    onChange={(e) => handleChange("social_whatsapp", e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:border-emerald-500/60 focus:outline-none"
+                    placeholder="https://wa.me/923099797771"
+                  />
+                  <p className="text-[10px] text-slate-500">Direct WhatsApp click-to-chat URL (e.g. https://wa.me/923099797771)</p>
+                </div>
+
+                {/* Twitter / X */}
+                <div className="space-y-2 p-5 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center border border-sky-500/20">
+                        <FiTwitter size={14} />
+                      </div>
+                      Twitter / X Account
+                    </label>
+                    {settings.social_twitter && (
+                      <a
+                        href={settings.social_twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-sky-400 hover:text-sky-300 font-bold transition-colors"
+                      >
+                        <span>Test Link</span>
+                        <FiExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.social_twitter || ""}
+                    onChange={(e) => handleChange("social_twitter", e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:border-sky-500/60 focus:outline-none"
+                    placeholder="https://twitter.com/your_handle"
+                  />
+                  <p className="text-[10px] text-slate-500">Official Twitter / X profile URL</p>
+                </div>
+
+                {/* LinkedIn */}
+                <div className="space-y-2 p-5 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+                        <FiLinkedin size={14} />
+                      </div>
+                      LinkedIn Company Page
+                    </label>
+                    {settings.social_linkedin && (
+                      <a
+                        href={settings.social_linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-bold transition-colors"
+                      >
+                        <span>Test Link</span>
+                        <FiExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.social_linkedin || ""}
+                    onChange={(e) => handleChange("social_linkedin", e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:border-indigo-500/60 focus:outline-none"
+                    placeholder="https://linkedin.com/company/your-company"
+                  />
+                  <p className="text-[10px] text-slate-500">Official LinkedIn organization or showcase page</p>
+                </div>
+
+                {/* YouTube */}
+                <div className="space-y-2 p-5 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
+                        <FiYoutube size={14} />
+                      </div>
+                      YouTube Channel (Optional)
+                    </label>
+                    {settings.social_youtube && (
+                      <a
+                        href={settings.social_youtube}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-rose-400 hover:text-rose-300 font-bold transition-colors"
+                      >
+                        <span>Test Link</span>
+                        <FiExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.social_youtube || ""}
+                    onChange={(e) => handleChange("social_youtube", e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:border-rose-500/60 focus:outline-none"
+                    placeholder="https://youtube.com/@your_channel"
+                  />
+                  <p className="text-[10px] text-slate-500">Video guides, testimonials, and visa briefings channel</p>
                 </div>
               </div>
             </div>

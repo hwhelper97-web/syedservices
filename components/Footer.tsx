@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   FiFacebook, 
@@ -10,6 +11,13 @@ import {
   FiPhone, 
   FiLock 
 } from "react-icons/fi";
+
+const DEFAULT_SOCIALS = {
+  instagram: "https://www.instagram.com/syed_servicesndconsultant?stkn=NmQ0dnJ3NnBienQz",
+  facebook: "https://www.facebook.com/share/g/14nEsAPNEmD/?mibextid=wwXIfr",
+  twitter: "https://twitter.com/syedservices",
+  linkedin: "https://linkedin.com/company/syedservices",
+};
 
 const serviceLinks = [
   { name: "Tourist Visa", href: "/visa/pakistan#tourist" },
@@ -33,14 +41,35 @@ const legalLinks = [
   { name: "Cookie Policy", href: "/terms" },
 ];
 
-const socialLinks = [
-  { Icon: FiFacebook, href: "https://facebook.com", name: "Facebook" },
-  { Icon: FiTwitter, href: "https://twitter.com", name: "Twitter" },
-  { Icon: FiInstagram, href: "https://instagram.com", name: "Instagram" },
-  { Icon: FiLinkedin, href: "https://linkedin.com", name: "LinkedIn" },
-];
-
 export default function Footer() {
+  const [socials, setSocials] = useState(DEFAULT_SOCIALS);
+
+  useEffect(() => {
+    async function fetchPublicSettings() {
+      try {
+        const res = await fetch("/api/settings/public");
+        const data = await res.json();
+        if (data?.settings) {
+          setSocials({
+            instagram: data.settings.social_instagram || DEFAULT_SOCIALS.instagram,
+            facebook: data.settings.social_facebook || DEFAULT_SOCIALS.facebook,
+            twitter: data.settings.social_twitter || DEFAULT_SOCIALS.twitter,
+            linkedin: data.settings.social_linkedin || DEFAULT_SOCIALS.linkedin,
+          });
+        }
+      } catch (e) {
+        // Fallback to DEFAULT_SOCIALS
+      }
+    }
+    fetchPublicSettings();
+  }, []);
+
+  const socialLinks = [
+    { Icon: FiFacebook, href: socials.facebook, name: "Facebook" },
+    { Icon: FiTwitter, href: socials.twitter, name: "Twitter" },
+    { Icon: FiInstagram, href: socials.instagram, name: "Instagram" },
+    { Icon: FiLinkedin, href: socials.linkedin, name: "LinkedIn" },
+  ];
   return (
     <footer className="bg-[#020617] border-t border-slate-800/80 pt-6 md:pt-10 pb-5 md:pb-6 text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
