@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -190,7 +190,8 @@ export default function PackagesSection() {
                   <div className="relative h-56 w-full overflow-hidden bg-slate-950">
                     <img
                       src={pkg.image || "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80"}
-                      alt={pkg.title}
+                      alt={`${pkg.title} - ${pkg.country} Visa Travel Package Syed Services`}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0b1329] via-[#0b1329]/40 to-transparent" />

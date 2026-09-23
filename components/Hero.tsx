@@ -135,12 +135,14 @@ export default function Hero() {
               <motion.img
                 key={currentIndex}
                 src={slides[currentIndex].src}
-                alt={slides[currentIndex].name}
+                alt={`${slides[currentIndex].name}, ${slides[currentIndex].location} - Pakistan Tourism and Visa Assistance Syed Services`}
                 initial={{ opacity: 0, scale: 1.1 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 1.5, ease: "easeInOut" }}
                 className="w-full h-full object-cover"
+                fetchPriority={currentIndex === 0 ? "high" : "auto"}
+                loading={currentIndex === 0 ? "eager" : "lazy"}
               />
             </AnimatePresence>
             <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent pointer-events-none" />

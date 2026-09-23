@@ -21,9 +21,9 @@ export default function Logo() {
 
       <div className="text-left">
         {/* TEXT */}
-        <h1 className="text-white text-lg font-black tracking-wider leading-none">
+        <span className="block text-white text-lg font-black tracking-wider leading-none">
           Syed <span className="text-yellow-400">Services</span>
-        </h1>
+        </span>
         <p className="text-[9px] text-slate-400 tracking-[0.22em] uppercase font-bold mt-1.5 leading-none">
           Travel • Visa • Tours
         </p>

@@ -2,25 +2,54 @@ import "./globals.css";
 import { Outfit } from "next/font/google";
 import type { Metadata } from "next";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { OrganizationJsonLd, LocalBusinessJsonLd } from "@/components/JsonLd";
 
-const outfit = Outfit({ subsets: ["latin"] });
+const outfit = Outfit({ 
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.syedservices.com.pk"),
 
-  title: "Syed Services | Premier Visa & Travel Solutions",
+  title: {
+    default: "Syed Services | Premier Visa & Travel Solutions",
+    template: "%s | Syed Services",
+  },
   description:
-    "Your trusted partner for visa processing, flight tickets, work permits, and immigration consultancy. Fast, reliable, and professional services.",
+    "Your trusted partner for visa processing, flight tickets, work permits, and immigration consultancy. Fast, reliable, and professional services worldwide.",
 
   keywords: [
-    "visa services",
-    "travel consultancy",
-    "tickets",
+    "Pakistan visa services",
+    "Pakistan e-visa application",
+    "Pakistan exit permit",
+    "travel consultancy Peshawar",
     "flight booking",
     "work permits",
-    "immigration",
+    "immigration consultant",
     "Syed Services Pakistan",
+    "Syed Services Jalalabad"
   ],
+
+  authors: [{ name: "Syed Services", url: "https://www.syedservices.com.pk" }],
+  creator: "Syed Services",
+  publisher: "Syed Services",
+
+  alternates: {
+    canonical: "https://www.syedservices.com.pk",
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 
   openGraph: {
     title: "Syed Services | Premier Visa & Travel Solutions",
@@ -29,12 +58,13 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://www.syedservices.com.pk",
     siteName: "Syed Services",
+    locale: "en_US",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Syed Services",
+        alt: "Syed Services - Premier Visa & Travel Consultancy",
       },
     ],
   },
@@ -43,7 +73,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Syed Services | Premier Visa & Travel Solutions",
     description:
-      "Expert guidance for visas, immigration, and travel services.",
+      "Expert guidance for visas, immigration, and travel services worldwide.",
+    creator: "@syedservices",
     images: ["/og-image.jpg"],
   },
 };
@@ -59,6 +90,8 @@ export default function RootLayout({
         className={`${outfit.className} bg-[#020617] text-white antialiased`}
         suppressHydrationWarning
       >
+        <OrganizationJsonLd />
+        <LocalBusinessJsonLd />
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

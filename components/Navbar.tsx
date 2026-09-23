@@ -23,6 +23,8 @@ const LanguageSwitcher = () => {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Change language selector"
+        aria-expanded={isOpen}
         className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 px-3 py-1.5 rounded-full border border-white/5 transition-all text-xs font-bold"
       >
         <span>{languages.find(l => l.code === language)?.flag}</span>
@@ -193,8 +195,10 @@ export default function Navbar() {
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-white"
+          className="md:hidden text-white p-2.5 rounded-xl hover:bg-slate-800 transition-colors"
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "Close main navigation menu" : "Open main navigation menu"}
+          aria-expanded={isOpen}
         >
           {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
         </button>
