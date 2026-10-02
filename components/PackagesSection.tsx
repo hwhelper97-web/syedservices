@@ -28,17 +28,41 @@ interface PackageItem {
   status: string;
 }
 
-export default function PackagesSection() {
-  const [packages, setPackages] = useState<PackageItem[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PackagesSectionProps {
+  initialPackages?: PackageItem[];
+}
+
+let cachedPackages: PackageItem[] | null = null;
+
+export default function PackagesSection({ initialPackages }: PackagesSectionProps = {}) {
+  const [packages, setPackages] = useState<PackageItem[]>(() => {
+    if (initialPackages && initialPackages.length > 0) {
+      cachedPackages = initialPackages;
+      return initialPackages;
+    }
+    return cachedPackages || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    if (initialPackages && initialPackages.length > 0) return false;
+    if (cachedPackages && cachedPackages.length > 0) return false;
+    return true;
+  });
   const [activeCurrency, setActiveCurrency] = useState<"USD" | "PKR" | "AFN">("USD");
   const [selectedCountry, setSelectedCountry] = useState("ALL");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [shareModalPkg, setShareModalPkg] = useState<PackageItem | null>(null);
 
   useEffect(() => {
-    fetchPackages();
-  }, []);
+    if (initialPackages && initialPackages.length > 0) {
+      setPackages(initialPackages);
+      cachedPackages = initialPackages;
+      setLoading(false);
+      return;
+    }
+    if (!cachedPackages || cachedPackages.length === 0) {
+      fetchPackages();
+    }
+  }, [initialPackages]);
 
   const fetchPackages = async () => {
     try {
@@ -46,6 +70,7 @@ export default function PackagesSection() {
       const data = await res.json();
       if (res.ok && data.packages) {
         setPackages(data.packages);
+        cachedPackages = data.packages;
       }
     } catch (err) {
       console.error("Failed to load packages:", err);

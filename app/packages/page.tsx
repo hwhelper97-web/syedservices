@@ -1,13 +1,16 @@
-"use client";
-
 import React from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsApp from "@/components/WhatsApp";
 import PackagesSection from "@/components/PackagesSection";
 import { FiTag } from "react-icons/fi";
+import { getActivePackages } from "@/lib/packages";
 
-export default function PackagesCatalogPage() {
+export const revalidate = 60;
+
+export default async function PackagesCatalogPage() {
+  const initialPackages = await getActivePackages();
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200">
       <Navbar />
@@ -26,7 +29,7 @@ export default function PackagesCatalogPage() {
       </section>
 
       <div>
-        <PackagesSection />
+        <PackagesSection initialPackages={initialPackages} />
       </div>
       <Footer />
       <WhatsApp />

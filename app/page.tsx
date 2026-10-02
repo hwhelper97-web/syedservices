@@ -9,14 +9,19 @@ import Footer from "../components/Footer";
 import WhatsApp from "../components/WhatsApp";
 import WorldMapPro from "../components/WorldMapPro";
 import PackagesSection from "../components/PackagesSection";
+import { getActivePackages } from "@/lib/packages";
 
-export default function Home() {
+export const revalidate = 60;
+
+export default async function Home() {
+  const initialPackages = await getActivePackages();
+
   return (
     <main className="relative">
       <Navbar />
       <Hero />
       <WorldMapPro />
-      <PackagesSection />
+      <PackagesSection initialPackages={initialPackages} />
       <Services />
       <Stats />
       <WhyUs />

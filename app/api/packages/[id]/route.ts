@@ -19,7 +19,14 @@ export async function GET(
       return NextResponse.json({ error: "Package not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, package: pkg });
+    return NextResponse.json(
+      { success: true, package: pkg },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("GET_PACKAGE_ERROR:", error);
     return NextResponse.json({ error: "Failed to fetch package" }, { status: 500 });
