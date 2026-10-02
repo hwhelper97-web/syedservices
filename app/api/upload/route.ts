@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 
 export async function POST(req: Request) {
   try {
@@ -21,16 +22,36 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
     const mimeType = file.type || "image/jpeg";
     const extension = file.name.split(".").pop() || "jpg";
-    const cleanFileName = `pkg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
-    // 1. Try to save locally to public/uploads/packages so it's a real URL
+    let processedBuffer: Buffer = buffer;
+    let finalMimeType = mimeType;
+    let finalExtension = extension;
+
+    // Compress images with sharp (WebP max 1200px width, 80% quality)
+    try {
+      if (mimeType.startsWith("image/")) {
+        const compressed = await sharp(buffer)
+          .resize({ width: 1200, withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        processedBuffer = Buffer.from(compressed);
+        finalMimeType = "image/webp";
+        finalExtension = "webp";
+      }
+    } catch (sharpErr) {
+      console.warn("Sharp image compression skipped:", sharpErr);
+    }
+
+    const cleanFileName = `pkg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${finalExtension}`;
+
+    // 1. Try to save locally to public/uploads/packages
     try {
       const uploadDir = path.join(process.cwd(), "public", "uploads", "packages");
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
       const filePath = path.join(uploadDir, cleanFileName);
-      fs.writeFileSync(filePath, buffer);
+      fs.writeFileSync(filePath, processedBuffer);
 
       return NextResponse.json({
         success: true,
@@ -38,12 +59,12 @@ export async function POST(req: Request) {
         fileName: file.name,
       });
     } catch (fsErr) {
-      console.warn("Local storage write failed, falling back to base64 data URL:", fsErr);
+      console.warn("Local storage write failed, falling back to compressed base64 data URL:", fsErr);
     }
 
-    // 2. Fallback to base64 Data URL if filesystem write is restricted
-    const base64Content = buffer.toString("base64");
-    const fileUrl = `data:${mimeType};base64,${base64Content}`;
+    // 2. Fallback to lightweight compressed WebP Data URL if filesystem write is restricted
+    const base64Content = processedBuffer.toString("base64");
+    const fileUrl = `data:${finalMimeType};base64,${base64Content}`;
 
     return NextResponse.json({
       success: true,

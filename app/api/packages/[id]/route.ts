@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { formatPackageImage } from "@/lib/packages";
 
 export async function GET(
   req: NextRequest,
@@ -20,7 +21,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { success: true, package: pkg },
+      { success: true, package: formatPackageImage(pkg) },
       {
         headers: {
           "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
@@ -63,30 +64,40 @@ export async function PUT(
       status,
     } = body;
 
+    const dataToUpdate: any = {
+      ...(title && { title }),
+      ...(country && { country }),
+      ...(visaType !== undefined && { visaType }),
+      ...(agencyNumber && { agencyNumber }),
+      priceUSD: priceUSD ? parseFloat(priceUSD) : null,
+      pricePKR: pricePKR ? parseFloat(pricePKR) : null,
+      priceAFN: priceAFN ? parseFloat(priceAFN) : null,
+      duration: duration || null,
+      processingTime: processingTime || null,
+      ...(description && { description }),
+      ...(documents && { documents }),
+      ...(featured !== undefined && { featured: featured === true || featured === "true" }),
+      ...(status && { status }),
+    };
+
+    // If an image was submitted, check if it's the virtual URL or a real change
+    if (image !== undefined) {
+      if (typeof image === "string" && image.startsWith("/api/packages/")) {
+        // Retain existing image in database, do not overwrite with virtual route URL
+      } else {
+        dataToUpdate.image = image || null;
+      }
+    }
+
     const updated = await prisma.package.update({
       where: { id: pkgId },
-      data: {
-        ...(title && { title }),
-        ...(country && { country }),
-        ...(visaType !== undefined && { visaType }),
-        ...(agencyNumber && { agencyNumber }),
-        priceUSD: priceUSD ? parseFloat(priceUSD) : null,
-        pricePKR: pricePKR ? parseFloat(pricePKR) : null,
-        priceAFN: priceAFN ? parseFloat(priceAFN) : null,
-        duration: duration || null,
-        processingTime: processingTime || null,
-        ...(description && { description }),
-        ...(documents && { documents }),
-        image: image || null,
-        ...(featured !== undefined && { featured: featured === true || featured === "true" }),
-        ...(status && { status }),
-      },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({
       success: true,
       message: "Package updated successfully!",
-      package: updated,
+      package: formatPackageImage(updated),
     });
   } catch (error: any) {
     console.error("UPDATE_PACKAGE_ERROR:", error);

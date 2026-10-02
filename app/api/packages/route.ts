@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { formatPackageImage } from "@/lib/packages";
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        packages,
+        packages: packages.map(formatPackageImage),
       },
       {
         headers: {
