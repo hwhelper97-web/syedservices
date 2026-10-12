@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { sendSystemNotificationToAdmins } from "@/utils/email";
+import { sendSystemNotificationToAdmins, sendNewApplicationNotificationToClient } from "@/utils/email";
 
 export async function POST(req: Request) {
   try {
@@ -259,27 +259,70 @@ export async function POST(req: Request) {
     });
 
     if (!isDraft) {
-      sendSystemNotificationToAdmins({
-        subject: `New Application Received: ${trackingId}${parsedBargaining ? " [Bargaining Price Requested]" : ""}`,
-        htmlContent: `
-          <p>A new visa application has been submitted by <strong>${session.name}</strong> (${session.role}):</p>
-          <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Tracking ID:</strong> ${trackingId}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Country:</strong> ${country}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Visa Category:</strong> ${visaCategory}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Effective Invoice Fee:</strong> $${effectivePrice} USD</p>
-            ${parsedBargaining ? `<p style="margin: 5px 0; font-size: 13px; color: #facc15;"><strong>Agreed Bargaining Rate:</strong> $${parsedBargaining} USD (Original Package: $${finalPackagePrice} USD)</p><p style="margin: 5px 0; font-size: 13px; color: #94a3b8;"><strong>Bargaining Note:</strong> ${bargainingNotes || "None"}</p>` : ""}
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Father Name:</strong> ${fatherName || "N/A"}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Mother Name:</strong> ${motherName || "N/A"}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Marital Status:</strong> ${maritalStatus || "Single"}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Travel Date:</strong> ${travelDate || "N/A"}</p>
-            <p style="margin: 5px 0; font-size: 13px;"><strong>Entry Type:</strong> ${entryType || "Single"}</p>
-          </div>
-          <p style="font-size: 13px; color: #94a3b8;">You can view the complete official dossier in the Superadmin portal.</p>
-        `
-      }).catch((err) => {
-        console.error("Admin application alert async send error:", err);
-      });
+      // 1. Create in-app notification records for Admins & Staff
+      try {
+        const adminUsers = await prisma.user.findMany({
+          where: {
+            role: { in: ["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"] },
+            status: "ACTIVE",
+          },
+          select: { id: true },
+        });
+
+        if (adminUsers.length > 0) {
+          await prisma.notification.createMany({
+            data: adminUsers.map((u) => ({
+              userId: u.id,
+              title: "New Visa Application Received",
+              message: `Applicant ${session.name} submitted visa application for ${country} - ${visaCategory} (${trackingId})`,
+              actionUrl: `/portal/admin/applications/${application.id}`,
+              category: "PIPELINE",
+              priority: "HIGH",
+            })),
+          });
+        }
+      } catch (notifErr) {
+        console.error("In-app notification creation error:", notifErr);
+      }
+
+      // 2. Send email notification to Admin (MUST BE AWAITED for serverless delivery)
+      try {
+        await sendSystemNotificationToAdmins({
+          subject: `New Application Received: ${trackingId}${parsedBargaining ? " [Bargaining Price Requested]" : ""}`,
+          htmlContent: `
+            <p>A new visa application has been submitted by <strong>${session.name}</strong> (${session.role}):</p>
+            <div style="background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin: 15px 0;">
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Tracking ID:</strong> ${trackingId}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Applicant Name:</strong> ${session.name}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Applicant Email:</strong> ${session.email || "N/A"}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Phone / WhatsApp:</strong> ${phone || "N/A"}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Country:</strong> ${country}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Visa Category:</strong> ${visaCategory}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Effective Invoice Fee:</strong> $${effectivePrice} USD</p>
+              ${parsedBargaining ? `<p style="margin: 5px 0; font-size: 13px; color: #facc15;"><strong>Agreed Bargaining Rate:</strong> $${parsedBargaining} USD (Original Package: $${finalPackagePrice} USD)</p><p style="margin: 5px 0; font-size: 13px; color: #94a3b8;"><strong>Bargaining Note:</strong> ${bargainingNotes || "None"}</p>` : ""}
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Father Name:</strong> ${fatherName || "N/A"}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Mother Name:</strong> ${motherName || "N/A"}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Marital Status:</strong> ${maritalStatus || "Single"}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Travel Date:</strong> ${travelDate || "N/A"}</p>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>Entry Type:</strong> ${entryType || "Single"}</p>
+            </div>
+            <p style="font-size: 13px; color: #94a3b8;">You can view and process the complete official dossier in your Admin Portal dashboard.</p>
+          `
+        });
+      } catch (err) {
+        console.error("Admin application alert send error:", err);
+      }
+
+      // 3. Send official confirmation receipt email to Client applicant
+      try {
+        const clientEmailToSend = session.role === "CLIENT" ? session.email : body.clientEmail;
+        const clientNameToGreet = session.role === "CLIENT" ? session.name : (body.clientName || "Applicant");
+        if (clientEmailToSend) {
+          await sendNewApplicationNotificationToClient(application, clientEmailToSend, clientNameToGreet);
+        }
+      } catch (clientMailErr) {
+        console.error("Client application receipt email error:", clientMailErr);
+      }
     }
 
     return NextResponse.json({
@@ -306,20 +349,27 @@ export async function GET(req: Request) {
 
     let applications: any[] = [];
 
-    if (["SUPER_ADMIN", "ADMIN", "STAFF", "MANAGER", "VISA_OFFICER"].includes(session.role)) {
+    // Admins, Agency Owners, Staff, Managers, Visa Officers see all applications
+    if (["SUPER_ADMIN", "ADMIN", "STAFF", "MANAGER", "VISA_OFFICER", "AGENCY_OWNER"].includes(session.role)) {
       applications = await prisma.application.findMany({
         orderBy: { createdAt: "desc" },
         include: {
           client: {
             include: {
-              user: true
-            }
+              user: true,
+            },
+          },
+          agent: {
+            include: {
+              user: true,
+            },
           },
           package: true,
           invoices: true,
-        }
+          documents: true,
+        },
       });
-    } else if (["AGENT", "AGENCY_OWNER"].includes(session.role)) {
+    } else if (session.role === "AGENT") {
       let agentProfile = await prisma.agentProfile.findUnique({
         where: { userId: session.userId },
       });
@@ -342,12 +392,18 @@ export async function GET(req: Request) {
               user: true,
             },
           },
+          agent: {
+            include: {
+              user: true,
+            },
+          },
           package: true,
           invoices: true,
+          documents: true,
         },
       });
     } else {
-      // Client
+      // Direct Client
       const profile = await prisma.clientProfile.findUnique({
         where: { userId: session.userId },
       });
@@ -359,12 +415,20 @@ export async function GET(req: Request) {
           include: {
             package: true,
             invoices: true,
-          }
+            documents: true,
+          },
         });
       }
     }
 
-    return NextResponse.json({ success: true, applications });
+    return NextResponse.json(
+      { success: true, applications },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { error: "Internal server error during applications retrieval" },

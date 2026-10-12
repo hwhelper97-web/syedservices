@@ -48,7 +48,7 @@ export default function AdminApplicationsListPage() {
   const fetchApplications = async () => {
     try {
       setRefreshing(true);
-      const res = await fetch("/api/applications");
+      const res = await fetch("/api/applications", { cache: "no-store" });
       const data = await res.json();
       if (res.ok) {
         setApplications(data.applications || []);

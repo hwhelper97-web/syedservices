@@ -161,35 +161,63 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send notifications safely (non-blocking)
+    // Create in-app notifications for Admins & Staff
     try {
-      sendAdminNotification(lead, savedFiles).catch(e => console.error("Admin mail error:", e));
-      sendCustomerNotification(lead).catch(e => console.error("Customer mail error:", e));
-      sendSystemNotificationToAdmins({
-        subject: `New Application Received: ${lead.service} from ${lead.name}`,
-        htmlContent: `
-          <p>A new application has been submitted on the Syed Services website.</p>
-          <div style="background: #1e293b; padding: 15px; border-radius: 10px; margin: 15px 0;">
-            <p style="margin: 4px 0;"><strong>Tracking ID:</strong> <span style="color: #fbbf24; font-family: monospace; font-size: 16px;">${lead.trackingId}</span></p>
-            <p style="margin: 4px 0;"><strong>Applicant Name:</strong> ${lead.name}</p>
-            <p style="margin: 4px 0;"><strong>Service:</strong> ${lead.service}</p>
-            <p style="margin: 4px 0;"><strong>Phone / Mobile:</strong> ${lead.phone}</p>
-            <p style="margin: 4px 0;"><strong>Email:</strong> ${lead.email || "N/A"}</p>
-            <p style="margin: 4px 0;"><strong>Country / Nationality:</strong> ${lead.country || "N/A"}</p>
-            ${lead.passportNumber ? `<p style="margin: 4px 0;"><strong>Passport Number:</strong> ${lead.passportNumber}</p>` : ''}
-            <p style="margin: 4px 0;"><strong>Message:</strong> ${lead.message || "None"}</p>
-          </div>
-          ${savedFiles.length > 0 ? `
-            <p><strong>Uploaded Files (${savedFiles.length}):</strong></p>
-            <ul>
-              ${savedFiles.map(f => `<li><a href="${f.fileUrl}" target="_blank" style="color: #fbbf24;">${f.fileName}</a></li>`).join("")}
-            </ul>
-          ` : ''}
-          <div style="margin-top: 15px;">
-            <a href="https://www.syedservices.com.pk/portal/admin" style="background: #fbbf24; color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View in Admin Portal</a>
-          </div>
-        `
-      }).catch(e => console.error("System admin alert error:", e));
+      const adminUsers = await prisma.user.findMany({
+        where: {
+          role: { in: ["SUPER_ADMIN", "ADMIN", "STAFF", "AGENCY_OWNER", "MANAGER", "VISA_OFFICER"] },
+          status: "ACTIVE",
+        },
+        select: { id: true },
+      });
+
+      if (adminUsers.length > 0) {
+        await prisma.notification.createMany({
+          data: adminUsers.map((u) => ({
+            userId: u.id,
+            title: "New Website Lead / Application",
+            message: `${lead.name} submitted an application for ${lead.service} (${lead.trackingId})`,
+            actionUrl: `/portal/admin`,
+            category: "PIPELINE",
+            priority: "HIGH",
+          })),
+        });
+      }
+    } catch (notifErr) {
+      console.error("In-app notification creation error for lead:", notifErr);
+    }
+
+    // Send notifications reliably (awaited so serverless execution completes delivery)
+    try {
+      await Promise.allSettled([
+        sendAdminNotification(lead, savedFiles),
+        sendCustomerNotification(lead),
+        sendSystemNotificationToAdmins({
+          subject: `New Application Received: ${lead.service} from ${lead.name}`,
+          htmlContent: `
+            <p>A new application has been submitted on the Syed Services website.</p>
+            <div style="background: #1e293b; padding: 15px; border-radius: 10px; margin: 15px 0;">
+              <p style="margin: 4px 0;"><strong>Tracking ID:</strong> <span style="color: #fbbf24; font-family: monospace; font-size: 16px;">${lead.trackingId}</span></p>
+              <p style="margin: 4px 0;"><strong>Applicant Name:</strong> ${lead.name}</p>
+              <p style="margin: 4px 0;"><strong>Service:</strong> ${lead.service}</p>
+              <p style="margin: 4px 0;"><strong>Phone / Mobile:</strong> ${lead.phone}</p>
+              <p style="margin: 4px 0;"><strong>Email:</strong> ${lead.email || "N/A"}</p>
+              <p style="margin: 4px 0;"><strong>Country / Nationality:</strong> ${lead.country || "N/A"}</p>
+              ${lead.passportNumber ? `<p style="margin: 4px 0;"><strong>Passport Number:</strong> ${lead.passportNumber}</p>` : ''}
+              <p style="margin: 4px 0;"><strong>Message:</strong> ${lead.message || "None"}</p>
+            </div>
+            ${savedFiles.length > 0 ? `
+              <p><strong>Uploaded Files (${savedFiles.length}):</strong></p>
+              <ul>
+                ${savedFiles.map(f => `<li><a href="${f.fileUrl}" target="_blank" style="color: #fbbf24;">${f.fileName}</a></li>`).join("")}
+              </ul>
+            ` : ''}
+            <div style="margin-top: 15px;">
+              <a href="https://www.syedservices.com.pk/portal/admin" style="background: #fbbf24; color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View in Admin Portal</a>
+            </div>
+          `
+        })
+      ]);
     } catch (notifErr) {
       console.error("Notification dispatch error:", notifErr);
     }

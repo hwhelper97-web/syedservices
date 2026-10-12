@@ -8,42 +8,42 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const slides = [
   {
-    src: "/images/pakistan/fairy-meadows.png",
+    src: "/images/pakistan/fairy-meadows.webp",
     name: "Fairy Meadows",
     location: "Gilgit-Baltistan"
   },
   {
-    src: "/images/pakistan/attabad-lake.png",
+    src: "/images/pakistan/attabad-lake.webp",
     name: "Attabad Lake",
     location: "Hunza Valley"
   },
   {
-    src: "/images/pakistan/neelum-valley.png",
+    src: "/images/pakistan/neelum-valley.webp",
     name: "Neelum Valley",
     location: "Azad Kashmir"
   },
   {
-    src: "/images/pakistan/k2.png",
+    src: "/images/pakistan/k2.webp",
     name: "K2 Base Camp",
     location: "Karakoram Range"
   },
   {
-    src: "/images/pakistan/faisal-mosque.png",
+    src: "/images/pakistan/faisal-mosque.webp",
     name: "Faisal Mosque",
     location: "Islamabad"
   },
   {
-    src: "/images/pakistan/hunza-valley.png",
+    src: "/images/pakistan/hunza-valley.webp",
     name: "Hunza Valley",
     location: "Gilgit-Baltistan"
   },
   {
-    src: "/images/pakistan/skardu.png",
+    src: "/images/pakistan/skardu.webp",
     name: "Shangrila Lake",
     location: "Skardu"
   },
   {
-    src: "/images/pakistan/badshahi-mosque.png",
+    src: "/images/pakistan/badshahi-mosque.webp",
     name: "Badshahi Mosque",
     location: "Lahore"
   }

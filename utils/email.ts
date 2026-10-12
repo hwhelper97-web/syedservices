@@ -22,23 +22,31 @@ export async function sendSystemNotificationToAdmins({
   htmlContent: string;
 }) {
   try {
-    const admins = await prisma.user.findMany({
-      where: {
-        role: { in: ["SUPER_ADMIN", "ADMIN", "STAFF"] },
-        status: "ACTIVE"
-      },
-      select: { email: true }
-    });
+    const primaryAdmin = process.env.ADMIN_EMAIL || "syedsaif@syedservices.com.pk";
+    const targetEmails = new Set<string>();
+    targetEmails.add(primaryAdmin);
 
-    const adminEmails = admins.map(a => a.email).filter(Boolean);
-    
-    if (adminEmails.length === 0) {
-      adminEmails.push(process.env.ADMIN_EMAIL || "info@syedservices.com.pk");
+    try {
+      const admins = await prisma.user.findMany({
+        where: {
+          role: { in: ["SUPER_ADMIN", "ADMIN"] },
+          status: "ACTIVE"
+        },
+        select: { email: true }
+      });
+      admins.forEach(a => {
+        if (a.email && !a.email.includes("@demo.com") && !a.email.includes("@travelhubos.com")) {
+          targetEmails.add(a.email);
+        }
+      });
+    } catch (dbErr) {
+      console.warn("Could not query additional admin emails, using primary:", dbErr);
     }
 
     const transporter = getTransporter();
+    const emailList = Array.from(targetEmails);
 
-    for (const email of adminEmails) {
+    for (const email of emailList) {
       try {
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
           await transporter.sendMail({
@@ -60,7 +68,7 @@ export async function sendSystemNotificationToAdmins({
               </div>
             `
           });
-          console.log(`System alert sent to ${email}`);
+          console.log(`System alert successfully delivered to ${email}`);
         } else {
           console.log(`[EMAIL DEV MODE] Admin notification to ${email} (Subject: ${subject})`);
         }
@@ -70,6 +78,93 @@ export async function sendSystemNotificationToAdmins({
     }
   } catch (error) {
     console.error("Failed to send system notifications to admins:", error);
+  }
+}
+
+export async function sendNewApplicationNotificationToClient(
+  application: any,
+  clientEmail: string,
+  clientName: string
+) {
+  if (!clientEmail) return;
+
+  try {
+    const transporter = getTransporter();
+    const mailOptions = {
+      from: `"Syed Services Visa Desk" <${process.env.EMAIL_USER}>`,
+      to: clientEmail,
+      subject: `Application Confirmation - ${application.trackingId} (${application.country} ${application.visaCategory})`,
+      html: `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; text-align: center;">
+              <div style="display: inline-block; width: 50px; height: 50px; background-color: #facc15; border-radius: 12px; line-height: 50px; color: #000000; font-weight: bold; font-size: 24px; margin-bottom: 10px;">S</div>
+              <h1 style="color: #ffffff; margin: 0; font-size: 20px; letter-spacing: 1px; text-transform: uppercase;">Syed Services</h1>
+              <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 12px;">Official Visa Application Confirmation</p>
+            </div>
+            
+            <div style="padding: 35px 30px;">
+              <h2 style="color: #1e293b; margin: 0 0 15px 0; font-size: 20px; font-weight: bold;">Application Received!</h2>
+              <p style="color: #475569; line-height: 1.6; margin-bottom: 25px;">
+                Dear <strong>${clientName}</strong>,<br><br>
+                Thank you for applying with Syed Services. Your official visa dossier has been registered and submitted to our immigration operations team.
+              </p>
+
+              <div style="background-color: #fefce8; border-left: 4px solid #facc15; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <p style="margin: 0; color: #713f12; font-size: 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Your Official Tracking Code</p>
+                <p style="margin: 5px 0 0 0; color: #1e293b; font-size: 22px; font-weight: 800; font-family: monospace;">${application.trackingId}</p>
+              </div>
+
+              <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
+                  <tr>
+                    <td style="color: #64748b; padding-bottom: 8px;">Destination:</td>
+                    <td style="color: #1e293b; font-weight: bold; text-align: right; padding-bottom: 8px;">${application.country}</td>
+                  </tr>
+                  <tr>
+                    <td style="color: #64748b; padding-bottom: 8px;">Visa Category:</td>
+                    <td style="color: #1e293b; font-weight: bold; text-align: right; padding-bottom: 8px;">${application.visaCategory}</td>
+                  </tr>
+                  <tr>
+                    <td style="color: #64748b; padding-bottom: 8px;">Current Status:</td>
+                    <td style="color: #d97706; font-weight: bold; text-align: right; padding-bottom: 8px;">Waiting Confirmation</td>
+                  </tr>
+                  ${application.packagePrice ? `
+                  <tr>
+                    <td style="color: #64748b;">Invoice Total:</td>
+                    <td style="color: #059669; font-weight: bold; text-align: right;">$${application.packagePrice} USD</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.syedservices.com.pk'}/portal/login" style="display: inline-block; background-color: #facc15; color: #000000; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                  Log In to Client Portal
+                </a>
+              </div>
+              
+              <p style="color: #64748b; font-size: 12px; line-height: 1.5; text-align: center; margin: 0;">
+                You can upload required documents (passport scans, photographs, and identity certificates) directly from the Documents section of your portal.
+              </p>
+            </div>
+
+            <div style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="color: #64748b; font-size: 12px; margin: 0 0 10px 0;">Need immediate assistance? Reach our 24/7 desk:</p>
+              <p style="color: #1e293b; font-size: 12px; font-weight: bold; margin: 0;">WhatsApp: +92 309 9797771 | Email: info@syedservices.com.pk</p>
+              <p style="color: #94a3b8; font-size: 10px; margin-top: 15px;">© 2026 Syed Services Pakistan. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      await transporter.sendMail(mailOptions);
+      console.log(`Confirmation email sent to applicant ${clientEmail}`);
+    }
+  } catch (error) {
+    console.error("Client Application Confirmation Email Error:", error);
   }
 }
 
