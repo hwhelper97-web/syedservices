@@ -5,8 +5,10 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 export const prisma =
-  globalForPrisma.prisma ?? new PrismaClient();
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+  });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Ensure a single PrismaClient is shared across serverless function invocations to avoid exhausting database connection pools
+globalForPrisma.prisma = prisma;
