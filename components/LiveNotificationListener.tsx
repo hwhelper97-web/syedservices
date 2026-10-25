@@ -82,8 +82,11 @@ export default function LiveNotificationListener() {
     // Initial check
     pollNotifications();
 
-    // Poll every 4 seconds
-    const interval = setInterval(pollNotifications, 4000);
+    // Poll every 30 seconds (skip when tab is backgrounded)
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      pollNotifications();
+    }, 30000);
 
     return () => {
       isMounted = false;

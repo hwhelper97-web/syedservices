@@ -247,76 +247,78 @@ export async function POST(req: Request) {
       currentStatus: status,
     });
 
-    // Auto-generate invoice number if not provided
+    // Auto-generate unique invoice number if not provided
     let invoiceNumber = customInvoiceNumber?.trim();
     if (!invoiceNumber) {
       const year = new Date().getFullYear();
-      const count = await prisma.invoice.count().catch(() => Math.floor(100 + Math.random() * 900));
-      const padded = String(count + 1).padStart(4, "0");
-      invoiceNumber = `INV-${year}-${padded}`;
-    }
-
-    // Check for duplicate invoiceNumber
-    const existing = await prisma.invoice.findUnique({
-      where: { invoiceNumber },
-    }).catch(() => null);
-    if (existing) {
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-      invoiceNumber = `${invoiceNumber}-${randomSuffix}`;
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      invoiceNumber = `INV-${year}-${Date.now().toString().slice(-4)}${rand.toString().slice(-2)}`;
     }
 
     const accessToken = crypto.randomBytes(16).toString("hex");
 
-    const created = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        currency,
-        clientName: customerName || null,
-        companyName: customerCompany || null,
-        customerEmail: customerEmail || null,
-        customerPhone: customerPhone || null,
-        customerAddress: customerAddress || null,
-        customerCity: customerCity || null,
-        customerCountry: customerCountry || null,
-        taxNumber: customerTaxId || null,
-        subtotalAmount: calc.subtotal,
-        discountType: discountType || "FLAT",
-        discountValue: parseFloat(String(discountValue || 0)),
-        discountAmount: calc.discountTotal,
-        taxRate: parseFloat(String(taxRate || 0)),
-        taxAmount: calc.taxTotal,
-        shippingFee: calc.shippingFee,
-        totalAmount: calc.totalAmount,
-        paidAmount: 0,
-        balanceAmount: calc.balanceDue,
-        status: (calc.suggestedStatus as any) || "ISSUED",
-        issueDate: issueDate ? new Date(issueDate) : new Date(),
-        dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 14 * 86400000),
-        notes: notes || null,
-        termsConditions: terms || null,
-        accessToken,
-        applicationId: applicationId ? parseInt(String(applicationId), 10) : null,
-        items: {
-          create: calc.items.map((item, idx) => ({
-            serviceName: item.serviceName,
-            description: item.description || item.serviceName,
-            quantity: Math.round(item.quantity),
-            unit: item.unit || "service",
-            unitPrice: item.unitPrice,
-            amount: item.lineTotal,
-            discount: item.lineDiscountAmount,
-            discountType: item.discountType || "PERCENTAGE",
-            discountValue: item.discountValue || 0,
-            tax: item.lineTaxAmount,
-            taxRate: item.taxRate || 0,
-            sortOrder: idx,
-          })),
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
+    // Execute create with resilient retry for connection pool spikes
+    let created: any = null;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        created = await prisma.invoice.create({
+          data: {
+            invoiceNumber,
+            currency,
+            clientName: customerName || null,
+            companyName: customerCompany || null,
+            customerEmail: customerEmail || null,
+            customerPhone: customerPhone || null,
+            customerAddress: customerAddress || null,
+            customerCity: customerCity || null,
+            customerCountry: customerCountry || null,
+            taxNumber: customerTaxId || null,
+            subtotalAmount: calc.subtotal,
+            discountType: discountType || "FLAT",
+            discountValue: parseFloat(String(discountValue || 0)),
+            discountAmount: calc.discountTotal,
+            taxRate: parseFloat(String(taxRate || 0)),
+            taxAmount: calc.taxTotal,
+            shippingFee: calc.shippingFee,
+            totalAmount: calc.totalAmount,
+            paidAmount: 0,
+            balanceAmount: calc.balanceDue,
+            status: (calc.suggestedStatus as any) || "ISSUED",
+            issueDate: issueDate ? new Date(issueDate) : new Date(),
+            dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 14 * 86400000),
+            notes: notes || null,
+            termsConditions: terms || null,
+            accessToken,
+            applicationId: applicationId ? parseInt(String(applicationId), 10) : null,
+            items: {
+              create: calc.items.map((item, idx) => ({
+                serviceName: item.serviceName,
+                description: item.description || item.serviceName,
+                quantity: Math.round(item.quantity),
+                unit: item.unit || "service",
+                unitPrice: item.unitPrice,
+                amount: item.lineTotal,
+                discount: item.lineDiscountAmount,
+                discountType: item.discountType || "PERCENTAGE",
+                discountValue: item.discountValue || 0,
+                tax: item.lineTaxAmount,
+                taxRate: item.taxRate || 0,
+                sortOrder: idx,
+              })),
+            },
+          },
+          include: {
+            items: true,
+          },
+        });
+        break;
+      } catch (err: any) {
+        attempts++;
+        if (attempts >= 3) throw err;
+        await new Promise((resolve) => setTimeout(resolve, 600 * attempts));
+      }
+    }
 
     await prisma.auditLog.create({
       data: {
