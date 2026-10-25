@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Admin {
@@ -15,36 +16,35 @@ model Admin {
 }
 
 model Lead {
-  id              Int      @id @default(autoincrement())
-  trackingId      String   @unique
-  name            String
-  email           String
-  phone           String
-  service         String
-  message         String
-  status          String   @default("New") // New, In Progress, Completed
-  
-  // Visa specific fields
-  dob             String?
-  fatherName      String?
-  motherName      String?
-  maritalStatus   String?
-  spouseName      String?
-  passportNumber  String?
-  passportExpiry  String?
-  country         String?
-  
-  createdAt       DateTime @default(now())
-  files           File[]
+  id             Int      @id @default(autoincrement())
+  trackingId     String   @unique
+  name           String
+  email          String
+  phone          String
+  service        String
+  message        String
+  status         String   @default("New")
+  createdAt      DateTime @default(now())
+  country        String?
+  dob            String?
+  fatherName     String?
+  maritalStatus  String?
+  motherName     String?
+  passportExpiry String?
+  passportNumber String?
+  spouseName     String?
+  tenantId       Int?
+  files          File[]
+  Tenant         Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model File {
-  id        Int    @id @default(autoincrement())
-  leadId    Int
-  lead      Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  fileUrl   String
-  fileType  String // pdf, image
-  fileName  String
+  id       Int    @id @default(autoincrement())
+  leadId   Int
+  fileUrl  String
+  fileType String
+  fileName String
+  lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
 }
 
 model Contact {
@@ -53,6 +53,1630 @@ model Contact {
   email     String
   message   String
   createdAt DateTime @default(now())
+  tenantId  Int?
+  Tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                 Int                  @id @default(autoincrement())
+  email              String               @unique
+  passwordHash       String
+  name               String
+  role               UserRole             @default(CLIENT)
+  status             String               @default("ACTIVE")
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  tenantId           Int?
+  resetToken         String?
+  image              String?
+  resetTokenExpiry   DateTime?
+  agentProfile       AgentProfile?
+  auditLogs          AuditLog[]
+  blogs              Blog[]
+  CRMLead            CRMLead[]
+  CaseActivity       CaseActivity[]
+  CaseTask           CaseTask[]
+  clientProfile      ClientProfile?
+  FinanceTransaction FinanceTransaction[]
+  recvMessages       Message[]            @relation("Receiver")
+  sentMessages       Message[]            @relation("Sender")
+  notifications      Notification[]
+  verifiedPayments   Payment[]            @relation("VerifiedBy")
+  StaffProfile       StaffProfile?
+  staffTasks         Task[]               @relation("AssignedTo")
+  createdTasks       Task[]               @relation("CreatedBy")
+  Tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  VisaCase           VisaCase[]
+}
+
+model ClientProfile {
+  id                     Int                  @id @default(autoincrement())
+  userId                 Int                  @unique
+  phone                  String?
+  companyName            String?
+  address                String?
+  clientType             String               @default("INDIVIDUAL")
+  creditLimit            Float?               @default(0)
+  taxNumber              String?
+  dob                    String?
+  passportExpiryDate     String?
+  passportNumber         String?
+  profession             String?
+  agentId                Int?
+  gender                 String?
+  nationality            String?
+  birthPlace             String?
+  cnicNumber             String?
+  currentAddress         String?
+  fatherName             String?
+  maritalStatus          String?
+  passportIssueDate      String?
+  passportIssuePlace     String?
+  permanentAddress       String?
+  qualification          String?
+  religion               String?
+  motherName             String?
+  spouseName             String?
+  childrenCount          Int?                 @default(0)
+  emergencyContact       String?
+  bachelor               String?
+  cgpa                   String?
+  college                String?
+  graduationYear         String?
+  highSchool             String?
+  master                 String?
+  position               String?
+  salary                 String?
+  city                   String?
+  clientCode             String?              @unique
+  countryOfResidence     String?
+  customerCategory       String?              @default("INDIVIDUAL")
+  leadSource             String?              @default("DIRECT")
+  postalCode             String?
+  preferredContactMethod String?              @default("WHATSAPP")
+  preferredCurrency      String?              @default("USD")
+  secondaryPhone         String?
+  tags                   String[]
+  vipStatus              Boolean              @default(false)
+  whatsappNumber         String?
+  employerAddress        String?
+  experienceYears        String?
+  tenantId               Int?
+  givenName              String?
+  surname                String?
+  childrenDetails        String?
+  applications           Application[]
+  appointments           Appointment[]
+  ClientDocument         ClientDocument[]
+  ClientNote             ClientNote[]
+  agent                  AgentProfile?        @relation("AgentClients", fields: [agentId], references: [id])
+  Tenant                 Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ClientTimeline         ClientTimeline[]
+  FinanceTransaction     FinanceTransaction[]
+  SmartContract          SmartContract[]
+  VisaCase               VisaCase[]
+
+  @@index([tenantId, clientCode])
+  @@index([tenantId, customerCategory])
+  @@index([tenantId, passportNumber])
+  @@index([tenantId, phone])
+}
+
+model AgentProfile {
+  id                 Int             @id @default(autoincrement())
+  userId             Int             @unique
+  agentCode          String          @unique
+  agencyName         String
+  phone              String?         @default("")
+  commission         Float           @default(0.0)
+  licenseCertificate String?
+  licenseNumber      String?
+  officeAddress      String?
+  whatsappNumber     String?
+  commissionRate     Float?          @default(0.0)
+  agencyAddress      String?
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications       Application[]
+  appointments       Appointment[]
+  clients            ClientProfile[] @relation("AgentClients")
+}
+
+model Application {
+  id                     Int                        @id @default(autoincrement())
+  clientId               Int
+  agentId                Int?
+  country                String
+  visaCategory           String
+  duration               String?
+  entryType              String?
+  travelDate             String?
+  returnDate             String?
+  purpose                String?
+  sponsor                String?
+  reference              String?
+  visitedCountries       String?
+  previousVisas          String?
+  visaRefusals           String?
+  previousPassportNumber String?
+  status                 ApplicationStatus          @default(DRAFT)
+  contractApprovedDays   String?
+  contractPaymentAmount  String?
+  contractFirstPartyName String?
+  contractStatus         String?                    @default("PENDING")
+  contractAccepted       Boolean                    @default(false)
+  contractAcceptedAt     DateTime?
+  contractSignatureName  String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  tenantId               Int?
+  applicantId            Int?
+  applicationNumber      String?                    @unique
+  biometricFee           Float                      @default(0)
+  courierFee             Float                      @default(0)
+  discount               Float                      @default(0)
+  embassyFee             Float                      @default(0)
+  insuranceFee           Float                      @default(0)
+  medicalFee             Float                      @default(0)
+  otherCharges           Float                      @default(0)
+  serviceFee             Float                      @default(0)
+  tax                    Float                      @default(0)
+  totalAmount            Float                      @default(0)
+  visaFee                Float                      @default(0)
+  trackingId             String?                    @unique
+  assignedStaffId        Int?
+  packageId              Int?
+  packagePrice           Float?
+  agent                  AgentProfile?              @relation(fields: [agentId], references: [id])
+  Applicant              Applicant?                 @relation(fields: [applicantId], references: [id])
+  client                 ClientProfile              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  package                Package?                   @relation(fields: [packageId], references: [id])
+  Tenant                 Tenant?                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  statusHistory          ApplicationStatusHistory[]
+  documents              Document[]
+  FinanceTransaction     FinanceTransaction[]
+  invoices               Invoice[]
+  PublicTracking         PublicTracking[]
+}
+
+model ApplicationStatusHistory {
+  id            Int               @id @default(autoincrement())
+  applicationId Int
+  status        ApplicationStatus
+  notes         String?
+  updatedById   Int
+  createdAt     DateTime          @default(now())
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id                   Int         @id @default(autoincrement())
+  applicationId        Int
+  documentType         String
+  fileUrl              String
+  fileName             String
+  fileSize             Int?
+  fileType             String
+  version              Int         @default(1)
+  createdAt            DateTime    @default(now())
+  confidenceLevel      String?     @default("HIGH")
+  confidencePercentage Int?        @default(90)
+  detectedType         String?
+  fileHash             String?
+  isConfirmed          Boolean     @default(false)
+  application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([fileHash])
+}
+
+model Appointment {
+  id              Int               @id @default(autoincrement())
+  clientId        Int?
+  agentId         Int?
+  date            DateTime          @default(now())
+  timeSlot        String?
+  status          AppointmentStatus @default(SCHEDULED)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  tenantId        Int?
+  appointmentDate DateTime          @default(now())
+  location        String?
+  serviceType     String            @default("CONSULTATION")
+  title           String            @default("Appointment")
+  agent           AgentProfile?     @relation(fields: [agentId], references: [id])
+  client          ClientProfile?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  Tenant          Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id                   Int                  @id @default(autoincrement())
+  invoiceNumber        String               @unique
+  applicationId        Int?
+  totalAmount          Float                @default(0)
+  status               PaymentStatus        @default(UNPAID)
+  dueDate              DateTime
+  createdAt            DateTime             @default(now())
+  tenantId             Int?
+  balanceAmount        Float                @default(0)
+  currency             String               @default("USD")
+  paidAmount           Float                @default(0)
+  applicantNames       String[]             @default([])
+  bankInfoJson         String?
+  businessRegistration String?
+  clientName           String?
+  clientType           String               @default("INDIVIDUAL")
+  companyName          String?
+  discountAmount       Float                @default(0)
+  discountType         String?              @default("FLAT")
+  discountValue        Float                @default(0)
+  nationality          String?
+  notes                String?
+  passportNumbers      String[]             @default([])
+  paymentTermsDays     Int                  @default(15)
+  processingType       String?              @default("NORMAL")
+  returnDate           String?
+  subtotalAmount       Float                @default(0)
+  taxAmount            Float                @default(0)
+  taxNumber            String?
+  taxRate              Float                @default(0)
+  taxType              String?              @default("VAT")
+  termsConditions      String?
+  travelDate           String?
+  visaCountry          String?
+  visaType             String?
+  customerEmail        String?
+  customerPhone        String?
+  customerAddress      String?
+  customerCity         String?
+  customerCountry      String?
+  accessToken          String?              @unique
+  shippingFee          Float                @default(0)
+  issueDate            DateTime             @default(now())
+  emailLogs            InvoiceEmailLog[]
+  CreditNote           CreditNote[]
+  FinanceTransaction   FinanceTransaction[]
+  application          Application?         @relation(fields: [applicationId], references: [id])
+  Tenant               Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items                InvoiceItem[]
+  payments             Payment[]
+  Refund               Refund[]
+  SmartContract        SmartContract[]
+}
+
+model InvoiceItem {
+  id            Int      @id @default(autoincrement())
+  invoiceId     Int
+  serviceName   String?
+  description   String
+  quantity      Int      @default(1)
+  unit          String?  @default("service")
+  unitPrice     Float
+  amount        Float
+  discount      Float    @default(0)
+  discountType  String?  @default("PERCENTAGE")
+  discountValue Float    @default(0)
+  serviceType   String?  @default("SERVICE_CHARGE")
+  tax           Float    @default(0)
+  taxRate       Float    @default(0)
+  sortOrder     Int      @default(0)
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id                Int           @id @default(autoincrement())
+  invoiceId         Int
+  amount            Float
+  paymentMethod     PaymentMethod
+  transactionId     String?
+  receiptUrl        String?
+  status            String        @default("VERIFIED")
+  verifiedById      Int?
+  createdAt         DateTime      @default(now())
+  tenantId          Int?
+  currency          String?       @default("USD")
+  exchangeRate      Float?        @default(1.0)
+  installmentNumber Int?          @default(1)
+  notes             String?
+  receiptNumber     String?       @unique
+  invoice           Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  Tenant            Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  verifiedBy        User?         @relation("VerifiedBy", fields: [verifiedById], references: [id])
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  senderId      Int
+  receiverId    Int
+  applicationId Int?
+  messageText   String
+  attachmentUrl String?
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  tenantId      Int?
+  receiver      User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender        User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  Tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  title      String
+  message    String
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  tenantId   Int?
+  actionUrl  String?
+  category   String    @default("SYSTEM")
+  isArchived Boolean   @default(false)
+  priority   String    @default("NORMAL")
+  readAt     DateTime?
+  Tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, category])
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  tenantId  Int?
+  Tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  id           Int          @id @default(autoincrement())
+  title        String
+  description  String?
+  dueDate      DateTime?
+  status       TaskStatus   @default(PENDING)
+  priority     TaskPriority @default(MEDIUM)
+  assignedToId Int?
+  createdById  Int
+  createdAt    DateTime     @default(now())
+  tenantId     Int?
+  assignedTo   User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy    User         @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  Tenant       Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Blog {
+  id         Int      @id @default(autoincrement())
+  title      String
+  slug       String   @unique
+  content    String
+  coverImage String?
+  status     String   @default("DRAFT")
+  authorId   Int
+  createdAt  DateTime @default(now())
+  tenantId   Int?
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  Tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Testimonial {
+  id         Int      @id @default(autoincrement())
+  clientName String
+  clientRole String?
+  text       String
+  rating     Int      @default(5)
+  avatar     String?
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+  tenantId   Int?
+  Tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model FAQ {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  category  String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  tenantId  Int?
+  Tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ContactRequest {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  tenantId  Int?
+  Tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Package {
+  id             Int           @id @default(autoincrement())
+  title          String
+  slug           String?       @unique
+  country        String
+  visaType       String?
+  agencyNumber   String
+  priceUSD       Float?
+  pricePKR       Float?
+  priceAFN       Float?
+  duration       String?
+  processingTime String?
+  description    String
+  documents      String
+  image          String?
+  featured       Boolean       @default(true)
+  status         String        @default("ACTIVE")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now()) @updatedAt
+  applications   Application[]
+}
+
+model Account {
+  id           Int            @id @default(autoincrement())
+  code         String
+  name         String
+  type         AccountType    @default(EXPENSE)
+  balance      Float          @default(0)
+  tenantId     Int?
+  Tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  JournalEntry JournalEntry[]
+}
+
+model AgencyBankAccount {
+  id            Int      @id @default(autoincrement())
+  bankName      String
+  branchName    String?
+  accountTitle  String
+  accountNumber String
+  iban          String
+  swiftCode     String?
+  currency      String   @default("PKR")
+  isDefault     Boolean  @default(false)
+  qrCodeUrl     String?
+  bankLogoUrl   String?
+  createdAt     DateTime @default(now())
+  tenantId      Int?
+  Tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AgencyBranch {
+  id          Int      @id @default(autoincrement())
+  branchName  String
+  branchCode  String
+  managerName String?
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  country     String?  @default("Pakistan")
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  tenantId    Int?
+  Tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AgencyDocument {
+  id                 Int       @id @default(autoincrement())
+  documentTitle      String
+  documentType       String
+  fileUrl            String
+  fileSize           String?
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  verificationStatus String    @default("VERIFIED")
+  createdAt          DateTime  @default(now())
+  tenantId           Int?
+  Tenant             Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AirTicket {
+  id            Int      @id @default(autoincrement())
+  pnr           String   @unique
+  airline       String
+  passengerName String
+  departure     String
+  arrival       String
+  departureDate DateTime
+  ticketCost    Float
+  sellingPrice  Float
+  commission    Float    @default(0)
+  status        String   @default("CONFIRMED")
+  createdAt     DateTime @default(now())
+  tenantId      Int?
+  Tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id             Int       @id @default(autoincrement())
+  isSuperAdmin   Boolean   @default(false)
+  title          String
+  content        String
+  type           String    @default("INFO")
+  displayFormat  String    @default("TOP_BANNER")
+  targetAudience Json?
+  priority       String    @default("NORMAL")
+  isSticky       Boolean   @default(false)
+  isPinned       Boolean   @default(false)
+  isDismissible  Boolean   @default(true)
+  status         String    @default("PUBLISHED")
+  publishedAt    DateTime  @default(now())
+  expiresAt      DateTime?
+  readsCount     Int       @default(0)
+  clicksCount    Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  tenantId       Int?
+  actionText     String?
+  actionUrl      String?
+  Tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([isSuperAdmin, status])
+  @@index([tenantId, status])
+}
+
+model Applicant {
+  id               Int           @id @default(autoincrement())
+  applicantId      String        @unique
+  photoUrl         String?
+  passportScanUrl  String?
+  cnicScanUrl      String?
+  firstName        String
+  lastName         String
+  fatherName       String?
+  motherName       String?
+  gender           String?
+  dob              String?
+  age              Int?
+  nationality      String?
+  passportNumber   String?
+  passportExpiry   String?
+  issueDate        String?
+  issuePlace       String?
+  maritalStatus    String?
+  education        String?
+  occupation       String?
+  currentAddress   String?
+  permanentAddress String?
+  email            String?
+  phone            String?
+  emergencyContact String?
+  notes            String?
+  tags             String[]      @default([])
+  status           String        @default("ACTIVE")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  tenantId         Int?
+  Tenant           Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  Application      Application[]
+  VisaCase         VisaCase[]
+}
+
+model BroadcastMessage {
+  id          Int      @id @default(autoincrement())
+  title       String
+  targetGroup String
+  channel     String   @default("BOTH")
+  messageBody String
+  sentCount   Int      @default(0)
+  failedCount Int      @default(0)
+  status      String   @default("COMPLETED")
+  createdAt   DateTime @default(now())
+  tenantId    Int?
+  Tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CRMLead {
+  id              Int           @id @default(autoincrement())
+  trackingId      String        @unique
+  name            String
+  email           String?
+  phone           String?
+  source          CRMLeadSource @default(WALK_IN)
+  status          CRMLeadStatus @default(NEW)
+  service         String?
+  notes           String?
+  followUpDate    DateTime?
+  assignedStaffId Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime
+  tenantId        Int?
+  User            User?         @relation(fields: [assignedStaffId], references: [id])
+  Tenant          Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CaseActivity {
+  id            Int      @id @default(autoincrement())
+  caseId        Int
+  action        String
+  details       String?
+  performedById Int?
+  createdAt     DateTime @default(now())
+  tenantId      Int?
+  VisaCase      VisaCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  User          User?    @relation(fields: [performedById], references: [id])
+  Tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CaseAppointment {
+  id        Int      @id @default(autoincrement())
+  caseId    Int
+  type      String
+  date      DateTime
+  timeSlot  String?
+  location  String?
+  status    String   @default("SCHEDULED")
+  notes     String?
+  createdAt DateTime @default(now())
+  tenantId  Int?
+  VisaCase  VisaCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  Tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CaseDocument {
+  id           Int       @id @default(autoincrement())
+  caseId       Int
+  title        String
+  documentType String
+  fileUrl      String?
+  fileName     String?
+  fileSize     Int?
+  status       String    @default("MISSING")
+  verifiedById Int?
+  verifiedAt   DateTime?
+  expiryDate   DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  tenantId     Int?
+  VisaCase     VisaCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  Tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CaseTask {
+  id           Int       @id @default(autoincrement())
+  caseId       Int
+  title        String
+  description  String?
+  dueDate      DateTime?
+  assignedToId Int?
+  status       String    @default("PENDING")
+  priority     String    @default("NORMAL")
+  createdAt    DateTime  @default(now())
+  tenantId     Int?
+  User         User?     @relation(fields: [assignedToId], references: [id])
+  VisaCase     VisaCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  Tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ClientDocument {
+  id                 Int           @id @default(autoincrement())
+  clientProfileId    Int
+  folderCategory     String        @default("GENERAL")
+  fileName           String
+  fileUrl            String
+  fileSize           String?
+  expiryDate         DateTime?
+  uploadedBy         String?
+  createdAt          DateTime      @default(now())
+  tenantId           Int?
+  ocrData            String?
+  verificationStatus String        @default("VERIFIED")
+  version            String?       @default("v1.0")
+  ClientProfile      ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  Tenant             Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ClientNote {
+  id              Int           @id @default(autoincrement())
+  clientProfileId Int
+  category        String        @default("GENERAL")
+  noteText        String
+  isPrivate       Boolean       @default(false)
+  authorName      String?
+  createdAt       DateTime      @default(now())
+  tenantId        Int?
+  ClientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  Tenant          Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ClientTimeline {
+  id              Int           @id @default(autoincrement())
+  clientProfileId Int
+  eventType       String
+  description     String
+  actorName       String?
+  createdAt       DateTime      @default(now())
+  tenantId        Int?
+  ClientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  Tenant          Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CommunicationLog {
+  id               Int       @id @default(autoincrement())
+  recipientName    String
+  recipientContact String
+  channel          String
+  templateName     String?
+  subject          String?
+  messageBody      String
+  status           String    @default("SENT")
+  errorMessage     String?
+  attachmentUrl    String?
+  visaCaseId       Int?
+  invoiceId        Int?
+  staffName        String?
+  createdAt        DateTime  @default(now())
+  tenantId         Int?
+  bouncedAt        DateTime?
+  deliveredAt      DateTime?
+  openedAt         DateTime?
+  provider         String?   @default("RESEND")
+  resendId         String?
+  Tenant           Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([resendId])
+  @@index([tenantId, recipientContact])
+  @@index([tenantId, status])
+}
+
+model ContractTemplate {
+  id                    Int      @id @default(autoincrement())
+  name                  String
+  serviceCategory       String
+  destinationCountry    String   @default("Global")
+  defaultGovernmentFee  Float    @default(0.0)
+  defaultAgencyFee      Float    @default(0.0)
+  defaultProcessingDays Int      @default(15)
+  defaultTerms          String?
+  defaultRefundPolicy   String?
+  requiredDocuments     Json?    @default("[]")
+  isGlobalSuperAdmin    Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime
+  tenantId              Int?
+  Tenant                Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model ContractVersion {
+  id            Int           @id @default(autoincrement())
+  contractId    Int
+  versionNumber Int
+  snapshotJson  Json
+  changedBy     String?
+  changeReason  String?
+  createdAt     DateTime      @default(now())
+  SmartContract SmartContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+}
+
+model Country {
+  id                 Int        @id @default(autoincrement())
+  name               String
+  code               String
+  flagUrl            String?
+  currency           String     @default("USD")
+  embassyNotes       String?
+  processingTimeDays Int        @default(15)
+  tenantId           Int?
+  Tenant             Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  VisaType           VisaType[]
+}
+
+model CreditNote {
+  id               Int      @id @default(autoincrement())
+  creditNoteNumber String   @unique
+  invoiceId        Int
+  amount           Float
+  reason           String?
+  status           String   @default("ISSUED")
+  createdAt        DateTime @default(now())
+  tenantId         Int?
+  Invoice          Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  Tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CustomWorkflow {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?
+  trigger         String
+  conditions      Json?
+  actions         Json
+  status          String   @default("ACTIVE")
+  executionsCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  tenantId        Int?
+  Tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model EmailConfig {
+  id             Int      @id @default(autoincrement())
+  provider       String   @default("SMTP")
+  host           String?
+  port           Int?     @default(587)
+  username       String?
+  password       String?
+  encryption     String?  @default("TLS")
+  senderName     String?
+  senderEmail    String?
+  replyToEmail   String?
+  emailSignature String?
+  status         String   @default("DISCONNECTED")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  tenantId       Int?
+  Tenant         Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model EmailSuppression {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  reason    String   @default("HARD_BOUNCE")
+  source    String?  @default("RESEND")
+  resendId  String?
+  createdAt DateTime @default(now())
+}
+
+model ExchangeRate {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  fromCurrency String
+  toCurrency   String
+  rate         Float
+  isLocked     Boolean  @default(false)
+  updatedAt    DateTime
+  Tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fromCurrency, toCurrency])
+}
+
+model Expense {
+  id         Int             @id @default(autoincrement())
+  title      String
+  category   ExpenseCategory @default(MISCELLANEOUS)
+  amount     Float
+  date       DateTime        @default(now())
+  receiptUrl String?
+  notes      String?
+  createdAt  DateTime        @default(now())
+  tenantId   Int?
+  Tenant     Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model FinanceTransaction {
+  id                                                                Int               @id @default(autoincrement())
+  tenantId                                                          Int
+  transactionNumber                                                 String            @unique
+  type                                                              String
+  amount                                                            Float
+  currency                                                          String            @default("USD")
+  exchangeRate                                                      Float             @default(1.0)
+  paymentMethod                                                     String            @default("CASH")
+  transactionDate                                                   DateTime          @default(now())
+  description                                                       String
+  category                                                          String            @default("MISCELLANEOUS")
+  subcategory                                                       String?
+  referenceNumber                                                   String?
+  accountId                                                         Int?
+  toAccountId                                                       Int?
+  clientId                                                          Int?
+  supplierId                                                        Int?
+  invoiceId                                                         Int?
+  applicationId                                                     Int?
+  attachment                                                        String?
+  notes                                                             String?
+  status                                                            String            @default("COMPLETED")
+  createdById                                                       Int?
+  createdAt                                                         DateTime          @default(now())
+  updatedAt                                                         DateTime
+  FinancialAccount_FinanceTransaction_accountIdToFinancialAccount   FinancialAccount? @relation("FinanceTransaction_accountIdToFinancialAccount", fields: [accountId], references: [id])
+  Application                                                       Application?      @relation(fields: [applicationId], references: [id])
+  ClientProfile                                                     ClientProfile?    @relation(fields: [clientId], references: [id])
+  User                                                              User?             @relation(fields: [createdById], references: [id])
+  Invoice                                                           Invoice?          @relation(fields: [invoiceId], references: [id])
+  Supplier                                                          Supplier?         @relation(fields: [supplierId], references: [id])
+  Tenant                                                            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  FinancialAccount_FinanceTransaction_toAccountIdToFinancialAccount FinancialAccount? @relation("FinanceTransaction_toAccountIdToFinancialAccount", fields: [toAccountId], references: [id])
+}
+
+model FinancialAccount {
+  id                                                                  Int                  @id @default(autoincrement())
+  tenantId                                                            Int
+  name                                                                String
+  accountType                                                         String               @default("BANK")
+  accountNumber                                                       String?
+  bankName                                                            String?
+  currency                                                            String               @default("USD")
+  openingBalance                                                      Float                @default(0)
+  currentBalance                                                      Float                @default(0)
+  isDefault                                                           Boolean              @default(false)
+  notes                                                               String?
+  createdAt                                                           DateTime             @default(now())
+  updatedAt                                                           DateTime
+  FinanceTransaction_FinanceTransaction_accountIdToFinancialAccount   FinanceTransaction[] @relation("FinanceTransaction_accountIdToFinancialAccount")
+  FinanceTransaction_FinanceTransaction_toAccountIdToFinancialAccount FinanceTransaction[] @relation("FinanceTransaction_toAccountIdToFinancialAccount")
+  Tenant                                                              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  RecurringExpense                                                    RecurringExpense[]
+}
+
+model HotelBooking {
+  id           Int       @id @default(autoincrement())
+  hotelName    String
+  roomType     String?
+  guestName    String
+  checkIn      DateTime
+  checkOut     DateTime
+  cost         Float
+  sellingPrice Float
+  status       String    @default("CONFIRMED")
+  supplierId   Int?
+  createdAt    DateTime  @default(now())
+  tenantId     Int?
+  Supplier     Supplier? @relation(fields: [supplierId], references: [id])
+  Tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model JournalEntry {
+  id          Int      @id @default(autoincrement())
+  accountId   Int
+  description String
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  date        DateTime @default(now())
+  tenantId    Int?
+  Account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  Tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model MarketplaceAd {
+  id          Int      @id @default(autoincrement())
+  title       String
+  tagline     String?
+  category    String   @default("SPECIAL_PROMO")
+  imageUrl    String?
+  badgeText   String   @default("SPECIAL OFFER")
+  targetUrl   String?
+  placement   String   @default("TOP_HERO_BANNER")
+  isActive    Boolean  @default(true)
+  viewsCount  Int      @default(0)
+  clicksCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+}
+
+model MarketplaceListing {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String
+  category         String
+  pricing          Float    @default(0.0)
+  pricingUnit      String   @default("per document")
+  deliveryTime     String   @default("24 Hours")
+  ecosystem        String   @default("SERVICES")
+  isPublished      Boolean  @default(true)
+  status           String   @default("APPROVED")
+  viewsCount       Int      @default(0)
+  ordersCount      Int      @default(0)
+  rating           Float    @default(5.0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  tenantId         Int?
+  requirements     String[] @default([])
+  contractTerms    String?
+  currency         String   @default("USD")
+  externalLink     String?
+  requiresContract Boolean  @default(false)
+  sampleImages     String[] @default([])
+  Tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([category, isPublished])
+  @@index([tenantId])
+}
+
+model MarketplaceOrder {
+  id                 Int      @id @default(autoincrement())
+  orderNumber        String   @unique
+  partnerName        String
+  serviceCategory    String
+  status             String   @default("PENDING_REQUEST")
+  amount             Float    @default(0.0)
+  notes              String?
+  deliveryTime       String?  @default("24 Hours")
+  messages           Json?    @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  tenantId           Int?
+  partnerTenantId    Int?
+  budget             Float    @default(0.0)
+  counterOfferNotes  String?
+  deadline           String?  @default("24 Hours")
+  platformCommission Float    @default(0.0)
+  priority           String   @default("REGULAR")
+  providerEarnings   Float    @default(0.0)
+  settlementStatus   String   @default("UNSETTLED")
+  Tenant             Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([partnerTenantId])
+  @@index([tenantId, status])
+}
+
+model MessageTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String
+  channel     String   @default("BOTH")
+  subject     String?
+  messageBody String
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  tenantId    Int?
+  Tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model MobileWallet {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  provider      String
+  accountName   String
+  accountNumber String
+  currency      String   @default("PKR")
+  instructions  String?
+  status        String   @default("ACTIVE")
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  Tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique
+  emailEnabled     Boolean  @default(true)
+  inAppEnabled     Boolean  @default(true)
+  browserEnabled   Boolean  @default(true)
+  whatsappEnabled  Boolean  @default(true)
+  mutedCategories  String[] @default([])
+  workingHoursOnly Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  tenantId         Int?
+  Tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model NotificationRule {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String   @default("GENERAL")
+  eventKey    String   @unique
+  recipients  String[] @default(["TENANT_ADMIN", "CLIENT"])
+  channel     String   @default("EMAIL")
+  templateId  Int?
+  isEnabled   Boolean  @default(true)
+  isMandatory Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  tenantId    Int?
+  Tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Payable {
+  id            Int       @id @default(autoincrement())
+  tenantId      Int
+  payableNumber String    @unique
+  title         String
+  supplierId    Int?
+  amount        Float
+  paidAmount    Float     @default(0)
+  balanceAmount Float     @default(0)
+  currency      String    @default("USD")
+  dueDate       DateTime
+  status        String    @default("UNPAID")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  Supplier      Supplier? @relation(fields: [supplierId], references: [id])
+  Tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  price        Float
+  billingCycle String
+  features     String[]
+  description  String?
+  isActive     Boolean  @default(true)
+  Tenant       Tenant[]
+}
+
+model PublicTracking {
+  id             Int         @id @default(autoincrement())
+  trackingNumber String      @unique
+  applicationId  Int
+  status         String
+  notes          String?
+  updatedAt      DateTime
+  Application    Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model RecurringExpense {
+  id               Int               @id @default(autoincrement())
+  tenantId         Int
+  title            String
+  category         String            @default("OFFICE_RENT")
+  amount           Float
+  currency         String            @default("USD")
+  frequency        String            @default("MONTHLY")
+  startDate        DateTime          @default(now())
+  nextDueDate      DateTime
+  lastPostedDate   DateTime?
+  autoPost         Boolean           @default(false)
+  accountId        Int?
+  paymentMethod    String            @default("BANK_TRANSFER")
+  description      String?
+  status           String            @default("ACTIVE")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime
+  FinancialAccount FinancialAccount? @relation(fields: [accountId], references: [id])
+  Tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Refund {
+  id           Int      @id @default(autoincrement())
+  refundNumber String   @unique
+  invoiceId    Int
+  amount       Float
+  reason       String?
+  method       String   @default("CASH")
+  status       String   @default("PROCESSED")
+  createdAt    DateTime @default(now())
+  tenantId     Int?
+  Invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  Tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ScheduledMessage {
+  id               Int      @id @default(autoincrement())
+  recipientName    String
+  recipientContact String
+  channel          String
+  templateName     String?
+  messageBody      String
+  scheduledFor     DateTime
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  tenantId         Int?
+  Tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model SmartContract {
+  id                       Int                 @id @default(autoincrement())
+  contractNumber           String              @unique
+  clientId                 Int?
+  clientName               String?
+  clientEmail              String?
+  clientPhone              String?
+  serviceCategory          String
+  destinationCountry       String
+  visaCategory             String              @default("Tourist Visa")
+  processingDays           Int                 @default(15)
+  estimatedCompletionDate  DateTime?
+  governmentFee            Float               @default(0.0)
+  agencyFee                Float               @default(0.0)
+  taxAmount                Float               @default(0.0)
+  discountAmount           Float               @default(0.0)
+  urgentFee                Float               @default(0.0)
+  totalAmount              Float               @default(0.0)
+  currency                 String              @default("USD")
+  optionalServices         Json?               @default("[]")
+  requiresInvitationLetter Boolean             @default(false)
+  invitationStatus         String?             @default("NOT_REQUIRED")
+  termsAndConditions       String?
+  legalClauses             String?
+  cancellationPolicy       String?
+  refundPolicy             String?
+  specialNotes             String?
+  status                   String              @default("DRAFT")
+  version                  Int                 @default(1)
+  clientSignatureUrl       String?
+  clientSignatureType      String?
+  clientSignedAt           DateTime?
+  clientSignedIp           String?
+  agencySignatureUrl       String?
+  agencySignatureType      String?
+  agencySignedAt           DateTime?
+  agencySignedIp           String?
+  agencySignerName         String?
+  caseId                   Int?
+  invoiceId                Int?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime
+  tenantId                 Int?
+  ContractVersion          ContractVersion[]
+  VisaCase                 VisaCase?           @relation(fields: [caseId], references: [id])
+  ClientProfile            ClientProfile?      @relation(fields: [clientId], references: [id])
+  Invoice                  Invoice?            @relation(fields: [invoiceId], references: [id])
+  Tenant                   Tenant?             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  VisaCaseMilestone        VisaCaseMilestone[]
+
+  @@index([tenantId, destinationCountry])
+  @@index([tenantId, status])
+}
+
+model StaffAttendance {
+  id             Int          @id @default(autoincrement())
+  staffProfileId Int
+  date           DateTime     @default(now())
+  checkInTime    DateTime?
+  checkOutTime   DateTime?
+  status         String       @default("PRESENT")
+  notes          String?
+  createdAt      DateTime     @default(now())
+  tenantId       Int?
+  StaffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  Tenant         Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, date])
+}
+
+model StaffLeave {
+  id             Int          @id @default(autoincrement())
+  staffProfileId Int
+  leaveType      String       @default("ANNUAL")
+  startDate      DateTime
+  endDate        DateTime
+  reason         String
+  status         String       @default("PENDING")
+  approvedBy     String?
+  createdAt      DateTime     @default(now())
+  tenantId       Int?
+  StaffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  Tenant         Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+}
+
+model StaffProfile {
+  id              Int               @id @default(autoincrement())
+  staffCode       String            @unique
+  userId          Int?              @unique
+  fullName        String
+  email           String
+  phone           String?
+  department      String            @default("VISA_OPERATIONS")
+  designation     String            @default("Visa Specialist")
+  baseSalary      Float             @default(0.0)
+  commissionRate  Float             @default(0.0)
+  monthlyTarget   Float             @default(0.0)
+  joiningDate     DateTime?
+  status          String            @default("ACTIVE")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  tenantId        Int?
+  StaffAttendance StaffAttendance[]
+  StaffLeave      StaffLeave[]
+  Tenant          Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  User            User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, department])
+  @@index([tenantId, status])
+}
+
+model Supplier {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  type               SupplierType         @default(HOTEL)
+  contactPerson      String?
+  email              String?
+  phone              String?
+  address            String?
+  paymentTerms       String?
+  notes              String?
+  createdAt          DateTime             @default(now())
+  tenantId           Int?
+  FinanceTransaction FinanceTransaction[]
+  HotelBooking       HotelBooking[]
+  Payable            Payable[]
+  Tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model SupportTicket {
+  id            Int             @id @default(autoincrement())
+  tenantId      Int
+  title         String
+  message       String
+  status        String          @default("OPEN")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  category      String          @default("GENERAL")
+  fileName      String?
+  fileType      String?
+  fileUrl       String?
+  priority      String          @default("MEDIUM")
+  Tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  TicketMessage TicketMessage[]
+}
+
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime
+}
+
+model Template {
+  id        Int          @id @default(autoincrement())
+  type      TemplateType @default(EMAIL)
+  title     String
+  trigger   String
+  content   String
+  createdAt DateTime     @default(now())
+  tenantId  Int?
+  Tenant    Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Tenant {
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  subdomain              String                   @unique
+  customDomain           String?                  @unique
+  logo                   String?
+  invoiceLogo            String?
+  primaryColor           String?                  @default("#facc15")
+  secondaryColor         String?                  @default("#3b82f6")
+  emailSignature         String?
+  address                String?
+  phone                  String?
+  website                String?
+  status                 String                   @default("ACTIVE")
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  planId                 Int?
+  stripeCustomerId       String?                  @unique
+  stripeSubscriptionId   String?                  @unique
+  subscriptionEndsAt     DateTime?
+  trialEndsAt            DateTime?
+  businessHoursJson      String?
+  ceoName                String?
+  companyStampUrl        String?
+  companyType            String?                  @default("TRAVEL_AGENCY")
+  creditNotePrefix       String?                  @default("CN-2026-")
+  digitalSignatureUrl    String?
+  facebookUrl            String?
+  financeEmail           String?
+  iataCode               String?
+  instagramUrl           String?
+  invoicePrefix          String?                  @default("INV-2026-")
+  invoiceTerms           String?
+  legalName              String?
+  linkedinUrl            String?
+  ntnTaxNumber           String?
+  ownerName              String?
+  paymentInstructions    String?
+  quotationPrefix        String?                  @default("QT-2026-")
+  receiptPrefix          String?                  @default("REC-2026-")
+  registrationNumber     String?
+  supportEmail           String?
+  tourismLicenseNumber   String?
+  tradeName              String?
+  whatsappBusinessNumber String?
+  yearEstablished        String?
+  customDomainStatus     String?                  @default("PENDING")
+  country                String?                  @default("Saudi Arabia")
+  acceptedCurrencies     String[]                 @default(["USD"])
+  accountingCurrency     String                   @default("USD")
+  Account                Account[]
+  AgencyBankAccount      AgencyBankAccount[]
+  AgencyBranch           AgencyBranch[]
+  AgencyDocument         AgencyDocument[]
+  AirTicket              AirTicket[]
+  Announcement           Announcement[]
+  Applicant              Applicant[]
+  Application            Application[]
+  Appointment            Appointment[]
+  AuditLog               AuditLog[]
+  Blog                   Blog[]
+  BroadcastMessage       BroadcastMessage[]
+  CRMLead                CRMLead[]
+  CaseActivity           CaseActivity[]
+  CaseAppointment        CaseAppointment[]
+  CaseDocument           CaseDocument[]
+  CaseTask               CaseTask[]
+  ClientDocument         ClientDocument[]
+  ClientNote             ClientNote[]
+  ClientProfile          ClientProfile[]
+  ClientTimeline         ClientTimeline[]
+  CommunicationLog       CommunicationLog[]
+  Contact                Contact[]
+  ContactRequest         ContactRequest[]
+  ContractTemplate       ContractTemplate[]
+  Country                Country[]
+  CreditNote             CreditNote[]
+  CustomWorkflow         CustomWorkflow[]
+  EmailConfig            EmailConfig[]
+  ExchangeRate           ExchangeRate[]
+  Expense                Expense[]
+  FAQ                    FAQ[]
+  FinanceTransaction     FinanceTransaction[]
+  FinancialAccount       FinancialAccount[]
+  HotelBooking           HotelBooking[]
+  Invoice                Invoice[]
+  JournalEntry           JournalEntry[]
+  Lead                   Lead[]
+  MarketplaceListing     MarketplaceListing[]
+  MarketplaceOrder       MarketplaceOrder[]
+  Message                Message[]
+  MessageTemplate        MessageTemplate[]
+  MobileWallet           MobileWallet[]
+  Notification           Notification[]
+  NotificationPreference NotificationPreference[]
+  NotificationRule       NotificationRule[]
+  Payable                Payable[]
+  Payment                Payment[]
+  RecurringExpense       RecurringExpense[]
+  Refund                 Refund[]
+  ScheduledMessage       ScheduledMessage[]
+  SmartContract          SmartContract[]
+  StaffAttendance        StaffAttendance[]
+  StaffLeave             StaffLeave[]
+  StaffProfile           StaffProfile[]
+  Supplier               Supplier[]
+  SupportTicket          SupportTicket[]
+  Task                   Task[]
+  Template               Template[]
+  Plan                   Plan?                    @relation(fields: [planId], references: [id])
+  TenantSetting          TenantSetting[]
+  Testimonial            Testimonial[]
+  TourPackage            TourPackage[]
+  User                   User[]
+  VisaCase               VisaCase[]
+  WhatsAppConfig         WhatsAppConfig[]
+}
+
+model TenantSetting {
+  id       Int    @id @default(autoincrement())
+  tenantId Int
+  key      String
+  value    String
+  Tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+}
+
+model TicketMessage {
+  id            Int           @id @default(autoincrement())
+  ticketId      Int
+  senderRole    String
+  senderName    String        @default("")
+  content       String
+  fileUrl       String?
+  fileName      String?
+  fileType      String?
+  createdAt     DateTime      @default(now())
+  SupportTicket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+}
+
+model TourPackage {
+  id           Int      @id @default(autoincrement())
+  title        String
+  destinations String
+  itinerary    String?
+  pricing      Float
+  durationDays Int      @default(3)
+  images       String[] @default([])
+  createdAt    DateTime @default(now())
+  tenantId     Int?
+  Tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model VisaCase {
+  id                   Int                 @id @default(autoincrement())
+  caseNumber           String              @unique
+  clientId             Int?
+  applicantId          Int?
+  passportNumber       String?
+  nationality          String?
+  destinationCountry   String
+  visaCategory         String
+  visaType             String
+  processingType       String              @default("NORMAL")
+  stage                String              @default("LEAD_RECEIVED")
+  priority             String              @default("NORMAL")
+  assignedOfficerId    Int?
+  submissionDate       DateTime?
+  expectedDecisionDate DateTime?
+  travelDate           DateTime?
+  returnDate           DateTime?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime
+  tenantId             Int?
+  CaseActivity         CaseActivity[]
+  CaseAppointment      CaseAppointment[]
+  CaseDocument         CaseDocument[]
+  CaseTask             CaseTask[]
+  SmartContract        SmartContract[]
+  Applicant            Applicant?          @relation(fields: [applicantId], references: [id])
+  User                 User?               @relation(fields: [assignedOfficerId], references: [id])
+  ClientProfile        ClientProfile?      @relation(fields: [clientId], references: [id])
+  Tenant               Tenant?             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  VisaCaseMilestone    VisaCaseMilestone[]
+
+  @@index([tenantId, destinationCountry])
+  @@index([tenantId, stage])
+}
+
+model VisaCaseMilestone {
+  id                  Int            @id @default(autoincrement())
+  caseId              Int?
+  contractId          Int?
+  stepNumber          Int
+  title               String
+  description         String?
+  category            String
+  status              String         @default("PENDING")
+  isConditionalBranch Boolean        @default(false)
+  branchConditionKey  String?
+  progressPercentage  Int            @default(0)
+  completedAt         DateTime?
+  responsibleUserId   Int?
+  responsibleUserName String?
+  notes               String?
+  fileUrls            Json?          @default("[]")
+  messages            Json?          @default("[]")
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime
+  VisaCase            VisaCase?      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  SmartContract       SmartContract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([contractId])
+}
+
+model VisaType {
+  id           Int      @id @default(autoincrement())
+  countryId    Int
+  name         String
+  description  String?
+  requirements String[] @default([])
+  Country      Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppConfig {
+  id                 Int      @id @default(autoincrement())
+  provider           String   @default("META_CLOUD")
+  phoneNumber        String?
+  phoneId            String?
+  wabaId             String?
+  accessToken        String?
+  webhookVerifyToken String?
+  autoReconnect      Boolean  @default(true)
+  status             String   @default("DISCONNECTED")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  tenantId           Int?
+  Tenant             Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 enum UserRole {
@@ -62,8 +1686,15 @@ enum UserRole {
   STAFF
   CLIENT
   AGENCY_OWNER
-  VISA_OFFICER
   MANAGER
+  VISA_OFFICER
+  TICKETING_OFFICER
+  ACCOUNTANT
+  RECEPTIONIST
+  DOCUMENT_OFFICER
+  MARKETING_OFFICER
+  SUPPORT
+  GUEST
 }
 
 enum ApplicationStatus {
@@ -86,12 +1717,23 @@ enum PaymentStatus {
   PAID
   PARTIALLY_PAID
   VOID
+  DRAFT
+  ISSUED
+  SENT
+  OVERDUE
+  CANCELLED
 }
 
 enum PaymentMethod {
   ONLINE
   CASH
   BANK_TRANSFER
+  STRIPE
+  PAYPAL
+  WISE
+  WESTERN_UNION
+  CARD
+  CHEQUE
 }
 
 enum AppointmentStatus {
@@ -110,333 +1752,74 @@ enum TaskPriority {
   LOW
   MEDIUM
   HIGH
+  URGENT
 }
 
-model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  passwordHash String
-  name         String
-  image        String?
-  role         UserRole      @default(CLIENT)
-  status       String        @default("ACTIVE") // ACTIVE, SUSPENDED, PENDING
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  
-  resetToken       String?
-  resetTokenExpiry DateTime?
-  
-  clientProfile ClientProfile?
-  agentProfile  AgentProfile?
-  staffTasks    Task[]        @relation("AssignedTo")
-  createdTasks  Task[]        @relation("CreatedBy")
-  sentMessages  Message[]     @relation("Sender")
-  recvMessages  Message[]     @relation("Receiver")
-  notifications Notification[]
-  auditLogs     AuditLog[]
-  verifiedPayments Payment[]  @relation("VerifiedBy")
-  blogs         Blog[]
+enum AccountType {
+  INCOME
+  EXPENSE
+  ASSET
+  LIABILITY
+  EQUITY
 }
 
-model ClientProfile {
-  id             Int           @id @default(autoincrement())
-  userId         Int           @unique
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone          String?
-  dob            String?
-  gender         String?
-  nationality    String?
-  birthPlace     String?
-  religion       String?
-  profession     String?
-  qualification  String?
-  currentAddress String?
-  permanentAddress String?
-  
-  // Passport Info
-  passportNumber String?
-  passportIssueDate String?
-  passportExpiryDate String?
-  passportIssuePlace String?
-  
-  // Family Info
-  fatherName     String?
-  motherName     String?
-  maritalStatus  String?
-  spouseName     String?
-  childrenCount  Int           @default(0)
-  childrenDetails String?
-  emergencyContact String?
-  
-  // Education
-  highSchool     String?
-  college        String?
-  bachelor       String?
-  master         String?
-  graduationYear String?
-  cgpa           String?
-  
-  // Employment
-  companyName    String?
-  position       String?
-  salary         String?
-  experienceYears String?
-  employerAddress String?
-
-  applications   Application[]
-  appointments   Appointment[]
-  agentId        Int?
-  agent          AgentProfile? @relation(name: "AgentClients", fields: [agentId], references: [id], onDelete: SetNull)
+enum CRMLeadSource {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  GOOGLE
+  REFERRAL
+  WALK_IN
+  PHONE
+  EMAIL
 }
 
-model AgentProfile {
-  id             Int           @id @default(autoincrement())
-  userId         Int           @unique
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agentCode      String        @unique
-  agencyName     String?
-  agencyAddress  String?
-  phone          String?
-  commissionRate Float         @default(0.0)
-  licenseNumber  String?
-  whatsappNumber String?
-  officeAddress  String?
-  licenseCertificate String?
-
-  applications   Application[]
-  appointments   Appointment[]
-  clients        ClientProfile[] @relation("AgentClients")
+enum CRMLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
 }
 
-model Application {
-  id                 Int                       @id @default(autoincrement())
-  trackingId         String?                   @unique
-  clientId           Int
-  client             ClientProfile             @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  agentId            Int?
-  agent              AgentProfile?             @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  assignedStaffId    Int?
-  
-  // Visa details
-  country            String
-  visaCategory       String
-  duration           String?
-  entryType          String? // Single, Multiple
-  travelDate         String?
-  returnDate         String?
-  purpose            String?
-  sponsor            String?
-  reference          String?
-  
-  // Package relation
-  packageId          Int?
-  package            Package?                  @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  packagePrice       Float?
-  
-  // Travel History
-  visitedCountries   String?
-  previousVisas      String?
-  visaRefusals       String?
-  previousPassportNumber String?
-  
-  status             ApplicationStatus         @default(DRAFT)
-  
-  // Contract Details
-  contractApprovedDays  String?
-  contractPaymentAmount String?
-  contractFirstPartyName String?
-  contractStatus        String?                   @default("PENDING") // PENDING, SENT, ACCEPTED
-  contractAccepted      Boolean                   @default(false)
-  contractAcceptedAt    DateTime?
-  contractSignatureName String?
-
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @updatedAt
-
-  statusHistory      ApplicationStatusHistory[]
-  documents          Document[]
-  invoices           Invoice[]
+enum ExpenseCategory {
+  OFFICE_RENT
+  SALARY
+  MARKETING
+  UTILITIES
+  INTERNET
+  TRAVEL
+  COURIER
+  VISA_FEES
+  EMBASSY_PAYMENTS
+  MISCELLANEOUS
 }
 
-model ApplicationStatusHistory {
-  id            Int               @id @default(autoincrement())
-  applicationId Int
-  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  status        ApplicationStatus
-  notes         String?
-  updatedById   Int
-  createdAt     DateTime          @default(now())
+enum SupplierType {
+  EMBASSY
+  HOTEL
+  AIRLINE
+  TRANSPORT
+  INSURANCE
+  COURIER
+  VISA_CENTER
 }
 
-model Document {
-  id            Int         @id @default(autoincrement())
-  applicationId Int
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  documentType  String      // passport, cnic, photo, bank_statement, etc.
-  fileUrl       String
-  fileName      String
-  fileSize      Int?
-  fileType      String      // pdf, image, png, etc.
-  version       Int         @default(1)
-  createdAt     DateTime    @default(now())
+enum TemplateType {
+  EMAIL
+  SMS
+  WHATSAPP
 }
 
-model Appointment {
-  id            Int               @id @default(autoincrement())
-  clientId      Int
-  client        ClientProfile     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  agentId       Int?
-  agent         AgentProfile?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  date          DateTime
-  timeSlot      String
-  status        AppointmentStatus @default(SCHEDULED)
-  notes         String?
-  createdAt     DateTime          @default(now())
-}
-
-model Invoice {
-  id            Int           @id @default(autoincrement())
-  invoiceNumber String        @unique
-  applicationId Int?
-  application   Application?  @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  totalAmount   Float
-  status        PaymentStatus @default(UNPAID)
-  dueDate       DateTime
-  createdAt     DateTime      @default(now())
-  payments      Payment[]
-}
-
-model Payment {
-  id             Int           @id @default(autoincrement())
-  invoiceId      Int
-  invoice        Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  amount         Float
-  paymentMethod  PaymentMethod
-  transactionId  String?
-  receiptUrl     String?
-  status         String        @default("PENDING") // PENDING, VERIFIED, REJECTED
-  verifiedById   Int?
-  verifiedBy     User?         @relation("VerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
-  createdAt      DateTime      @default(now())
-}
-
-model Message {
-  id            Int      @id @default(autoincrement())
-  senderId      Int
-  sender        User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiverId    Int
-  receiver      User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  applicationId Int?
-  messageText   String
-  attachmentUrl String?
-  isRead        Boolean  @default(false)
-  createdAt     DateTime @default(now())
-}
-
-model Notification {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  message   String
-  actionUrl String?
-  category  String?   @default("SYSTEM") // PIPELINE, MESSAGE, CONTRACT, DOCUMENT, SYSTEM
-  priority  String?   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  isRead    Boolean   @default(false)
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-}
-
-model AuditLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action    String
-  details   String?
-  ipAddress String?
-  createdAt DateTime @default(now())
-}
-
-model Task {
-  id            Int          @id @default(autoincrement())
-  title         String
-  description   String?
-  dueDate       DateTime?
-  status        TaskStatus   @default(PENDING)
-  priority      TaskPriority @default(MEDIUM)
-  assignedToId  Int?
-  assignedTo    User?        @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdById   Int
-  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt     DateTime     @default(now())
-}
-
-model Setting {
-  id    Int    @id @default(autoincrement())
-  key   String @unique
-  value String
-}
-
-model Blog {
-  id         Int      @id @default(autoincrement())
-  title      String
-  slug       String   @unique
-  content    String
-  coverImage String?
-  status     String   @default("DRAFT") // DRAFT, PUBLISHED
-  authorId   Int
-  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-}
-
-model Testimonial {
-  id         Int      @id @default(autoincrement())
-  clientName String
-  clientRole String?
-  text       String
-  rating     Int      @default(5)
-  avatar     String?
-  status     String   @default("ACTIVE")
-  createdAt  DateTime @default(now())
-}
-
-model FAQ {
-  id        Int      @id @default(autoincrement())
-  question  String
-  answer    String
-  category  String?
-  status    String   @default("ACTIVE")
-  createdAt DateTime @default(now())
-}
-
-model ContactRequest {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String
-  phone     String?
-  message   String
-  status    String   @default("NEW") // NEW, READ, ARCHIVED
-  createdAt DateTime @default(now())
-}
-
-model Package {
+model InvoiceEmailLog {
   id             Int      @id @default(autoincrement())
-  title          String
-  slug           String?  @unique
-  country        String
-  visaType       String?
-  agencyNumber   String
-  priceUSD       Float?
-  pricePKR       Float?
-  priceAFN       Float?
-  duration       String?
-  processingTime String?
-  description    String
-  documents      String
-  image          String?
-  featured       Boolean  @default(true)
-  status         String   @default("ACTIVE") // ACTIVE, INACTIVE
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now()) @updatedAt
-  applications   Application[]
+  invoiceId      Int
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  recipientEmail String
+  subject        String
+  status         String   // SENT, FAILED
+  messageId      String?
+  errorMessage   String?
+  sentAt         DateTime @default(now())
 }

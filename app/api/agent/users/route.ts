@@ -22,6 +22,7 @@ export async function GET() {
           userId: session.userId,
           agentCode,
           agencyName: `${session.name}'s Agency`,
+          phone: '',
         },
       });
     }

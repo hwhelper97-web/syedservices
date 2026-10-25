@@ -63,7 +63,8 @@ export default function PortalLayoutClient({ children, user }: PortalLayoutClien
         { name: "Messages", href: "/portal/admin/messages", icon: <FiMessageSquare size={18} /> },
         { name: "Visa Settings", href: "/portal/admin/settings", icon: <FiGlobe size={18} /> },
         { name: "Packages Setup", href: "/portal/admin/packages", icon: <FiBriefcase size={18} /> },
-        { name: "Invoices & Payments", href: "/portal/admin/payments", icon: <FiDollarSign size={18} /> },
+        { name: "Invoices", href: "/portal/admin/invoices", icon: <FiFileText size={18} /> },
+        { name: "Payments & Receipts", href: "/portal/admin/payments", icon: <FiDollarSign size={18} /> },
         { name: "User Management", href: "/portal/admin/users", icon: <FiSettings size={18} /> },
       ];
     }
