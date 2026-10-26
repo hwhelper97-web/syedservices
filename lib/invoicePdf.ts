@@ -348,7 +348,36 @@ export function generateInvoicePdfBuffer(data: InvoicePdfData): Promise<Buffer> 
       drawSumRow("Amount Paid", formatCurrencyAmount(data.amountPaid, data.currency, { showCode: true }));
       drawSumRow("Balance Due", formatCurrencyAmount(data.balanceDue, data.currency, { showCode: true }), true);
 
-      currentY += 135;
+            currentY += 135;
+
+      // ================= OFFICIAL AUTHENTICITY STAMP & SIGNATURE =================
+      const sealSectionY = Math.min(Math.max(currentY - 15, 620), 645);
+      
+      // Signature line & Authority details
+      const sigLineX = margin + 14;
+      const sigLineY = sealSectionY + 68;
+      const sigLineWidth = 175;
+
+      doc.moveTo(sigLineX, sigLineY).lineTo(sigLineX + sigLineWidth, sigLineY).strokeColor("#cbd5e1").stroke();
+      doc.font("Helvetica-Bold").fontSize(8).fillColor(textDark).text("Syed Services Pvt Ltd", sigLineX, sigLineY + 6);
+      doc.font("Helvetica").fontSize(7).fillColor(textMuted).text("Authorized Signatory & Official Seal", sigLineX, sigLineY + 16);
+
+      // Official Transparent Rubber Stamp
+      const stampPath = path.join(process.cwd(), "public", "images", "stamp-transparent.png");
+      if (fs.existsSync(stampPath)) {
+        try {
+          doc.save();
+          doc.opacity(0.88); // Authentic wet ink rubber stamp opacity
+          const stampSize = 100;
+          const stampX = sigLineX + sigLineWidth - 50;
+          const stampY = sealSectionY - 5;
+          doc.rotate(-5, { origin: [stampX + stampSize / 2, stampY + stampSize / 2] });
+          doc.image(stampPath, stampX, stampY, { width: stampSize, height: stampSize });
+          doc.restore();
+        } catch (err) {
+          console.warn("Could not render authenticity stamp in PDF:", err);
+        }
+      }
 
       // ================= FOOTER & VERIFICATION LINK =================
       const footerY = 770;

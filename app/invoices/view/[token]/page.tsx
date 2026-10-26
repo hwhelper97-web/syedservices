@@ -346,6 +346,34 @@ export default function PublicInvoiceViewPage() {
                 </div>
               </div>
             </div>
+
+            {/* Official Seal & Authenticity Block */}
+            <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-1.5 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Certified & Authenticated Document
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 max-w-md">
+                  This invoice is officially issued and stamped by Syed Services Pvt Ltd. Retain for official record and verification.
+                </p>
+                <div className="text-[10px] text-slate-500 font-mono pt-1">
+                  OFFICIAL SEAL • SYED SERVICES PVT LTD • VERIFIED INVOICE
+                </div>
+              </div>
+
+              <div className="relative shrink-0 select-none group">
+                <Image
+                  src="/images/stamp-transparent.png"
+                  alt="Official Syed Services Pvt Ltd Seal"
+                  width={110}
+                  height={110}
+                  className="opacity-90 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_15px_rgba(30,58,138,0.35)] -rotate-6"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Verification Footer */}
