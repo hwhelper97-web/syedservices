@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMenu, FiX, FiPhone, FiChevronRight, FiLock, FiChevronDown, FiGlobe, FiBriefcase, FiBook, FiShield, FiHeart, FiPlus, FiFileText, FiDollarSign, FiSearch } from "react-icons/fi";
@@ -114,8 +115,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center text-black font-bold text-xl group-hover:rotate-12 transition-transform">
-            S
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-0.5 border border-yellow-400/30 shadow-md shadow-yellow-400/10 group-hover:scale-105 transition-all overflow-hidden shrink-0">
+            <Image
+              src="/images/logo.png"
+              alt="Syed Services Logo"
+              width={38}
+              height={38}
+              className="w-full h-full object-contain"
+              priority
+            />
           </div>
           <div>
             <span className="text-xl font-bold tracking-tight text-white block leading-none">SYED</span>

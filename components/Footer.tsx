@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   FiFacebook, 
   FiInstagram, 
@@ -80,8 +81,14 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-3">
             <div className="flex items-center justify-between sm:justify-start gap-4">
               <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 md:w-9 md:h-9 bg-yellow-400 rounded-xl flex items-center justify-center text-black font-black text-lg shadow-sm group-hover:scale-105 transition-transform">
-                  S
+                <div className="w-9 h-9 md:w-10 md:h-10 bg-white rounded-xl flex items-center justify-center p-0.5 border border-yellow-400/30 shadow-sm group-hover:scale-105 transition-all overflow-hidden shrink-0">
+                  <Image
+                    src="/images/logo.png"
+                    alt="Syed Services Logo"
+                    width={38}
+                    height={38}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div>
                   <span className="text-base md:text-lg font-black tracking-tight text-white block leading-none">

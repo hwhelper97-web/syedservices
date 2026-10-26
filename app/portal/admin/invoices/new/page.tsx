@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   FiArrowLeft,
   FiPlus,
@@ -768,8 +769,8 @@ export default function CreateInvoicePage() {
               {/* Header Bar */}
               <div className="bg-[#020617] p-5 border-b-2 border-amber-400 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-xl flex items-center justify-center">
-                    S
+                  <div className="w-10 h-10 rounded-lg bg-white p-0.5 border border-amber-400/40 flex items-center justify-center overflow-hidden shrink-0">
+                    <Image src="/images/logo.png" alt="Syed Services Logo" width={38} height={38} className="w-full h-full object-contain" priority />
                   </div>
                   <div>
                     <div className="text-sm font-bold text-white tracking-wider">SYED SERVICES</div>

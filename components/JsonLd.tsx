@@ -8,7 +8,7 @@ export function OrganizationJsonLd() {
     "name": "Syed Services",
     "alternateName": "Syed Services Pvt Ltd",
     "url": "https://www.syedservices.com.pk",
-    "logo": "https://www.syedservices.com.pk/og-image.jpg",
+    "logo": "https://www.syedservices.com.pk/images/logo.png",
     "description": "Premier international visa assistance, immigration consultancy, flight ticketing, and travel advisory services.",
     "email": "info@syedservices.com.pk",
     "telephone": "+92 309 9797771",

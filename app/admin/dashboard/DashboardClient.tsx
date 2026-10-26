@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   FiLogOut, FiTrash2, FiMail, FiPhone, FiCheckCircle, 
   FiClock, FiFileText, FiDownload, FiSearch, FiEye, FiUser, FiCalendar, FiTag, FiX, FiGlobe, FiLoader
@@ -111,7 +112,9 @@ export default function DashboardClient({ initialLeads }: { initialLeads: any[] 
       <nav className="bg-[#0f172a] border-b border-slate-800 p-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center text-black font-bold text-xl">S</div>
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-0.5 border border-yellow-400/30 shadow-sm overflow-hidden shrink-0">
+            <Image src="/images/logo.png" alt="Syed Services Logo" width={38} height={38} className="w-full h-full object-contain" />
+          </div>
             <div>
               <h1 className="text-xl font-bold text-white leading-none">Syed Services</h1>
               <p className="text-xs text-slate-400 mt-1">Admin Dashboard</p>

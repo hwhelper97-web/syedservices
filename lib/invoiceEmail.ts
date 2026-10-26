@@ -145,7 +145,7 @@ export async function sendInvoiceEmail(params: SendInvoiceEmailParams) {
 <body>
   <div class="card">
     <div class="header">
-      <div class="logo-badge">S</div>
+      <img src="https://syedservices.com.pk/images/logo.png" width="46" height="46" style="border-radius: 8px; vertical-align: middle; margin-right: 14px; background: #ffffff; padding: 2px;" alt="Syed Services" />
       <div class="brand-title">
         <h1>SYED SERVICES &amp; CONSULTANT</h1>
         <p>TRAVEL &amp; VISA SERVICES • PESHAWAR &amp; JALALABAD</p>

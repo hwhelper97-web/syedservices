@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import PDFDocument from "pdfkit";
 import { formatCurrencyAmount } from "./currencies";
 
@@ -77,17 +79,54 @@ export function generateInvoicePdfBuffer(data: InvoicePdfData): Promise<Buffer> 
       const margin = 36;
       const contentWidth = pageWidth - margin * 2;
 
+      // ================= MIDDLE PAGE BRAND WATERMARK =================
+      const renderWatermark = () => {
+        try {
+          const watermarkPath = path.join(process.cwd(), "public", "images", "logo-transparent.png");
+          if (fs.existsSync(watermarkPath)) {
+            doc.save();
+            doc.opacity(0.065); // Subtle luxury watermark
+            const watermarkSize = 300;
+            const watermarkX = (pageWidth - watermarkSize) / 2;
+            const watermarkY = (841.89 - watermarkSize) / 2 + 25;
+            doc.image(watermarkPath, watermarkX, watermarkY, { width: watermarkSize });
+            doc.restore();
+          }
+        } catch (err) {
+          console.warn("Could not render invoice watermark:", err);
+        }
+      };
+
+      // Draw watermark on page 1
+      renderWatermark();
+
+      // Ensure additional pages also get watermark
+      doc.on("pageAdded", () => {
+        renderWatermark();
+      });
+
       // ================= HEADER SECTION =================
       // Header background bar
       doc.rect(margin, margin, contentWidth, 80).fill("#020617");
 
-      // Company Branding
-      // Gold emblem box
-      doc.roundedRect(margin + 16, margin + 14, 52, 52, 8).fill("#facc15");
-      doc.fillColor("#020617").font("Helvetica-Bold").fontSize(26).text("S", margin + 16, margin + 26, {
-        width: 52,
-        align: "center",
-      });
+      // Company Official Brand Logo
+      const headerLogoPath = path.join(process.cwd(), "public", "images", "logo.png");
+      if (fs.existsSync(headerLogoPath)) {
+        doc.roundedRect(margin + 14, margin + 12, 56, 56, 8).fill("#ffffff");
+        doc.image(headerLogoPath, margin + 16, margin + 14, {
+          width: 52,
+          height: 52,
+          fit: [52, 52],
+          align: "center",
+          valign: "center",
+        });
+      } else {
+        doc.roundedRect(margin + 16, margin + 14, 52, 52, 8).fill("#facc15");
+        doc.fillColor("#020617").font("Helvetica-Bold").fontSize(26).text("S", margin + 16, margin + 26, {
+          width: 52,
+          align: "center",
+        });
+      }
 
       // Business Name & Tagline
       doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(18).text("SYED SERVICES", margin + 80, margin + 18);

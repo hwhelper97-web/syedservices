@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   FiDownload,
   FiPrinter,
@@ -151,8 +152,8 @@ export default function PublicInvoiceViewPage() {
           {/* Header */}
           <div className="bg-[#020617] p-8 border-b-2 border-amber-400 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-400 text-slate-950 font-black text-3xl flex items-center justify-center shadow-lg shadow-amber-400/20">
-                S
+              <div className="w-14 h-14 rounded-2xl bg-white p-1 border border-amber-400/40 flex items-center justify-center shadow-lg shadow-amber-400/20 overflow-hidden shrink-0">
+                <Image src="/images/logo.png" alt="Syed Services Logo" width={52} height={52} className="w-full h-full object-contain" priority />
               </div>
               <div>
                 <div className="text-xl font-black text-white tracking-wider">SYED SERVICES</div>
