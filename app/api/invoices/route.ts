@@ -105,19 +105,45 @@ export async function GET(req: Request) {
     // 3. Compute KPI metrics safely with resilient fallback
     let metrics = null;
     try {
-      const metricRows = await prisma.invoice.findMany({
-        where: session.role === "CLIENT" || session.role === "AGENT" ? where : {},
+      const scopeWhere: any = session.role === "CLIENT" || session.role === "AGENT" ? { ...where } : {};
+      delete scopeWhere.currency;
+
+      const allScopedRows = await prisma.invoice.findMany({
+        where: scopeWhere,
         select: {
+          currency: true,
           status: true,
           totalAmount: true,
           paidAmount: true,
           balanceAmount: true,
           dueDate: true,
         },
-        take: 200,
-      }).catch(() => null);
+        take: 300,
+      }).catch(() => []);
 
-      const source = metricRows || invoices;
+      const currencyBreakdown: Record<string, { count: number; totalInvoiced: number; totalReceived: number; totalOutstanding: number }> = {
+        PKR: { count: 0, totalInvoiced: 0, totalReceived: 0, totalOutstanding: 0 },
+        AFN: { count: 0, totalInvoiced: 0, totalReceived: 0, totalOutstanding: 0 },
+        USD: { count: 0, totalInvoiced: 0, totalReceived: 0, totalOutstanding: 0 },
+        CAD: { count: 0, totalInvoiced: 0, totalReceived: 0, totalOutstanding: 0 },
+      };
+
+      allScopedRows.forEach((row: any) => {
+        const c = (row.currency || "PKR").toUpperCase();
+        if (!currencyBreakdown[c]) {
+          currencyBreakdown[c] = { count: 0, totalInvoiced: 0, totalReceived: 0, totalOutstanding: 0 };
+        }
+        currencyBreakdown[c].count += 1;
+        currencyBreakdown[c].totalInvoiced += row.totalAmount || 0;
+        currencyBreakdown[c].totalReceived += row.paidAmount || 0;
+        currencyBreakdown[c].totalOutstanding += row.balanceAmount || 0;
+      });
+
+      const activeRows = (currency && currency !== "ALL")
+        ? allScopedRows.filter((r: any) => (r.currency || "").toUpperCase() === currency.toUpperCase())
+        : allScopedRows;
+
+      const source = activeRows.length > 0 ? activeRows : invoices;
       let totalInvoiced = 0;
       let totalReceived = 0;
       let totalOutstanding = 0;
@@ -139,7 +165,8 @@ export async function GET(req: Request) {
       });
 
       metrics = {
-        totalInvoices: total,
+        activeCurrency: currency && currency !== "ALL" ? currency.toUpperCase() : "ALL",
+        totalInvoices: activeRows.length || total,
         totalInvoiced,
         totalReceived,
         totalOutstanding,
@@ -148,10 +175,12 @@ export async function GET(req: Request) {
         pendingCount: source.filter((i: any) => i.status === "UNPAID" || i.status === "ISSUED" || i.status === "SENT").length,
         partiallyPaidCount: source.filter((i: any) => i.status === "PARTIALLY_PAID").length,
         overdueCount: source.filter((i: any) => i.status === "OVERDUE" || (new Date(i.dueDate) < now && (i.balanceAmount || 0) > 0 && i.status !== "PAID" && i.status !== "VOID")).length,
+        currencyBreakdown,
       };
     } catch {
       // Fallback metrics from current page
       metrics = {
+        activeCurrency: currency && currency !== "ALL" ? currency.toUpperCase() : "ALL",
         totalInvoices: total,
         totalInvoiced: invoices.reduce((s, i) => s + (i.totalAmount || 0), 0),
         totalReceived: invoices.reduce((s, i) => s + (i.paidAmount || 0), 0),
@@ -161,6 +190,7 @@ export async function GET(req: Request) {
         pendingCount: invoices.filter((i) => i.status === "UNPAID" || i.status === "ISSUED" || i.status === "SENT").length,
         partiallyPaidCount: invoices.filter((i) => i.status === "PARTIALLY_PAID").length,
         overdueCount: 0,
+        currencyBreakdown: {},
       };
     }
 

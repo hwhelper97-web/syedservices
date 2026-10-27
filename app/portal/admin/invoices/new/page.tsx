@@ -66,6 +66,16 @@ export default function CreateInvoicePage() {
   // Invoice Meta
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [currency, setCurrency] = useState("PKR");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const urlCur = sp.get("currency");
+      if (urlCur && urlCur !== "ALL") {
+        setCurrency(urlCur.toUpperCase());
+      }
+    }
+  }, []);
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState(
     new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0]
@@ -278,7 +288,7 @@ export default function CreateInvoicePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div className="flex items-center gap-3">
           <Link
-            href="/portal/admin/invoices"
+            href={`/portal/admin/invoices?currency=${currency}`}
             className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <FiArrowLeft size={18} />

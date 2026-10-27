@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,8 +21,48 @@ import {
   FiX,
   FiFilter,
   FiExternalLink,
+  FiArrowRight,
+  FiGlobe,
 } from "react-icons/fi";
-import { formatCurrencyAmount, SUPPORTED_CURRENCIES } from "@/lib/currencies";
+import { formatCurrencyAmount, SUPPORTED_CURRENCIES, getCurrencyInfo } from "@/lib/currencies";
+
+const PRIMARY_CURRENCIES = [
+  {
+    code: "ALL",
+    name: "All Accounts",
+    flag: "🌐",
+    symbol: "Multi",
+    description: "Consolidated multi-currency view of all client invoices and global receivables.",
+  },
+  {
+    code: "PKR",
+    name: "Pakistani Rupee",
+    flag: "🇵🇰",
+    symbol: "Rs",
+    description: "Dedicated account for Pakistan domestic services, visa processing, and ticketing in PKR (₨).",
+  },
+  {
+    code: "AFN",
+    name: "Afghan Afghani",
+    flag: "🇦🇫",
+    symbol: "؋",
+    description: "Dedicated account for Afghanistan border transit, consulate services, and regional billing in AFN (؋).",
+  },
+  {
+    code: "USD",
+    name: "US Dollar",
+    flag: "🇺🇸",
+    symbol: "$",
+    description: "Dedicated account for international visas, overseas packages, and global transactions in USD ($).",
+  },
+  {
+    code: "CAD",
+    name: "Canadian Dollar",
+    flag: "🇨🇦",
+    symbol: "CA$",
+    description: "Dedicated account for Canadian immigration files, study visas, and North American billing in CAD (CA$).",
+  },
+];
 
 export default function AdminInvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -56,6 +96,31 @@ export default function AdminInvoicesPage() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast(message ? { message, type } : null);
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Sync currency from URL search params on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const urlCur = sp.get("currency");
+      if (urlCur && urlCur !== currencyFilter) {
+        setCurrencyFilter(urlCur.toUpperCase());
+      }
+    }
+  }, []);
+
+  const handleSelectCurrency = (code: string) => {
+    setCurrencyFilter(code);
+    setPage(1);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (code === "ALL") {
+        url.searchParams.delete("currency");
+      } else {
+        url.searchParams.set("currency", code);
+      }
+      window.history.pushState({}, "", url.toString());
+    }
   };
 
   const fetchInvoices = async () => {
@@ -204,8 +269,28 @@ export default function AdminInvoicesPage() {
     }
   };
 
+  // Identify active currency info
+  const activeCurrencyInfo = useMemo(() => {
+    const found = PRIMARY_CURRENCIES.find((c) => c.code === currencyFilter);
+    if (found) return found;
+    const fromSupported = SUPPORTED_CURRENCIES.find((c) => c.code === currencyFilter);
+    if (fromSupported) {
+      return {
+        code: fromSupported.code,
+        name: fromSupported.name,
+        flag: "🌍",
+        symbol: fromSupported.symbol,
+        description: `Dedicated account for ${fromSupported.name} invoices and transactions in ${fromSupported.code}.`,
+      };
+    }
+    return PRIMARY_CURRENCIES[0];
+  }, [currencyFilter]);
+
+  // Determine active currency code for formatting
+  const kpiCurrencyCode = currencyFilter !== "ALL" ? currencyFilter : "PKR";
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
@@ -226,7 +311,7 @@ export default function AdminInvoicesPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -235,7 +320,7 @@ export default function AdminInvoicesPage() {
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Independent Invoices</h1>
               <p className="text-sm text-slate-400">
-                Create, track, send, and manage multi-currency invoices for all services.
+                Create, track, send, and manage dedicated multi-currency accounts &amp; billing.
               </p>
             </div>
           </div>
@@ -251,120 +336,286 @@ export default function AdminInvoicesPage() {
           </button>
 
           <Link
-            href="/portal/admin/invoices/new"
+            href={`/portal/admin/invoices/new?currency=${currencyFilter !== "ALL" ? currencyFilter : "PKR"}`}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-semibold text-sm shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <FiPlus size={18} />
-            <span>Create Invoice</span>
+            <span>
+              Create {currencyFilter !== "ALL" ? `${currencyFilter} Invoice` : "Invoice"}
+            </span>
           </Link>
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* ================= DEDICATED CURRENCY LOCATIONS NAVIGATION ================= */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-2.5 backdrop-blur-md shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Primary Currency Tabs: ALL, PKR, AFN, USD, CAD */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            {PRIMARY_CURRENCIES.map((cur) => {
+              const count =
+                cur.code === "ALL"
+                  ? metrics?.totalInvoices ?? invoices.length
+                  : metrics?.currencyBreakdown?.[cur.code]?.count ?? 0;
+              const isActive = currencyFilter === cur.code;
+
+              return (
+                <button
+                  key={cur.code}
+                  onClick={() => handleSelectCurrency(cur.code)}
+                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    isActive
+                      ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 scale-[1.02]"
+                      : "bg-slate-950/70 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  <span className="text-sm">{cur.flag}</span>
+                  <span>{cur.name}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold ${
+                      isActive
+                        ? "bg-slate-950/20 text-slate-950"
+                        : "bg-slate-800 text-amber-400 border border-amber-400/20"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* More World Currencies Dropdown */}
+          <div className="flex items-center gap-2 self-end lg:self-auto shrink-0">
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider hidden sm:inline">
+              Other Currencies:
+            </span>
+            <select
+              value={PRIMARY_CURRENCIES.some((c) => c.code === currencyFilter) ? "" : currencyFilter}
+              onChange={(e) => {
+                if (e.target.value) handleSelectCurrency(e.target.value);
+              }}
+              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-amber-400"
+            >
+              <option value="">Select More...</option>
+              {SUPPORTED_CURRENCIES.filter(
+                (sc) => !PRIMARY_CURRENCIES.some((pc) => pc.code === sc.code)
+              ).map((sc) => {
+                const count = metrics?.currencyBreakdown?.[sc.code]?.count ?? 0;
+                return (
+                  <option key={sc.code} value={sc.code}>
+                    {sc.code} ({sc.symbol}) {count > 0 ? `• ${count} inv` : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= ACTIVE CURRENCY LOCATION BANNER ================= */}
+      {currencyFilter !== "ALL" && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg"
+        >
+          <div className="flex items-center gap-3.5">
+            <span className="text-3xl p-2.5 rounded-2xl bg-slate-950 border border-slate-800 shadow-inner">
+              {activeCurrencyInfo.flag}
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white tracking-tight">
+                  {activeCurrencyInfo.name} Location
+                </h2>
+                <span className="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-md border border-amber-400/30">
+                  {activeCurrencyInfo.code} ({activeCurrencyInfo.symbol})
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                {activeCurrencyInfo.description}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <Link
+              href={`/portal/admin/invoices/new?currency=${currencyFilter}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-400/20"
+            >
+              <FiPlus size={15} />
+              <span>Create {currencyFilter} Invoice</span>
+            </Link>
+
+            <button
+              onClick={() => handleSelectCurrency("ALL")}
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+              title="View all currencies"
+            >
+              View All
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ================= MULTI-CURRENCY OVERVIEW CARDS (WHEN ALL IS ACTIVE) ================= */}
+      {currencyFilter === "ALL" && metrics?.currencyBreakdown && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { code: "PKR", flag: "🇵🇰", name: "Pakistani Rupee" },
+            { code: "USD", flag: "🇺🇸", name: "US Dollar" },
+            { code: "AFN", flag: "🇦🇫", name: "Afghan Afghani" },
+            { code: "CAD", flag: "🇨🇦", name: "Canadian Dollar" },
+          ].map((item) => {
+            const data = metrics.currencyBreakdown[item.code] || {
+              count: 0,
+              totalInvoiced: 0,
+              totalReceived: 0,
+              totalOutstanding: 0,
+            };
+
+            return (
+              <div
+                key={item.code}
+                onClick={() => handleSelectCurrency(item.code)}
+                className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-amber-400/40 hover:bg-slate-900/80 transition-all cursor-pointer group shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{item.flag}</span>
+                    <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
+                      {item.code} Account
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-300">
+                    {data.count} {data.count === 1 ? "inv" : "invs"}
+                  </span>
+                </div>
+
+                <div className="mt-3">
+                  <div className="text-lg font-black text-white">
+                    {formatCurrencyAmount(data.totalInvoiced, item.code, { showCode: true })}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                    <span>Outstanding:</span>
+                    <span className={data.totalOutstanding > 0 ? "text-amber-400 font-semibold" : "text-emerald-400"}>
+                      {formatCurrencyAmount(data.totalOutstanding, item.code, { showCode: true })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-amber-400 font-semibold group-hover:translate-x-0.5 transition-transform">
+                  <span>Open {item.code} Location</span>
+                  <FiArrowRight size={12} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ================= KPI CARDS (MATCHING SELECTED CURRENCY) ================= */}
       {metrics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Invoiced</span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                Total Invoiced {currencyFilter !== "ALL" ? `(${currencyFilter})` : ""}
+              </span>
               <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400"><FiFileText size={18} /></div>
             </div>
             <div className="mt-3 text-2xl font-bold text-white">
-              {formatCurrencyAmount(metrics.totalInvoiced, "PKR", { showSymbol: true })}
+              {formatCurrencyAmount(metrics.totalInvoiced, kpiCurrencyCode, { showSymbol: true })}
             </div>
-            <div className="mt-1 text-xs text-slate-500">{metrics.totalInvoices} Total Invoices</div>
+            <div className="mt-1 text-xs text-slate-500">
+              {metrics.totalInvoices} {currencyFilter !== "ALL" ? `${currencyFilter} Invoices` : "Total Invoices"}
+            </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Payments Collected</span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                Payments Collected {currencyFilter !== "ALL" ? `(${currencyFilter})` : ""}
+              </span>
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400"><FiCheckCircle size={18} /></div>
             </div>
             <div className="mt-3 text-2xl font-bold text-emerald-400">
-              {formatCurrencyAmount(metrics.totalReceived, "PKR", { showSymbol: true })}
+              {formatCurrencyAmount(metrics.totalReceived, kpiCurrencyCode, { showSymbol: true })}
             </div>
             <div className="mt-1 text-xs text-slate-500">{metrics.paidCount} Fully Paid</div>
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Outstanding Balance</span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                Outstanding Balance {currencyFilter !== "ALL" ? `(${currencyFilter})` : ""}
+              </span>
               <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400"><FiClock size={18} /></div>
             </div>
             <div className="mt-3 text-2xl font-bold text-amber-400">
-              {formatCurrencyAmount(metrics.totalOutstanding, "PKR", { showSymbol: true })}
+              {formatCurrencyAmount(metrics.totalOutstanding, kpiCurrencyCode, { showSymbol: true })}
             </div>
-            <div className="mt-1 text-xs text-slate-500">{metrics.pendingCount + metrics.partiallyPaidCount} Pending Invoices</div>
+            <div className="mt-1 text-xs text-slate-500">
+              {metrics.pendingCount + metrics.partiallyPaidCount} Pending Invoices
+            </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Overdue Balance</span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                Overdue Balance {currencyFilter !== "ALL" ? `(${currencyFilter})` : ""}
+              </span>
               <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400"><FiAlertCircle size={18} /></div>
             </div>
             <div className="mt-3 text-2xl font-bold text-rose-400">
-              {formatCurrencyAmount(metrics.totalOverdue, "PKR", { showSymbol: true })}
+              {formatCurrencyAmount(metrics.totalOverdue, kpiCurrencyCode, { showSymbol: true })}
             </div>
             <div className="mt-1 text-xs text-slate-500">{metrics.overdueCount} Past Due</div>
           </div>
         </div>
       )}
 
-      {/* Search & Filters */}
+      {/* Search & Status Filters */}
       <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative w-full md:w-96">
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
-            placeholder="Search invoice #, client, email..."
+            placeholder={
+              currencyFilter !== "ALL"
+                ? `Search ${currencyFilter} invoice #, client, email...`
+                : "Search invoice #, client, email..."
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
           />
         </form>
 
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Status Pills */}
-          <div className="flex items-center gap-1 overflow-x-auto py-1">
-            {["ALL", "ISSUED", "SENT", "PARTIALLY_PAID", "PAID", "OVERDUE", "DRAFT"].map((st) => (
-              <button
-                key={st}
-                onClick={() => {
-                  setStatusFilter(st);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  statusFilter === st
-                    ? "bg-amber-400 text-slate-950 font-bold"
-                    : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700"
-                }`}
-              >
-                {st.replace("_", " ")}
-              </button>
-            ))}
-          </div>
-
-          {/* Currency Dropdown */}
-          <select
-            value={currencyFilter}
-            onChange={(e) => {
-              setCurrencyFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-amber-400"
-          >
-            <option value="ALL">All Currencies</option>
-            {SUPPORTED_CURRENCIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} ({c.symbol})
-              </option>
-            ))}
-          </select>
+        {/* Status Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto py-1 w-full md:w-auto scrollbar-none">
+          {["ALL", "ISSUED", "SENT", "PARTIALLY_PAID", "PAID", "OVERDUE", "DRAFT"].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                statusFilter === st
+                  ? "bg-amber-400 text-slate-950 font-bold"
+                  : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700"
+              }`}
+            >
+              {st.replace("_", " ")}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Table */}
+      {/* ================= INVOICE TABLE ================= */}
       <div className="rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -384,13 +635,36 @@ export default function AdminInvoicesPage() {
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                     <FiRefreshCw className="inline-block animate-spin mr-2" size={18} />
-                    Loading invoices...
+                    Loading {currencyFilter !== "ALL" ? `${currencyFilter} invoices...` : "invoices..."}
                   </td>
                 </tr>
               ) : invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                    No invoices found. Click "Create Invoice" to issue a new one.
+                  <td colSpan={7} className="px-6 py-14 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-800 text-amber-400 flex items-center justify-center mx-auto text-xl">
+                        {currencyFilter !== "ALL" ? activeCurrencyInfo.flag : <FiFileText size={22} />}
+                      </div>
+                      <div className="text-white font-bold text-base">
+                        No {currencyFilter !== "ALL" ? `${currencyFilter} ` : ""}Invoices Found
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {currencyFilter !== "ALL"
+                          ? `There are currently no invoices issued in ${activeCurrencyInfo.name} (${currencyFilter}). Click below to create your first ${currencyFilter} invoice.`
+                          : "No invoices found matching your search and filter criteria."}
+                      </p>
+                      <div className="pt-2">
+                        <Link
+                          href={`/portal/admin/invoices/new?currency=${currencyFilter !== "ALL" ? currencyFilter : "PKR"}`}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-400/20"
+                        >
+                          <FiPlus size={15} />
+                          <span>
+                            Create First {currencyFilter !== "ALL" ? `${currencyFilter} Invoice` : "Invoice"}
+                          </span>
+                        </Link>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -441,11 +715,13 @@ export default function AdminInvoicesPage() {
                         <div className="text-slate-500 mt-0.5">Due: {dueDateFormatted}</div>
                       </td>
                       <td className="px-6 py-4 font-semibold text-white">
-                        {formatCurrencyAmount(inv.totalAmount, inv.currency, { showCode: true })}
+                        <span className="font-mono">
+                          {formatCurrencyAmount(inv.totalAmount, inv.currency, { showCode: true })}
+                        </span>
                       </td>
                       <td className="px-6 py-4 font-semibold">
                         {inv.balanceAmount > 0 ? (
-                          <span className="text-amber-400">
+                          <span className="text-amber-400 font-mono">
                             {formatCurrencyAmount(inv.balanceAmount, inv.currency, { showCode: true })}
                           </span>
                         ) : (
@@ -530,7 +806,7 @@ export default function AdminInvoicesPage() {
                 Previous
               </button>
               <button
-                disabled={page >= 1}
+                disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 disabled:opacity-50 hover:bg-slate-700"
               >
